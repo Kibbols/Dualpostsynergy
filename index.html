@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DualPost — Upload Everywhere</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="noise"></div>
+
+  <header>
+    <div class="logo">
+      <span class="logo-icon">⬆</span>
+      <span class="logo-text">DualPost</span>
+    </div>
+    <div class="auth-bar">
+      <button class="auth-btn yt" id="ytAuthBtn" onclick="authYouTube()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg>
+        Connect YouTube
+      </button>
+      <button class="auth-btn tt" id="ttAuthBtn" onclick="authTikTok()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.6 3.3A4.9 4.9 0 0 1 14.7 0h-3.6v16.4a2.9 2.9 0 0 1-2.9 2.5 2.9 2.9 0 0 1-2.9-2.9 2.9 2.9 0 0 1 2.9-2.9c.3 0 .5 0 .8.1V9.5a6.5 6.5 0 0 0-.8-.1A6.5 6.5 0 0 0 1.7 16a6.5 6.5 0 0 0 6.5 6.5A6.5 6.5 0 0 0 14.7 16V8.2a8.4 8.4 0 0 0 4.9 1.6V6.2a4.9 4.9 0 0 1-3-.9z"/></svg>
+        Connect TikTok
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <h1>One upload.<br/><em>Two platforms.</em></h1>
+      <p class="sub">Drop your vertical video, give it a title, and post to YouTube Shorts &amp; TikTok simultaneously.</p>
+    </div>
+
+    <div class="uploader-card" id="uploaderCard">
+
+      <!-- Step 1: Drop Zone -->
+      <div class="step" id="step1">
+        <div class="step-label">01 / SELECT VIDEO</div>
+        <div class="drop-zone" id="dropZone">
+          <div class="drop-inner">
+            <div class="phone-frame">
+              <div class="phone-screen" id="videoPreviewWrap">
+                <span class="drop-icon">▲</span>
+                <span class="drop-hint">Drop vertical video here<br/>or click to browse</span>
+              </div>
+            </div>
+            <input type="file" id="videoInput" accept="video/mp4,video/mov,video/quicktime,video/webm" hidden />
+          </div>
+        </div>
+        <div class="file-meta" id="fileMeta" style="display:none">
+          <span id="fileName"></span>
+          <span id="fileSize"></span>
+          <button class="clear-btn" onclick="clearFile()">✕ Remove</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Title -->
+      <div class="step" id="step2">
+        <div class="step-label">02 / TITLE YOUR VIDEO</div>
+        <div class="title-input-wrap">
+          <input type="text" id="videoTitle" class="title-input" placeholder="Enter video title..." maxlength="100" oninput="updateCharCount()" />
+          <div class="char-count"><span id="charCount">0</span>/100</div>
+        </div>
+        <textarea id="videoDesc" class="desc-input" placeholder="Description (optional)..." maxlength="500"></textarea>
+      </div>
+
+      <!-- Step 3: Targets -->
+      <div class="step" id="step3">
+        <div class="step-label">03 / PUBLISH TO</div>
+        <div class="platform-toggles">
+          <label class="platform-toggle yt-toggle" id="ytToggle">
+            <input type="checkbox" id="ytCheck" checked />
+            <div class="toggle-card">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg>
+              <span>YouTube Shorts</span>
+              <div class="status-dot" id="ytDot"></div>
+            </div>
+          </label>
+          <label class="platform-toggle tt-toggle" id="ttToggle">
+            <input type="checkbox" id="ttCheck" checked />
+            <div class="toggle-card">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.6 3.3A4.9 4.9 0 0 1 14.7 0h-3.6v16.4a2.9 2.9 0 0 1-2.9 2.5 2.9 2.9 0 0 1-2.9-2.9 2.9 2.9 0 0 1 2.9-2.9c.3 0 .5 0 .8.1V9.5a6.5 6.5 0 0 0-.8-.1A6.5 6.5 0 0 0 1.7 16a6.5 6.5 0 0 0 6.5 6.5A6.5 6.5 0 0 0 14.7 16V8.2a8.4 8.4 0 0 0 4.9 1.6V6.2a4.9 4.9 0 0 1-3-.9z"/></svg>
+              <span>TikTok</span>
+              <div class="status-dot" id="ttDot"></div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Upload Button -->
+      <button class="upload-btn" id="uploadBtn" onclick="startUpload()">
+        <span class="btn-text">Publish Now</span>
+        <span class="btn-arrow">→</span>
+      </button>
+
+    </div>
+
+    <!-- Progress Panel -->
+    <div class="progress-panel" id="progressPanel" style="display:none">
+      <div class="progress-title">Uploading...</div>
+      <div class="progress-track">
+        <div class="progress-platform">
+          <div class="progress-label">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg>
+            YouTube Shorts
+          </div>
+          <div class="bar-wrap"><div class="bar yt-bar" id="ytBar"></div></div>
+          <div class="progress-status" id="ytStatus">Waiting...</div>
+        </div>
+        <div class="progress-platform">
+          <div class="progress-label">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M19.6 3.3A4.9 4.9 0 0 1 14.7 0h-3.6v16.4a2.9 2.9 0 0 1-2.9 2.5 2.9 2.9 0 0 1-2.9-2.9 2.9 2.9 0 0 1 2.9-2.9c.3 0 .5 0 .8.1V9.5a6.5 6.5 0 0 0-.8-.1A6.5 6.5 0 0 0 1.7 16a6.5 6.5 0 0 0 6.5 6.5A6.5 6.5 0 0 0 14.7 16V8.2a8.4 8.4 0 0 0 4.9 1.6V6.2a4.9 4.9 0 0 1-3-.9z"/></svg>
+            TikTok
+          </div>
+          <div class="bar-wrap"><div class="bar tt-bar" id="ttBar"></div></div>
+          <div class="progress-status" id="ttStatus">Waiting...</div>
+        </div>
+      </div>
+      <button class="cancel-btn" onclick="cancelUpload()">Cancel</button>
+    </div>
+
+    <!-- Success Panel -->
+    <div class="success-panel" id="successPanel" style="display:none">
+      <div class="success-icon">✓</div>
+      <div class="success-title">Posted!</div>
+      <div class="success-links" id="successLinks"></div>
+      <button class="reset-btn" onclick="resetApp()">Upload Another</button>
+    </div>
+
+  </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
