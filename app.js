@@ -12,6 +12,24 @@ const state = {
   testMode: true,   // default to test mode for safety
 };
 
+// ── Sidebar ───────────────────────────────────────────────────
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').classList.add('open');
+  document.getElementById('hamburger').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+  document.getElementById('hamburger').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Close sidebar on Escape key
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
+
 // ── On Load ───────────────────────────────────────────────────
 window.addEventListener('load', () => {
   // Restore saved mode preference
@@ -46,9 +64,14 @@ function handleModeChange() {
 }
 
 function applyModeUI() {
-  const banner     = document.getElementById('modeBanner');
-  const uploadBtn  = document.getElementById('uploadBtn');
-  const bannerSwitch = banner.querySelector('.mode-banner-switch');
+  const banner    = document.getElementById('modeBanner');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const pill      = document.getElementById('headerModePill');
+
+  // Sidebar mode row
+  const sbIcon  = document.getElementById('sbModeIcon');
+  const sbTitle = document.getElementById('sbModeTitle');
+  const sbSub   = document.getElementById('sbModeSub');
 
   if (state.testMode) {
     banner.innerHTML = `
@@ -56,12 +79,20 @@ function applyModeUI() {
       <div><strong>Test Mode</strong> — No real uploads. Auth is skipped and progress is simulated. Perfect for demos!</div>
       <button class="mode-banner-switch" onclick="switchToLive()">Switch to Live →</button>`;
     uploadBtn.querySelector('.btn-text').textContent = 'Simulate Upload';
+    if (pill)    { pill.textContent = '🧪 Test'; pill.classList.remove('live-pill'); }
+    if (sbIcon)  sbIcon.textContent  = '🧪';
+    if (sbTitle) sbTitle.textContent = 'Test Mode';
+    if (sbSub)   sbSub.textContent   = 'Simulated uploads';
   } else {
     banner.innerHTML = `
       <span class="mode-banner-icon">🚀</span>
       <div><strong>Live Mode</strong> — Real uploads to YouTube &amp; TikTok. Connect your accounts to get started.</div>
       <button class="mode-banner-switch" onclick="switchToTest()">← Switch to Test</button>`;
     uploadBtn.querySelector('.btn-text').textContent = 'Publish Now';
+    if (pill)    { pill.textContent = '🚀 Live'; pill.classList.add('live-pill'); }
+    if (sbIcon)  sbIcon.textContent  = '🚀';
+    if (sbTitle) sbTitle.textContent = 'Live Mode';
+    if (sbSub)   sbSub.textContent   = 'Real uploads';
   }
 }
 
@@ -105,39 +136,56 @@ function clearToken(platform) {
 
 // ── Auth UI ───────────────────────────────────────────────────
 function updateAuthUI() {
-  const ytBtn = document.getElementById('ytAuthBtn');
-  const ttBtn = document.getElementById('ttAuthBtn');
-  const ytDot = document.getElementById('ytDot');
-  const ttDot = document.getElementById('ttDot');
+  const ytBtn        = document.getElementById('ytAuthBtn');
+  const ttBtn        = document.getElementById('ttAuthBtn');
+  const ytDot        = document.getElementById('ytDot');
+  const ttDot        = document.getElementById('ttDot');
+  const ytStatus     = document.getElementById('ytAuthStatus');
+  const ttStatus     = document.getElementById('ttAuthStatus');
+  const ytCardDot    = document.getElementById('ytCardDot');
+  const ttCardDot    = document.getElementById('ttCardDot');
+  const headerYtPill = document.getElementById('headerYtPill');
+  const headerTtPill = document.getElementById('headerTtPill');
 
-  // In test mode show accounts as "demo connected"
   const ytConnected = state.testMode || !!state.ytToken;
   const ttConnected = state.testMode || !!state.ttToken;
 
+  // ── YouTube sidebar button ──
   if (ytConnected) {
     ytBtn.classList.add('connected');
-    const label = state.testMode ? 'YouTube (Demo)' : 'YouTube ✓';
-    ytBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg> ${label}`;
-    ytBtn.onclick = state.testMode ? null : () => { clearToken('yt'); updateAuthUI(); toast('YouTube disconnected'); };
-    if (ytDot) ytDot.classList.add('connected');
+    if (ytDot)     ytDot.classList.add('connected');
+    if (ytCardDot) ytCardDot.classList.add('connected');
+    if (ytStatus)  ytStatus.textContent = state.testMode ? 'Demo connected' : 'Connected ✓';
+    if (headerYtPill) { headerYtPill.textContent = '▶ YT'; headerYtPill.style.display = ''; }
+    ytBtn.onclick = state.testMode ? null : () => {
+      clearToken('yt'); updateAuthUI(); toast('YouTube disconnected');
+    };
   } else {
     ytBtn.classList.remove('connected');
-    ytBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg> Connect YouTube`;
+    if (ytDot)     ytDot.classList.remove('connected');
+    if (ytCardDot) ytCardDot.classList.remove('connected');
+    if (ytStatus)  ytStatus.textContent = 'Tap to connect';
+    if (headerYtPill) headerYtPill.style.display = 'none';
     ytBtn.onclick = authYouTube;
-    if (ytDot) ytDot.classList.remove('connected');
   }
 
+  // ── TikTok sidebar button ──
   if (ttConnected) {
     ttBtn.classList.add('connected');
-    const label = state.testMode ? 'TikTok (Demo)' : 'TikTok ✓';
-    ttBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.6 3.3A4.9 4.9 0 0 1 14.7 0h-3.6v16.4a2.9 2.9 0 0 1-2.9 2.5 2.9 2.9 0 0 1-2.9-2.9 2.9 2.9 0 0 1 2.9-2.9c.3 0 .5 0 .8.1V9.5a6.5 6.5 0 0 0-.8-.1A6.5 6.5 0 0 0 1.7 16a6.5 6.5 0 0 0 6.5 6.5A6.5 6.5 0 0 0 14.7 16V8.2a8.4 8.4 0 0 0 4.9 1.6V6.2a4.9 4.9 0 0 1-3-.9z"/></svg> ${label}`;
-    ttBtn.onclick = state.testMode ? null : () => { clearToken('tt'); updateAuthUI(); toast('TikTok disconnected'); };
-    if (ttDot) ttDot.classList.add('connected');
+    if (ttDot)     ttDot.classList.add('connected');
+    if (ttCardDot) ttCardDot.classList.add('connected');
+    if (ttStatus)  ttStatus.textContent = state.testMode ? 'Demo connected' : 'Connected ✓';
+    if (headerTtPill) { headerTtPill.textContent = '♪ TT'; headerTtPill.style.display = ''; }
+    ttBtn.onclick = state.testMode ? null : () => {
+      clearToken('tt'); updateAuthUI(); toast('TikTok disconnected');
+    };
   } else {
     ttBtn.classList.remove('connected');
-    ttBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.6 3.3A4.9 4.9 0 0 1 14.7 0h-3.6v16.4a2.9 2.9 0 0 1-2.9 2.5 2.9 2.9 0 0 1-2.9-2.9 2.9 2.9 0 0 1 2.9-2.9c.3 0 .5 0 .8.1V9.5a6.5 6.5 0 0 0-.8-.1A6.5 6.5 0 0 0 1.7 16a6.5 6.5 0 0 0 6.5 6.5A6.5 6.5 0 0 0 14.7 16V8.2a8.4 8.4 0 0 0 4.9 1.6V6.2a4.9 4.9 0 0 1-3-.9z"/></svg> Connect TikTok`;
+    if (ttDot)     ttDot.classList.remove('connected');
+    if (ttCardDot) ttCardDot.classList.remove('connected');
+    if (ttStatus)  ttStatus.textContent = 'Tap to connect';
+    if (headerTtPill) headerTtPill.style.display = 'none';
     ttBtn.onclick = authTikTok;
-    if (ttDot) ttDot.classList.remove('connected');
   }
 }
 
