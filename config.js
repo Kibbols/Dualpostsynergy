@@ -7,7 +7,7 @@ const CONFIG = {
 
   // ── YouTube / Google ──────────────────────────────────────
   // From: https://console.cloud.google.com → APIs & Services → Credentials
-  GOOGLE_CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
+  GOOGLE_CLIENT_ID: '684633849089-qasr9779deg5mg2a00tb28pt1q9g1nus.apps.googleusercontent.com',
 
   // Your GitHub Pages URL (no trailing slash)
   // e.g. 'https://yourusername.github.io/your-repo-name'
