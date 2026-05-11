@@ -11,7 +11,7 @@ const CONFIG = {
 
   // Your GitHub Pages URL (no trailing slash)
   // e.g. 'https://yourusername.github.io/your-repo-name'
-  REDIRECT_URI: 'https://YOUR_GITHUB_USERNAME.github.io/YOUR_REPO_NAME',
+  REDIRECT_URI: 'https://kibbols.github.io/Dualpostsynergy/',
 
   // ── TikTok ───────────────────────────────────────────────
   // From: https://developers.tiktok.com → My Apps → your app → Keys & Tokens
