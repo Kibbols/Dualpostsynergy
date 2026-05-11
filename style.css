@@ -707,3 +707,123 @@ h1 em {
   .platform-toggles { grid-template-columns: 1fr 1fr; }
   h1 { font-size: 2.4rem; }
 }
+
+/* ─── Mode Toggle ────────────────────────────────────────── */
+.mode-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  border-radius: 50px;
+  padding: 6px 14px;
+  box-shadow: var(--shadow);
+}
+
+.mode-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--muted);
+  transition: color 0.25s;
+  white-space: nowrap;
+}
+
+#modeLabelTest { color: #b48fff; }
+#modeLabelLive { color: var(--muted); }
+
+body.live-mode #modeLabelTest { color: var(--muted); }
+body.live-mode #modeLabelLive { color: #22c55e; }
+
+/* The slider track */
+.mode-slider-label { cursor: pointer; display: flex; align-items: center; }
+.mode-slider-label input { display: none; }
+
+.mode-track {
+  display: block;
+  width: 44px;
+  height: 24px;
+  background: #e8d5f5;
+  border-radius: 50px;
+  border: 2px solid #d4b8f0;
+  position: relative;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.mode-thumb {
+  display: block;
+  width: 16px;
+  height: 16px;
+  background: #b48fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), background 0.3s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.mode-slider-label input:checked ~ .mode-track {
+  background: #d4f5e0;
+  border-color: #86efac;
+}
+
+.mode-slider-label input:checked ~ .mode-track .mode-thumb {
+  transform: translateX(20px);
+  background: #22c55e;
+}
+
+/* ─── Mode Banner ────────────────────────────────────────── */
+.mode-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #f5f0ff;
+  border: 2px solid #d4b8f0;
+  border-radius: 16px;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #6b3fa0;
+  animation: fadeUp 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+  box-shadow: 0 4px 0 #d4b8f0;
+}
+
+.mode-banner-icon { font-size: 1.3rem; flex-shrink: 0; }
+
+.mode-banner strong { color: #5b2d9e; }
+
+.mode-banner-switch {
+  margin-left: auto;
+  background: #b48fff;
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.mode-banner-switch:hover { background: #9d6ff0; transform: translateY(-1px); }
+
+body.live-mode .mode-banner {
+  background: #f0fff4;
+  border-color: #86efac;
+  color: #166534;
+  box-shadow: 0 4px 0 #86efac;
+}
+
+body.live-mode .mode-banner strong { color: #15803d; }
+body.live-mode .mode-banner-switch { background: #22c55e; }
+body.live-mode .mode-banner-switch:hover { background: #16a34a; }
+
+/* In live mode, auth buttons become more prominent */
+body.live-mode .auth-btn:not(.connected) {
+  border-color: var(--accent);
+  color: var(--accent);
+}

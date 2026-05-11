@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terms of Service — DualPost</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #fff8f0; --surface: #ffffff; --border: #fddcb5;
+      --text: #2d1b00; --muted: #a07850; --accent: #ff8c42;
+      --font-display: 'Fredoka One', cursive; --font-body: 'Nunito', sans-serif;
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 1rem; line-height: 1.8; }
+    header {
+      padding: 20px 40px; border-bottom: 2px solid var(--border);
+      background: rgba(255,248,240,0.9); backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .logo { font-family: var(--font-display); font-size: 1.5rem; color: var(--text); text-decoration: none; }
+    .logo span {
+      background: linear-gradient(135deg, #ff8c42, #ffc947); color: #fff;
+      width: 32px; height: 32px; border-radius: 10px; display: inline-flex;
+      align-items: center; justify-content: center; margin-right: 8px; font-size: 0.9rem;
+    }
+    main { max-width: 760px; margin: 0 auto; padding: 56px 24px 100px; }
+    .page-tag {
+      display: inline-block; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em;
+      text-transform: uppercase; color: #fff;
+      background: linear-gradient(120deg, #b48fff, #ff6b9d);
+      padding: 4px 12px; border-radius: 50px; margin-bottom: 16px;
+    }
+    h1 { font-family: var(--font-display); font-size: 2.8rem; color: var(--text); margin-bottom: 8px; line-height: 1.1; }
+    .updated { font-size: 0.82rem; color: var(--muted); font-weight: 600; margin-bottom: 40px; }
+    .card {
+      background: var(--surface); border: 2px solid var(--border);
+      border-radius: 20px; padding: 32px 36px; margin-bottom: 20px;
+      box-shadow: 0 4px 0 var(--border);
+    }
+    h2 { font-family: var(--font-display); font-size: 1.3rem; color: var(--text); margin-bottom: 14px; }
+    p { color: #5a3a10; margin-bottom: 12px; font-weight: 600; }
+    p:last-child { margin-bottom: 0; }
+    ul { padding-left: 20px; margin-bottom: 12px; }
+    li { color: #5a3a10; font-weight: 600; margin-bottom: 6px; }
+    a { color: var(--accent); text-decoration: none; font-weight: 700; }
+    a:hover { text-decoration: underline; }
+    .highlight {
+      background: #fff5ec; border: 2px solid var(--border);
+      border-radius: 14px; padding: 18px 22px; margin: 16px 0;
+      font-weight: 700; color: var(--text);
+    }
+    footer { text-align: center; padding: 40px 24px; color: var(--muted); font-size: 0.82rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="index.html"><span>⬆</span>DualPost</a>
+</header>
+
+<main>
+  <div class="page-tag">Legal</div>
+  <h1>Terms of Service</h1>
+  <p class="updated">Last updated: June 2025</p>
+
+  <div class="card">
+    <h2>Acceptance of Terms</h2>
+    <p>By accessing or using DualPost ("the Service"), you agree to be bound by these Terms of Service. If you do not agree, please do not use the Service.</p>
+    <p>These Terms apply to all users of DualPost, including users who connect their social media accounts to upload content.</p>
+  </div>
+
+  <div class="card">
+    <h2>Description of Service</h2>
+    <p>DualPost is a free, open-source web tool that allows users to upload vertical video content simultaneously to YouTube Shorts and TikTok using those platforms' official APIs.</p>
+    <div class="highlight">
+      DualPost is a convenience tool only. It does not host, store, or modify your content. All uploads go directly to YouTube and TikTok from your own browser.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Your Responsibilities</h2>
+    <p>You are solely responsible for all content you upload using DualPost. You agree that you will not upload content that:</p>
+    <ul>
+      <li>Violates YouTube's <a href="https://www.youtube.com/t/terms" target="_blank">Terms of Service</a> or <a href="https://support.google.com/youtube/answer/2801973" target="_blank">Community Guidelines</a></li>
+      <li>Violates TikTok's <a href="https://www.tiktok.com/legal/terms-of-service" target="_blank">Terms of Service</a> or <a href="https://www.tiktok.com/community-guidelines" target="_blank">Community Guidelines</a></li>
+      <li>Infringes any copyright, trademark, or other intellectual property rights</li>
+      <li>Contains illegal content or promotes illegal activities</li>
+      <li>Depicts or promotes violence, harassment, hate speech, or exploitation</li>
+      <li>Violates any applicable local, national, or international laws</li>
+    </ul>
+    <p>You must have all necessary rights and permissions to upload the content you submit through DualPost.</p>
+  </div>
+
+  <div class="card">
+    <h2>Third-Party Platform Terms</h2>
+    <p>DualPost connects to YouTube and TikTok via their official APIs. Your use of these platforms through DualPost is also subject to their own terms:</p>
+    <ul>
+      <li><a href="https://www.youtube.com/t/terms" target="_blank">YouTube Terms of Service</a></li>
+      <li><a href="https://developers.google.com/youtube/terms/api-services-terms-of-service" target="_blank">YouTube API Services Terms of Service</a></li>
+      <li><a href="https://www.tiktok.com/legal/terms-of-service" target="_blank">TikTok Terms of Service</a></li>
+      <li><a href="https://developers.tiktok.com/doc/tiktok-api-terms-of-service" target="_blank">TikTok API Terms of Service</a></li>
+    </ul>
+    <p>By using DualPost to post content, you confirm that you also agree to and comply with all of the above terms.</p>
+  </div>
+
+  <div class="card">
+    <h2>Account Connections & Revocation</h2>
+    <p>DualPost temporarily stores OAuth access tokens in your browser's sessionStorage to allow uploads. These tokens are cleared when you close the browser tab or click "Disconnect."</p>
+    <p>You may revoke DualPost's access to your YouTube account at any time by visiting <a href="https://myaccount.google.com/permissions" target="_blank">Google Account Permissions</a>.</p>
+    <p>You may revoke DualPost's access to your TikTok account at any time by visiting your <a href="https://www.tiktok.com/setting" target="_blank">TikTok Settings → Connected Apps</a>.</p>
+  </div>
+
+  <div class="card">
+    <h2>No Warranty</h2>
+    <p>DualPost is provided "as is" without warranty of any kind, express or implied. We do not guarantee that the Service will be available, error-free, or that uploads will always succeed.</p>
+    <p>Platform API availability and functionality are outside our control. YouTube and TikTok may change their APIs at any time, which may affect DualPost's functionality.</p>
+  </div>
+
+  <div class="card">
+    <h2>Limitation of Liability</h2>
+    <p>To the maximum extent permitted by law, DualPost and its contributors shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the Service, including but not limited to:</p>
+    <ul>
+      <li>Content that is removed or rejected by YouTube or TikTok</li>
+      <li>Account suspensions on third-party platforms</li>
+      <li>Failed or incomplete uploads</li>
+      <li>Loss of data or content</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Open Source</h2>
+    <p>DualPost is open source. The source code is available on GitHub. You are free to fork, modify, and self-host the tool in accordance with the project's open source license.</p>
+  </div>
+
+  <div class="card">
+    <h2>Changes to These Terms</h2>
+    <p>We reserve the right to update these Terms at any time. Updated terms will be posted on this page with a revised date. Continued use of the Service after changes constitutes acceptance of the new terms.</p>
+  </div>
+
+  <div class="card">
+    <h2>Contact</h2>
+    <p>For questions about these Terms, please open an issue on the <a href="https://github.com" target="_blank">GitHub repository</a> for this project.</p>
+  </div>
+</main>
+
+<footer>
+  &copy; 2025 DualPost &nbsp;·&nbsp; <a href="index.html">Back to App</a> &nbsp;·&nbsp; <a href="privacy-policy.html">Privacy Policy</a>
+</footer>
+
+</body>
+</html>

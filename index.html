@@ -17,6 +17,17 @@
       <span class="logo-icon">⬆</span>
       <span class="logo-text">DualPost</span>
     </div>
+    <div class="mode-toggle-wrap">
+      <span class="mode-label" id="modeLabelTest">🧪 Test</span>
+      <label class="mode-slider-label">
+        <input type="checkbox" id="modeToggle" onchange="handleModeChange()" />
+        <span class="mode-track">
+          <span class="mode-thumb"></span>
+        </span>
+      </label>
+      <span class="mode-label" id="modeLabelLive">🚀 Live</span>
+    </div>
+
     <div class="auth-bar">
       <button class="auth-btn yt" id="ytAuthBtn" onclick="authYouTube()">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg>
@@ -33,6 +44,15 @@
     <div class="hero">
       <h1>One upload.<br/><em>Two platforms.</em></h1>
       <p class="sub">Drop your vertical video, give it a title, and post to YouTube Shorts &amp; TikTok simultaneously.</p>
+    </div>
+
+    <!-- Mode Banner -->
+    <div class="mode-banner" id="modeBanner">
+      <span class="mode-banner-icon">🧪</span>
+      <div>
+        <strong>Test Mode</strong> — No real uploads. Auth is skipped and progress is simulated. Perfect for demos!
+      </div>
+      <button class="mode-banner-switch" onclick="document.getElementById('modeToggle').click(); handleModeChange()">Switch to Live →</button>
     </div>
 
     <div class="uploader-card" id="uploaderCard">
