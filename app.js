@@ -33,7 +33,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar
 // ── On Load ───────────────────────────────────────────────────
 window.addEventListener('load', () => {
   // Restore saved mode preference
-  const savedMode = sessionStorage.getItem('dp_mode');
+  const savedMode = localStorage.getItem('dp_mode');
   if (savedMode === 'live') {
     state.testMode = false;
     document.getElementById('modeToggle').checked = true;
@@ -51,7 +51,7 @@ window.addEventListener('load', () => {
 function handleModeChange() {
   const toggle = document.getElementById('modeToggle');
   state.testMode = !toggle.checked;
-  sessionStorage.setItem('dp_mode', state.testMode ? 'test' : 'live');
+  localStorage.setItem('dp_mode', state.testMode ? 'test' : 'live');
 
   if (state.testMode) {
     document.body.classList.remove('live-mode');
@@ -99,7 +99,7 @@ function applyModeUI() {
 function switchToLive() {
   document.getElementById('modeToggle').checked = true;
   state.testMode = false;
-  sessionStorage.setItem('dp_mode', 'live');
+  localStorage.setItem('dp_mode', 'live');
   document.body.classList.add('live-mode');
   applyModeUI();
   updateAuthUI();
@@ -108,7 +108,7 @@ function switchToLive() {
 function switchToTest() {
   document.getElementById('modeToggle').checked = false;
   state.testMode = true;
-  sessionStorage.setItem('dp_mode', 'test');
+  localStorage.setItem('dp_mode', 'test');
   document.body.classList.remove('live-mode');
   applyModeUI();
   updateAuthUI();
@@ -116,22 +116,22 @@ function switchToTest() {
 
 // ── Token Storage ─────────────────────────────────────────────
 function saveTokens() {
-  if (state.ytToken) sessionStorage.setItem('dp_yt', JSON.stringify(state.ytToken));
-  if (state.ttToken) sessionStorage.setItem('dp_tt', JSON.stringify(state.ttToken));
+  if (state.ytToken) localStorage.setItem('dp_yt', JSON.stringify(state.ytToken));
+  if (state.ttToken) localStorage.setItem('dp_tt', JSON.stringify(state.ttToken));
 }
 
 function restoreTokens() {
   try {
-    const yt = sessionStorage.getItem('dp_yt');
-    const tt = sessionStorage.getItem('dp_tt');
+    const yt = localStorage.getItem('dp_yt');
+    const tt = localStorage.getItem('dp_tt');
     if (yt) state.ytToken = JSON.parse(yt);
     if (tt) state.ttToken = JSON.parse(tt);
   } catch(e) {}
 }
 
 function clearToken(platform) {
-  if (platform === 'yt') { state.ytToken = null; sessionStorage.removeItem('dp_yt'); }
-  if (platform === 'tt') { state.ttToken = null; sessionStorage.removeItem('dp_tt'); }
+  if (platform === 'yt') { state.ytToken = null; localStorage.removeItem('dp_yt'); }
+  if (platform === 'tt') { state.ttToken = null; localStorage.removeItem('dp_tt'); }
 }
 
 // ── Auth UI ───────────────────────────────────────────────────
@@ -215,8 +215,8 @@ async function authYouTube() {
 
   const verifier  = generateCodeVerifier();
   const challenge = await generateCodeChallenge(verifier);
-  sessionStorage.setItem('yt_verifier', verifier);
-  sessionStorage.setItem('oauth_pending', 'youtube');
+  localStorage.setItem('yt_verifier', verifier);
+  localStorage.setItem('oauth_pending', 'youtube');
 
   const params = new URLSearchParams({
     client_id: CONFIG.GOOGLE_CLIENT_ID,
@@ -243,8 +243,8 @@ async function authTikTok() {
 
   const verifier  = generateCodeVerifier();
   const challenge = await generateCodeChallenge(verifier);
-  sessionStorage.setItem('tt_verifier', verifier);
-  sessionStorage.setItem('oauth_pending', 'tiktok');
+  localStorage.setItem('tt_verifier', verifier);
+  localStorage.setItem('oauth_pending', 'tiktok');
 
   const params = new URLSearchParams({
     client_key: CONFIG.TIKTOK_CLIENT_KEY,
@@ -263,13 +263,13 @@ async function authTikTok() {
 async function handleOAuthCallback() {
   const params   = new URLSearchParams(window.location.search);
   const code     = params.get('code');
-  const platform = sessionStorage.getItem('oauth_pending');
+  const platform = localStorage.getItem('oauth_pending');
 
   if (!code || !platform) return;
 
   // Clean the URL immediately so a refresh doesn't re-trigger
   window.history.replaceState({}, document.title, window.location.pathname);
-  sessionStorage.removeItem('oauth_pending');
+  localStorage.removeItem('oauth_pending');
 
   toast('Connecting account...');
 
@@ -285,8 +285,8 @@ async function handleOAuthCallback() {
 }
 
 async function exchangeYouTubeCode(code) {
-  const verifier = sessionStorage.getItem('yt_verifier');
-  sessionStorage.removeItem('yt_verifier');
+  const verifier = localStorage.getItem('yt_verifier');
+  localStorage.removeItem('yt_verifier');
 
   // Note: Worker URL only — no /exchange path, the Worker handles all requests at root
   const res = await fetch(CONFIG.WORKER_URL, {
@@ -312,8 +312,8 @@ async function exchangeYouTubeCode(code) {
 }
 
 async function exchangeTikTokCode(code) {
-  const verifier = sessionStorage.getItem('tt_verifier');
-  sessionStorage.removeItem('tt_verifier');
+  const verifier = localStorage.getItem('tt_verifier');
+  localStorage.removeItem('tt_verifier');
 
   const res = await fetch(CONFIG.WORKER_URL, {
     method: 'POST',
