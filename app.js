@@ -363,7 +363,17 @@ function initDropZone() {
   const zone  = document.getElementById('dropZone');
   const input = document.getElementById('videoInput');
 
-  zone.addEventListener('click', () => input.click());
+  zone.addEventListener('click', () => {
+    if (state.testMode && !state.file) {
+      // In test mode set a fake placeholder so the upload flow works
+      state.file = { name: 'demo-video.mp4', size: 10 * 1024 * 1024, type: 'video/mp4', _demo: true };
+      showPreview(null);
+      showFileMeta(state.file);
+      toast('Demo video selected 🎬');
+      return;
+    }
+    input.click();
+  });
   zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('dragging'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('dragging'));
   zone.addEventListener('drop', e => {
@@ -378,13 +388,16 @@ function initDropZone() {
 }
 
 function handleFile(file) {
-  const validExt = /\.(mp4|mov|webm)$/i.test(file.name);
-  const validType = ['video/mp4','video/quicktime','video/webm'].includes(file.type);
-  if (!validType && !validExt) {
-    toast('Please select an MP4, MOV, or WebM file.', 'error'); return;
-  }
-  if (file.size > 256 * 1024 * 1024) {
-    toast('File too large. Max 256MB.', 'error'); return;
+  // In test mode accept any file — nothing gets uploaded anyway
+  if (!state.testMode) {
+    const validExt = /\.(mp4|mov|webm)$/i.test(file.name);
+    const validType = ['video/mp4','video/quicktime','video/webm'].includes(file.type);
+    if (!validType && !validExt) {
+      toast('Please select an MP4, MOV, or WebM file.', 'error'); return;
+    }
+    if (file.size > 256 * 1024 * 1024) {
+      toast('File too large. Max 256MB.', 'error'); return;
+    }
   }
   state.file = file;
   showPreview(file);
@@ -394,6 +407,10 @@ function handleFile(file) {
 function showPreview(file) {
   const wrap = document.getElementById('videoPreviewWrap');
   wrap.innerHTML = '';
+  if (!file) {
+    wrap.innerHTML = '<span style="font-size:2rem">🎬</span><span class="drop-hint">Demo video</span>';
+    return;
+  }
   const video = document.createElement('video');
   video.src = URL.createObjectURL(file);
   video.muted = true; video.loop = true; video.autoplay = true; video.playsInline = true;
@@ -402,7 +419,7 @@ function showPreview(file) {
 
 function showFileMeta(file) {
   document.getElementById('fileMeta').style.display = 'flex';
-  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileName').textContent = file.name + (file._demo ? ' (demo)' : '');
   document.getElementById('fileSize').textContent = formatBytes(file.size);
 }
 
@@ -427,7 +444,7 @@ async function startUpload() {
   const uploadYT = document.getElementById('ytCheck').checked;
   const uploadTT = document.getElementById('ttCheck').checked;
 
-  if (!state.file)              { toast('Please select a video file first.', 'error'); return; }
+  if (!state.file && !state.testMode) { toast('Please select a video file first.', 'error'); return; }
   if (!title)                   { toast('Please enter a video title.', 'error'); return; }
   if (!uploadYT && !uploadTT)   { toast('Select at least one platform.', 'error'); return; }
 
