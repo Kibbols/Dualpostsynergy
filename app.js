@@ -30,9 +30,20 @@ function closeSidebar() {
 // Close sidebar on Escape key
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
 
+// ── Debug Logger ──────────────────────────────────────────────
+function dbg(msg) {
+  console.log('[DualPost]', msg);
+  const panel = document.getElementById('debugPanel');
+  if (!panel) return;
+  const line = document.createElement('div');
+  line.textContent = new Date().toLocaleTimeString() + ' — ' + msg;
+  panel.appendChild(line);
+  panel.style.display = 'block';
+  panel.scrollTop = panel.scrollHeight;
+}
+
 // ── On Load ───────────────────────────────────────────────────
 window.addEventListener('load', () => {
-  // Restore saved mode preference
   const savedMode = localStorage.getItem('dp_mode');
   if (savedMode === 'live') {
     state.testMode = false;
@@ -41,11 +52,17 @@ window.addEventListener('load', () => {
   }
   applyModeUI();
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const code      = urlParams.get('code');
+  const pending   = localStorage.getItem('oauth_pending');
+  dbg('Loaded. code=' + (code ? code.slice(0,12) + '...' : 'NONE') + ' | pending=' + (pending || 'NONE'));
+
   handleOAuthCallback();
   restoreTokens();
   updateAuthUI();
   initDropZone();
 });
+
 
 // ── Mode Toggle ───────────────────────────────────────────────
 function handleModeChange() {
@@ -265,19 +282,22 @@ async function handleOAuthCallback() {
   const code     = params.get('code');
   const platform = localStorage.getItem('oauth_pending');
 
-  if (!code || !platform) return;
+  dbg('Callback check: code=' + (code?'YES':'NO') + ' platform=' + (platform||'NONE'));
+  if (!code || !platform) { dbg('Callback aborted - missing code or platform'); return; }
 
   // Clean the URL immediately so a refresh doesn't re-trigger
   window.history.replaceState({}, document.title, window.location.pathname);
   localStorage.removeItem('oauth_pending');
 
   toast('Connecting account...');
+  dbg('Starting exchange for: ' + platform);
 
   try {
     if (platform === 'youtube')     await exchangeYouTubeCode(code);
     else if (platform === 'tiktok') await exchangeTikTokCode(code);
   } catch (err) {
     console.error('OAuth exchange error:', err);
+    dbg('ERROR: ' + err.message);
     toast('Connection failed: ' + err.message, 'error');
   }
 
@@ -296,7 +316,7 @@ async function exchangeYouTubeCode(code) {
   });
 
   const rawText = await res.text();
-  console.log('YouTube exchange response:', res.status, rawText);
+  dbg('Worker YouTube response: ' + res.status + ' | ' + rawText.slice(0,80));
 
   if (!res.ok) throw new Error(`Worker returned ${res.status}: ${rawText}`);
 
@@ -308,6 +328,7 @@ async function exchangeYouTubeCode(code) {
 
   state.ytToken = { access_token: data.access_token };
   saveTokens();
+  dbg('YouTube token saved OK');
   toast('YouTube connected! 🎉', 'success');
 }
 
@@ -322,7 +343,7 @@ async function exchangeTikTokCode(code) {
   });
 
   const rawText = await res.text();
-  console.log('TikTok exchange response:', res.status, rawText);
+  dbg('Worker TikTok response: ' + res.status + ' | ' + rawText.slice(0,80));
 
   if (!res.ok) throw new Error(`Worker returned ${res.status}: ${rawText}`);
 

@@ -211,6 +211,13 @@
 
   </main>
 
+
+  <!-- Debug Panel — shows OAuth flow status, remove when done -->
+  <div id="debugPanel" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a0a00;color:#ffc947;font-family:monospace;font-size:11px;padding:10px 14px;max-height:160px;overflow-y:auto;z-index:9999;border-top:2px solid #ff8c42;line-height:1.7;">
+    <strong style="color:#ff8c42;">🔍 Debug Log</strong> — <button onclick="document.getElementById('debugPanel').style.display='none'" style="background:none;border:1px solid #ff8c42;color:#ff8c42;padding:1px 6px;border-radius:4px;cursor:pointer;font-size:10px;">close</button>
+    <br/>
+  </div>
+
   <div class="toast" id="toast"></div>
 
   <script src="config.js"></script>
