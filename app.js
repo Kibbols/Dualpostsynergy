@@ -267,17 +267,18 @@ async function handleOAuthCallback() {
 
   if (!code || !platform) return;
 
+  // Clean the URL immediately so a refresh doesn't re-trigger
   window.history.replaceState({}, document.title, window.location.pathname);
   sessionStorage.removeItem('oauth_pending');
 
   toast('Connecting account...');
 
   try {
-    if (platform === 'youtube')      await exchangeYouTubeCode(code);
-    else if (platform === 'tiktok')  await exchangeTikTokCode(code);
+    if (platform === 'youtube')     await exchangeYouTubeCode(code);
+    else if (platform === 'tiktok') await exchangeTikTokCode(code);
   } catch (err) {
-    toast('Connection failed. Check your Worker URL and try again.', 'error');
     console.error('OAuth exchange error:', err);
+    toast('Connection failed: ' + err.message, 'error');
   }
 
   updateAuthUI();
@@ -287,16 +288,23 @@ async function exchangeYouTubeCode(code) {
   const verifier = sessionStorage.getItem('yt_verifier');
   sessionStorage.removeItem('yt_verifier');
 
-  const res = await fetch(`${CONFIG.WORKER_URL}/exchange`, {
+  // Note: Worker URL only — no /exchange path, the Worker handles all requests at root
+  const res = await fetch(CONFIG.WORKER_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ code, platform: 'youtube', verifier }),
   });
 
-  if (!res.ok) throw new Error(await res.text());
+  const rawText = await res.text();
+  console.log('YouTube exchange response:', res.status, rawText);
 
-  const data = await res.json();
-  if (!data.access_token) throw new Error('No access_token in response');
+  if (!res.ok) throw new Error(`Worker returned ${res.status}: ${rawText}`);
+
+  let data;
+  try { data = JSON.parse(rawText); }
+  catch (e) { throw new Error('Worker response was not valid JSON: ' + rawText); }
+
+  if (!data.access_token) throw new Error('No access_token in response: ' + rawText);
 
   state.ytToken = { access_token: data.access_token };
   saveTokens();
@@ -307,16 +315,22 @@ async function exchangeTikTokCode(code) {
   const verifier = sessionStorage.getItem('tt_verifier');
   sessionStorage.removeItem('tt_verifier');
 
-  const res = await fetch(`${CONFIG.WORKER_URL}/exchange`, {
+  const res = await fetch(CONFIG.WORKER_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ code, platform: 'tiktok', verifier }),
   });
 
-  if (!res.ok) throw new Error(await res.text());
+  const rawText = await res.text();
+  console.log('TikTok exchange response:', res.status, rawText);
 
-  const data = await res.json();
-  if (!data.access_token) throw new Error('No access_token in response');
+  if (!res.ok) throw new Error(`Worker returned ${res.status}: ${rawText}`);
+
+  let data;
+  try { data = JSON.parse(rawText); }
+  catch (e) { throw new Error('Worker response was not valid JSON: ' + rawText); }
+
+  if (!data.access_token) throw new Error('No access_token in response: ' + rawText);
 
   state.ttToken = { access_token: data.access_token };
   saveTokens();
