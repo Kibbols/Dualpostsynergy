@@ -250,6 +250,9 @@ async function authYouTube() {
   localStorage.setItem('yt_verifier', verifier);
   localStorage.setItem('oauth_pending', 'youtube');
 
+  // Encode verifier in state so it survives the GitHub -> dualpost.app redirect
+  const stateParam = btoa(JSON.stringify({ platform: 'youtube', verifier }));
+
   const params = new URLSearchParams({
     client_id: CONFIG.GOOGLE_CLIENT_ID,
     redirect_uri: CONFIG.REDIRECT_URI,
@@ -259,6 +262,7 @@ async function authYouTube() {
     code_challenge_method: 'S256',
     access_type: 'offline',
     prompt: 'consent',
+    state: stateParam,
   });
 
   window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
@@ -278,6 +282,9 @@ async function authTikTok() {
   localStorage.setItem('tt_verifier', verifier);
   localStorage.setItem('oauth_pending', 'tiktok');
 
+  // Encode verifier in state so it survives the GitHub -> dualpost.app redirect
+  const stateParam = btoa(JSON.stringify({ platform: 'tiktok', verifier }));
+
   const params = new URLSearchParams({
     client_key: CONFIG.TIKTOK_CLIENT_KEY,
     redirect_uri: CONFIG.REDIRECT_URI,
@@ -285,7 +292,7 @@ async function authTikTok() {
     scope: 'video.upload',
     code_challenge: challenge,
     code_challenge_method: 'S256',
-    state: 'tiktok_auth',
+    state: stateParam,
   });
 
   window.location.href = `https://www.tiktok.com/v2/auth/authorize/?${params}`;
@@ -293,14 +300,25 @@ async function authTikTok() {
 
 // ── OAuth Callback Handler ─────────────────────────────────────
 async function handleOAuthCallback() {
-  const params   = new URLSearchParams(window.location.search);
-  const code     = params.get('code');
-  const platform = localStorage.getItem('oauth_pending');
+  const params = new URLSearchParams(window.location.search);
+  const code   = params.get('code');
+
+  // Try localStorage first, then fall back to state param (survives cross-domain redirect)
+  let platform = localStorage.getItem('oauth_pending');
+  let verifierFromState = null;
+
+  const stateParam = params.get('state');
+  if (stateParam) {
+    try {
+      const decoded = JSON.parse(atob(stateParam));
+      if (!platform && decoded.platform) platform = decoded.platform;
+      if (decoded.verifier) verifierFromState = decoded.verifier;
+    } catch(e) { /* state param wasn't ours, ignore */ }
+  }
 
   dbg('Callback check: code=' + (code?'YES':'NO') + ' platform=' + (platform||'NONE'));
   if (!code || !platform) { dbg('Callback aborted - missing code or platform'); return; }
 
-  // Clean the URL immediately so a refresh doesn't re-trigger
   window.history.replaceState({}, document.title, window.location.pathname);
   localStorage.removeItem('oauth_pending');
 
@@ -308,8 +326,8 @@ async function handleOAuthCallback() {
   dbg('Starting exchange for: ' + platform);
 
   try {
-    if (platform === 'youtube')     await exchangeYouTubeCode(code);
-    else if (platform === 'tiktok') await exchangeTikTokCode(code);
+    if (platform === 'youtube')     await exchangeYouTubeCode(code, verifierFromState);
+    else if (platform === 'tiktok') await exchangeTikTokCode(code, verifierFromState);
   } catch (err) {
     console.error('OAuth exchange error:', err);
     dbg('ERROR: ' + err.message);
@@ -319,8 +337,8 @@ async function handleOAuthCallback() {
   updateAuthUI();
 }
 
-async function exchangeYouTubeCode(code) {
-  const verifier = localStorage.getItem('yt_verifier');
+async function exchangeYouTubeCode(code, verifierOverride) {
+  const verifier = verifierOverride || localStorage.getItem('yt_verifier');
   localStorage.removeItem('yt_verifier');
 
   // Note: Worker URL only — no /exchange path, the Worker handles all requests at root
@@ -347,8 +365,8 @@ async function exchangeYouTubeCode(code) {
   toast('YouTube connected! 🎉', 'success');
 }
 
-async function exchangeTikTokCode(code) {
-  const verifier = localStorage.getItem('tt_verifier');
+async function exchangeTikTokCode(code, verifierOverride) {
+  const verifier = verifierOverride || localStorage.getItem('tt_verifier');
   localStorage.removeItem('tt_verifier');
 
   const res = await fetch(CONFIG.WORKER_URL, {
