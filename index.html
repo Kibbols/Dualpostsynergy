@@ -5,12 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DualPost Synergy</title>
   <script>
-    // GitHub URL redirects straight to the app page
-    if (window.location.hostname === 'kibbols.github.io') {
-      window.location.replace('https://dualpost.app/app.html' + window.location.search);
-    } else {
-      // On dualpost.app, redirect root to landing page
+    const search = window.location.search;
+    const hasCode = search.includes('code=');
+
+    if (hasCode) {
+      // OAuth callback — send to app with full query string preserved
+      window.location.replace('/app.html' + search);
+    } else if (window.location.hostname !== 'kibbols.github.io') {
+      // On dualpost.app with no code — show landing page
       window.location.replace('/landing.html');
+    } else {
+      // Direct GitHub visit with no code — send to app
+      window.location.replace('/app.html');
     }
   </script>
 </head>
