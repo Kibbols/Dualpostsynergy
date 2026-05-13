@@ -12,6 +12,15 @@ const state = {
   testMode: true,   // default to test mode for safety
 };
 
+// ── Force drawer closed on load ───────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const drawer = document.getElementById('debugDrawer');
+  const tab    = document.getElementById('debugDrawerTab');
+  if (drawer) { drawer.style.transition = 'none'; drawer.style.bottom = '-175px'; }
+  if (tab)    { tab.style.display = 'flex'; }
+  setTimeout(() => { if (drawer) drawer.style.transition = 'bottom 0.35s ease-out'; }, 50);
+});
+
 // ── Sidebar ───────────────────────────────────────────────────
 function openSidebar() {
   document.getElementById('sidebar').classList.add('open');
