@@ -372,6 +372,23 @@
 
     .footer-links a:hover { color: var(--accent); }
 
+    .nav-logo-icon-img {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      object-fit: cover;
+      box-shadow: 0 3px 0 rgba(255,100,0,0.15);
+      flex-shrink: 0;
+    }
+    .nav-logo-text-stack {
+      display: flex; flex-direction: column;
+      line-height: 1; gap: 1px;
+    }
+    .nav-logo-sub {
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+
     @media (max-width: 500px) {
       nav { padding: 14px 18px; }
       .hero { padding: 50px 18px 40px; }
@@ -383,8 +400,11 @@
 
   <nav>
     <a class="nav-logo" href="/">
-      <span class="nav-logo-icon">⬆</span>
-      DualPost Synergy
+      <img src="icon-192.png" class="nav-logo-icon-img" alt="DualPost Synergy" />
+      <div class="nav-logo-text-stack">
+        <span>DualPost</span>
+        <span class="nav-logo-sub">Synergy</span>
+      </div>
     </a>
     <a class="nav-cta" href="/app">Launch App →</a>
   </nav>
