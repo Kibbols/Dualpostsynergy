@@ -577,12 +577,11 @@ body.live-mode .mode-banner-switch:hover { background: #16a34a; }
 .kofi-banner {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 14px;
   background: #29ABE0;
   border: 2px solid #1a8fbf;
   border-radius: 16px;
-  padding: 12px 18px;
+  padding: 16px 18px;
   margin-bottom: 24px;
   font-size: 0.85rem;
   font-weight: 700;
@@ -596,7 +595,26 @@ body.live-mode .mode-banner-switch:hover { background: #16a34a; }
   box-shadow: 0 6px 0 #1a8fbf;
   background: #1a9fd4;
 }
-.kofi-banner strong { color: #ffffff; }
+.kofi-banner-icon { font-size: 1.4rem; flex-shrink: 0; }
+.kofi-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.kofi-banner-text strong { color: #ffffff; font-size: 0.88rem; }
+.kofi-banner-text span { font-size: 0.76rem; font-weight: 600; opacity: 0.9; line-height: 1.4; }
+.kofi-banner-cta {
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.25);
+  padding: 6px 13px;
+  border-radius: 50px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+  border: 1.5px solid rgba(255,255,255,0.4);
+}
 
 /* ─── Header status stacked layout ─────────────────────── */
 .header-status {
