@@ -43,7 +43,7 @@ function closeDebugDrawer() {
   const drawer = document.getElementById('debugDrawer');
   const tab    = document.getElementById('debugDrawerTab');
   if (!drawer) return;
-  drawer.style.bottom = '-320px';
+  drawer.style.bottom = '-175px';
   if (tab) tab.style.display = 'flex';
 }
 

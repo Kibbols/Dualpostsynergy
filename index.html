@@ -220,15 +220,14 @@
 
 
   <!-- Debug Drawer -->
-  <div id="debugDrawerTab" onclick="openDebugDrawer()" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:9999;background:#1a0a00;color:#ffc947;font-family:monospace;font-size:11px;padding:6px 20px 5px;border-radius:12px 12px 0 0;border:2px solid #ff8c42;border-bottom:none;cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none;box-shadow:0 -2px 12px rgba(255,140,66,0.3);">
-    <span style="font-size:14px;">▲</span> Debug Log
+  <div id="debugDrawerTab" onclick="openDebugDrawer()" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:9999;background:#1a0a00;color:#ffc947;font-family:monospace;font-size:11px;padding:5px 18px 4px;border-radius:12px 12px 0 0;border:2px solid #ff8c42;border-bottom:none;cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none;box-shadow:0 -2px 12px rgba(255,140,66,0.3);">
+    <span style="font-size:13px;">▲</span> Debug Log
   </div>
-  <div id="debugDrawer" style="position:fixed;bottom:-320px;left:0;right:0;z-index:9998;background:#1a0a00;border-top:2px solid #ff8c42;transition:bottom 0.35s ease-out;height:300px;display:flex;flex-direction:column;">
-    <div onclick="closeDebugDrawer()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid #3a1a00;cursor:pointer;flex-shrink:0;">
-      <strong style="color:#ff8c42;font-family:monospace;font-size:11px;">🔍 Debug Log</strong>
-      <span style="color:#ffc947;font-size:13px;font-family:monospace;">▼ hide</span>
+  <div id="debugDrawer" style="position:fixed;bottom:-175px;left:0;right:0;z-index:9998;background:#1a0a00;border-top:2px solid #ff8c42;transition:bottom 0.35s ease-out;height:160px;display:flex;flex-direction:column;">
+    <div onclick="closeDebugDrawer()" style="display:flex;align-items:center;justify-content:center;padding:4px 14px;border-bottom:1px solid #3a1a00;cursor:pointer;flex-shrink:0;background:#1a0a00;border-radius:12px 12px 0 0;position:absolute;top:-28px;left:50%;transform:translateX(-50%);border:2px solid #ff8c42;border-bottom:none;gap:6px;white-space:nowrap;">
+      <span style="color:#ffc947;font-size:13px;font-family:monospace;">▼</span><span style="color:#ffc947;font-family:monospace;font-size:11px;">Debug Log</span>
     </div>
-    <div id="debugPanel" style="color:#ffc947;font-family:monospace;font-size:11px;padding:8px 14px 10px;overflow-y:auto;line-height:1.8;flex:1;"></div>
+    <div id="debugPanel" style="color:#ffc947;font-family:monospace;font-size:11px;padding:8px 14px 10px;overflow-y:auto;line-height:1.8;flex:1;margin-top:0;"></div>
   </div>
 
   <div class="toast" id="toast"></div>
