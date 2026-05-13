@@ -651,12 +651,13 @@ body.live-mode .mode-banner-switch:hover { background: #16a34a; }
 
 /* ─── Logo image icon ───────────────────────────────────── */
 .logo-icon-img {
-  width: 36px;
-  height: 36px;
+  width: 36px !important;
+  height: 36px !important;
   border-radius: 10px;
   object-fit: cover;
   box-shadow: 0 3px 0 rgba(255,100,0,0.15);
   flex-shrink: 0;
+  display: block;
 }
 
 /* ─── Logo link ─────────────────────────────────────────── */

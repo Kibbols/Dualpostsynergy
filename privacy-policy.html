@@ -7,6 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <style>
+    .logo-icon-img { width:36px; height:36px; border-radius:10px; object-fit:cover; box-shadow:0 3px 0 rgba(255,100,0,0.15); flex-shrink:0; }
+    .logo-text-stack { display:flex; flex-direction:column; line-height:1; gap:1px; }
+    .logo-sub { font-size:0.65rem; color:#a07850; letter-spacing:0.08em; }
+    a.logo { text-decoration:none; color:#2d1b00; }
+  </style>
+  <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --bg: #fff8f0; --surface: #ffffff; --border: #fddcb5;
@@ -58,7 +64,13 @@
 <body>
 
 <header>
-  <a class="logo" href="index.html"><span>⬆</span>DualPost Synergy</a>
+  <a class="logo" href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:#2d1b00;font-family:'Fredoka One',cursive;font-size:1.4rem;">
+    <img src="icon-192.png" class="logo-icon-img" alt="DualPost Synergy" />
+    <div class="logo-text-stack">
+      <span>DualPost</span>
+      <span class="logo-sub">Synergy</span>
+    </div>
+  </a>
 </header>
 
 <main>
