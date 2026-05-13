@@ -260,7 +260,7 @@ header {
   font-family: var(--font-display); font-size: 1.5rem;
   color: var(--text); flex: 1;
 }
-.logo-icon {
+span.logo-icon {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   color: #fff; width: 34px; height: 34px;
   border-radius: 10px; display: flex; align-items: center; justify-content: center;
@@ -658,6 +658,9 @@ body.live-mode .mode-banner-switch:hover { background: #16a34a; }
   box-shadow: 0 3px 0 rgba(255,100,0,0.15);
   flex-shrink: 0;
   display: block;
+  background: none !important;
+  color: unset !important;
+  font-size: unset !important;
 }
 
 /* ─── Logo link ─────────────────────────────────────────── */
