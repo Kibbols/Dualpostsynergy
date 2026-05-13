@@ -30,7 +30,23 @@ function closeSidebar() {
 // Close sidebar on Escape key
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
 
-// ── Debug Logger ──────────────────────────────────────────────
+// ── Debug Drawer ──────────────────────────────────────────────
+function openDebugDrawer() {
+  const drawer = document.getElementById('debugDrawer');
+  const tab    = document.getElementById('debugDrawerTab');
+  if (!drawer) return;
+  drawer.style.bottom = '0px';
+  if (tab) tab.style.display = 'none';
+}
+
+function closeDebugDrawer() {
+  const drawer = document.getElementById('debugDrawer');
+  const tab    = document.getElementById('debugDrawerTab');
+  if (!drawer) return;
+  drawer.style.bottom = '-260px';
+  if (tab) tab.style.display = 'flex';
+}
+
 function dbg(msg) {
   console.log('[DualPost]', msg);
   const panel = document.getElementById('debugPanel');
@@ -38,8 +54,9 @@ function dbg(msg) {
   const line = document.createElement('div');
   line.textContent = new Date().toLocaleTimeString() + ' — ' + msg;
   panel.appendChild(line);
-  panel.style.display = 'block';
   panel.scrollTop = panel.scrollHeight;
+  // Auto-open drawer when new log arrives so user sees it
+  openDebugDrawer();
 }
 
 // ── On Load ───────────────────────────────────────────────────

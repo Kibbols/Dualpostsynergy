@@ -219,10 +219,16 @@
   </main>
 
 
-  <!-- Debug Panel — shows OAuth flow status, remove when done -->
-  <div id="debugPanel" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a0a00;color:#ffc947;font-family:monospace;font-size:11px;padding:10px 14px;max-height:160px;overflow-y:auto;z-index:9999;border-top:2px solid #ff8c42;line-height:1.7;">
-    <strong style="color:#ff8c42;">🔍 Debug Log</strong> — <button onclick="document.getElementById('debugPanel').style.display='none'" style="background:none;border:1px solid #ff8c42;color:#ff8c42;padding:1px 6px;border-radius:4px;cursor:pointer;font-size:10px;">close</button>
-    <br/>
+  <!-- Debug Drawer -->
+  <div id="debugDrawerTab" onclick="openDebugDrawer()" style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:9998;background:#1a0a00;color:#ffc947;font-family:monospace;font-size:11px;padding:5px 18px 4px;border-radius:12px 12px 0 0;border:2px solid #ff8c42;border-bottom:none;cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none;">
+    <span style="font-size:13px;">▲</span> Debug Log
+  </div>
+  <div id="debugDrawer" style="position:fixed;bottom:-260px;left:0;right:0;z-index:9997;background:#1a0a00;border-top:2px solid #ff8c42;transition:bottom 0.35s cubic-bezier(0.34,1.56,0.64,1);">
+    <div onclick="closeDebugDrawer()" style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px 6px;border-bottom:1px solid #3a1a00;cursor:pointer;">
+      <strong style="color:#ff8c42;font-family:monospace;font-size:11px;">🔍 Debug Log</strong>
+      <span style="color:#ffc947;font-size:13px;font-family:monospace;">▼ hide</span>
+    </div>
+    <div id="debugPanel" style="color:#ffc947;font-family:monospace;font-size:11px;padding:8px 14px 10px;max-height:200px;overflow-y:auto;line-height:1.8;"></div>
   </div>
 
   <div class="toast" id="toast"></div>
