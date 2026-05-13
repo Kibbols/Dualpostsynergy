@@ -1,0 +1,25 @@
+{
+  "name": "DualPost Synergy",
+  "short_name": "DualPost Synergy",
+  "description": "Upload vertical videos to YouTube Shorts and TikTok simultaneously",
+  "start_url": "/Dualpostsynergy/",
+  "scope": "/Dualpostsynergy/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff8f0",
+  "theme_color": "#ff8c42",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
