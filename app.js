@@ -105,35 +105,26 @@ function handleModeChange() {
 }
 
 function applyModeUI() {
-  const banner    = document.getElementById('modeBanner');
   const uploadBtn = document.getElementById('uploadBtn');
   const pill      = document.getElementById('headerModePill');
-
-  // Sidebar mode row
-  const sbIcon  = document.getElementById('sbModeIcon');
-  const sbTitle = document.getElementById('sbModeTitle');
-  const sbSub   = document.getElementById('sbModeSub');
+  const sbIcon    = document.getElementById('sbModeIcon');
+  const sbTitle   = document.getElementById('sbModeTitle');
+  const sbSub     = document.getElementById('sbModeSub');
 
   if (state.testMode) {
-    banner.innerHTML = `
-      <span class="mode-banner-icon">🧪</span>
-      <div><strong>Test Mode</strong> — No real uploads. Auth is skipped and progress is simulated. Perfect for demos!</div>
-      <button class="mode-banner-switch" onclick="switchToLive()">Switch to Live →</button>`;
     uploadBtn.querySelector('.btn-text').textContent = 'Simulate Upload';
     if (pill)    { pill.textContent = '🧪 Test'; pill.classList.remove('live-pill'); }
     if (sbIcon)  sbIcon.textContent  = '🧪';
     if (sbTitle) sbTitle.textContent = 'Test Mode';
     if (sbSub)   sbSub.textContent   = 'Simulated uploads';
+    document.body.classList.remove('live-mode');
   } else {
-    banner.innerHTML = `
-      <span class="mode-banner-icon">🚀</span>
-      <div><strong>Live Mode</strong> — Real uploads to YouTube &amp; TikTok. Connect your accounts to get started.</div>
-      <button class="mode-banner-switch" onclick="switchToTest()">← Switch to Test</button>`;
     uploadBtn.querySelector('.btn-text').textContent = 'Publish Now';
     if (pill)    { pill.textContent = '🚀 Live'; pill.classList.add('live-pill'); }
     if (sbIcon)  sbIcon.textContent  = '🚀';
     if (sbTitle) sbTitle.textContent = 'Live Mode';
     if (sbSub)   sbSub.textContent   = 'Real uploads';
+    document.body.classList.add('live-mode');
   }
 }
 

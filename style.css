@@ -597,3 +597,22 @@ body.live-mode .mode-banner-switch:hover { background: #16a34a; }
   background: #1a9fd4;
 }
 .kofi-banner strong { color: #ffffff; }
+
+/* ─── Header status stacked layout ─────────────────────── */
+.header-status {
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.header-status-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.status-pill.mode-pill {
+  font-size: 0.62rem;
+  padding: 2px 8px;
+}
