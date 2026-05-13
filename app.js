@@ -69,12 +69,14 @@ function dbg(msg) {
 // ── On Load ───────────────────────────────────────────────────
 window.addEventListener('load', () => {
   const savedMode = localStorage.getItem('dp_mode');
+  dbg('Saved mode: ' + (savedMode || 'none') + ' | testMode starts as: ' + state.testMode);
   if (savedMode === 'live') {
     state.testMode = false;
     document.getElementById('modeToggle').checked = true;
     document.body.classList.add('live-mode');
   }
   applyModeUI();
+  dbg('After applyModeUI: testMode=' + state.testMode);
 
   const urlParams = new URLSearchParams(window.location.search);
   const code      = urlParams.get('code');
