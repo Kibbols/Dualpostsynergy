@@ -479,6 +479,8 @@ async function startUpload() {
   const uploadYT = document.getElementById('ytCheck').checked;
   const uploadTT = document.getElementById('ttCheck').checked;
 
+  dbg('Upload pressed. testMode=' + state.testMode + ' ytToken=' + (state.ytToken ? 'YES' : 'NO') + ' file=' + (state.file ? state.file.name : 'NONE'));
+
   if (!state.file && !state.testMode) { toast('Please select a video file first.', 'error'); return; }
   if (!title)                   { toast('Please enter a video title.', 'error'); return; }
   if (!uploadYT && !uploadTT)   { toast('Select at least one platform.', 'error'); return; }
