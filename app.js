@@ -55,8 +55,6 @@ function dbg(msg) {
   line.textContent = new Date().toLocaleTimeString() + ' — ' + msg;
   panel.appendChild(line);
   panel.scrollTop = panel.scrollHeight;
-  // Auto-open drawer when new log arrives so user sees it
-  openDebugDrawer();
 }
 
 // ── On Load ───────────────────────────────────────────────────
