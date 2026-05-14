@@ -3,4 +3,5 @@ const CONFIG = {
   TIKTOK_CLIENT_KEY: 'sbaw1fqf7tahqg4aor',
   WORKER_URL: 'https://withered-mud-dc44.portgamingsttv.workers.dev',
   REDIRECT_URI: 'https://kibbols.github.io/Dualpostsynergy',
+  TIKTOK_REDIRECT_URI: 'https://dualpost.app/tiktok-callback.html',
 };
