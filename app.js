@@ -289,7 +289,7 @@ async function authTikTok() {
 
   const params = new URLSearchParams({
     client_key: CONFIG.TIKTOK_CLIENT_KEY,
-    redirect_uri: CONFIG.REDIRECT_URI,
+    redirect_uri: CONFIG.TIKTOK_REDIRECT_URI,
     response_type: 'code',
     scope: 'video.upload',
     code_challenge: challenge,
@@ -374,7 +374,7 @@ async function exchangeTikTokCode(code, verifierOverride) {
   const res = await fetch(CONFIG.WORKER_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code, platform: 'tiktok', verifier }),
+    body: JSON.stringify({ code, platform: 'tiktok', verifier, redirect_uri: CONFIG.TIKTOK_REDIRECT_URI }),
   });
 
   const rawText = await res.text();
