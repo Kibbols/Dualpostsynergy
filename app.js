@@ -93,7 +93,7 @@ window.addEventListener('load', () => {
   setTimeout(() => {
     dbg('Fetching creator info. ytToken=' + (state.ytToken?'YES':'NO') + ' ttToken=' + (state.ttToken?'YES':'NO') + ' testMode=' + state.testMode);
     if (state.ytToken || state.testMode) fetchYouTubeChannelInfo();
-    if (state.ttToken || state.testMode) fetchTikTokCreatorInfo();
+    if (state.ttToken) fetchTikTokCreatorInfo();
   }, 500);
 });
 
