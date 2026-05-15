@@ -295,6 +295,7 @@ async function authTikTok() {
     code_challenge: challenge,
     code_challenge_method: 'S256',
     state: stateParam,
+    force_login: '1',
   });
 
   window.location.href = `https://www.tiktok.com/v2/auth/authorize/?${params}`;
