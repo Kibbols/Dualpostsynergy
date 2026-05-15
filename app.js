@@ -595,12 +595,15 @@ function populateYouTubeChannelInfo(snippet) {
 
 // ── TikTok Creator Info ────────────────────────────────────────
 function showTikTokPlaceholder() {
+  dbg('showTikTokPlaceholder called');
   const infoEl = document.getElementById('ttCreatorInfo');
   const loadingEl = document.getElementById('ttCreatorLoading');
+  dbg('infoEl=' + (infoEl?'found':'NULL') + ' loadingEl=' + (loadingEl?'found':'NULL'));
   if (loadingEl) loadingEl.style.display = 'none';
   if (infoEl) {
     infoEl.innerHTML = '<span style="font-size:0.72rem;font-weight:700;color:#a07850;line-height:1.5;">Account connected. Profile info requires production API access — not available in sandbox mode.</span>';
     infoEl.style.display = 'flex';
+    dbg('Placeholder text set, display=flex');
   }
   // Populate privacy with defaults
   const privacySelect = document.getElementById('ttPrivacy');
