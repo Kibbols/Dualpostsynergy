@@ -206,7 +206,6 @@ function updateAuthUI() {
     ytBtn.onclick = state.testMode ? null : () => {
       clearToken('yt'); updateAuthUI(); toast('YouTube disconnected');
     };
-    fetchYouTubeChannelInfo();
   } else {
     ytBtn.classList.remove('connected');
     if (ytDot)     ytDot.classList.remove('connected');
@@ -226,8 +225,6 @@ function updateAuthUI() {
     ttBtn.onclick = state.testMode ? null : () => {
       clearToken('tt'); updateAuthUI(); toast('TikTok disconnected');
     };
-    // Fetch creator info now that we have a token
-    fetchTikTokCreatorInfo();
   } else {
     ttBtn.classList.remove('connected');
     if (ttDot)     ttDot.classList.remove('connected');
@@ -656,18 +653,20 @@ async function fetchTikTokCreatorInfo() {
     });
     const text = await res.text();
     dbg('TT proxy response: ' + res.status + ' | ' + text.slice(0, 100));
-    const data = JSON.parse(text);
-    if (data.data) {
+    let data = {};
+    try { data = JSON.parse(text); } catch(parseErr) { dbg('TT JSON parse error: ' + parseErr.message); }
+    if (data.data && data.data.creator_nickname) {
       populateTikTokCreatorInfo(data.data);
     } else {
-      dbg('TT no data in response — showing placeholder');
+      dbg('TT no valid data — showing placeholder');
       showTikTokPlaceholder();
     }
   } catch(e) {
     dbg('Creator info fetch failed: ' + e.message);
     showTikTokPlaceholder();
   } finally {
-    document.getElementById('ttCreatorLoading').style.display = 'none';
+    const ttLoading = document.getElementById('ttCreatorLoading');
+    if (ttLoading) ttLoading.style.display = 'none';
   }
 }
 
