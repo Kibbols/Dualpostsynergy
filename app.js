@@ -533,28 +533,38 @@ async function fetchYouTubeChannelInfo() {
 
   try {
     dbg('Calling YT proxy...');
-    const res = await fetch(CONFIG.WORKER_URL + '/proxy', {
+    // Try channels API first for specific channel name
+    const chanRes = await fetch(CONFIG.WORKER_URL + '/proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        url: 'https://www.googleapis.com/oauth2/v3/userinfo',
+        url: 'https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true',
         token: ytAccessToken,
       }),
     });
-    const text = await res.text();
-    dbg('YT proxy response: ' + res.status + ' | ' + text.slice(0, 100));
-    const data = JSON.parse(text);
-    if (data.name || data.email) {
-      populateYouTubeChannelInfo({
-        title: data.name || data.email || 'YouTube Connected',
-        customUrl: data.email || '',
-        thumbnails: { default: { url: data.picture || '' } },
-      });
-    } else if (data.items && data.items.length > 0) {
-      populateYouTubeChannelInfo(data.items[0].snippet);
+    const chanText = await chanRes.text();
+    dbg('YT channels response: ' + chanRes.status + ' | ' + chanText.slice(0, 80));
+    const chanData = JSON.parse(chanText);
+
+    if (chanData.items && chanData.items.length > 0) {
+      populateYouTubeChannelInfo(chanData.items[0].snippet);
     } else {
-      dbg('YT no data in response');
-      populateYouTubeChannelInfo({ title: 'YouTube Connected', customUrl: '', thumbnails: {} });
+      // Fall back to userinfo for Google account name/picture
+      dbg('YT channels empty, falling back to userinfo');
+      const uiRes = await fetch(CONFIG.WORKER_URL + '/proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: 'https://www.googleapis.com/oauth2/v3/userinfo',
+          token: ytAccessToken,
+        }),
+      });
+      const uiData = JSON.parse(await uiRes.text());
+      populateYouTubeChannelInfo({
+        title: uiData.name || 'YouTube Connected',
+        customUrl: uiData.email || '',
+        thumbnails: { default: { url: uiData.picture || '' } },
+      });
     }
   } catch(e) {
     dbg('YouTube channel info fetch failed: ' + e.message);
@@ -580,6 +590,26 @@ function populateYouTubeChannelInfo(snippet) {
 }
 
 // ── TikTok Creator Info ────────────────────────────────────────
+function showTikTokPlaceholder() {
+  const infoEl = document.getElementById('ttCreatorInfo');
+  const loadingEl = document.getElementById('ttCreatorLoading');
+  if (loadingEl) loadingEl.style.display = 'none';
+  if (infoEl) {
+    infoEl.innerHTML = '<span style="font-size:0.72rem;font-weight:700;color:#a07850;line-height:1.5;">Account connected. Profile info requires production API access — not available in sandbox mode.</span>';
+    infoEl.style.display = 'flex';
+  }
+  // Populate privacy with defaults
+  const privacySelect = document.getElementById('ttPrivacy');
+  if (privacySelect) {
+    privacySelect.innerHTML = '<option value="">Select...</option>';
+    [['PUBLIC_TO_EVERYONE','Everyone'],['MUTUAL_FOLLOW_FRIENDS','Friends'],['SELF_ONLY','Only Me']].forEach(([val, label]) => {
+      const opt = document.createElement('option');
+      opt.value = val; opt.textContent = label;
+      privacySelect.appendChild(opt);
+    });
+  }
+}
+
 async function fetchTikTokCreatorInfo() {
   const loadingEl = document.getElementById('ttCreatorLoading');
   const infoEl    = document.getElementById('ttCreatorInfo');
@@ -601,7 +631,7 @@ async function fetchTikTokCreatorInfo() {
 
   const ttAccessToken = state.ttToken?.access_token || (typeof state.ttToken === 'string' ? state.ttToken : null);
   dbg('TT access token: ' + (ttAccessToken ? ttAccessToken.slice(0,12)+'...' : 'NONE'));
-  if (!ttAccessToken) { dbg('No TT access token'); return; }
+  if (!ttAccessToken) { dbg('No TT access token'); showTikTokPlaceholder(); return; }
 
   loadingEl.style.display = 'flex';
   infoEl.style.display = 'none';
@@ -624,22 +654,7 @@ async function fetchTikTokCreatorInfo() {
     else dbg('TT no data in response');
   } catch(e) {
     dbg('Creator info fetch failed: ' + e.message);
-    // Show a placeholder explaining why info isn't visible
-    const infoEl = document.getElementById('ttCreatorInfo');
-    if (infoEl) {
-      infoEl.innerHTML = '<span style="font-size:0.72rem;font-weight:700;color:#a07850;line-height:1.5;">Account connected. Profile info requires production API access — not available in sandbox mode.</span>';
-      infoEl.style.display = 'flex';
-    }
-    // Still populate privacy options with defaults
-    const privacySelect = document.getElementById('ttPrivacy');
-    if (privacySelect) {
-      privacySelect.innerHTML = '<option value="">Select...</option>';
-      [['PUBLIC_TO_EVERYONE','Everyone'],['MUTUAL_FOLLOW_FRIENDS','Friends'],['SELF_ONLY','Only Me']].forEach(([val, label]) => {
-        const opt = document.createElement('option');
-        opt.value = val; opt.textContent = label;
-        privacySelect.appendChild(opt);
-      });
-    }
+    showTikTokPlaceholder();
   } finally {
     document.getElementById('ttCreatorLoading').style.display = 'none';
   }
