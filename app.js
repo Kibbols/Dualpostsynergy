@@ -631,7 +631,7 @@ async function fetchTikTokCreatorInfo() {
 
   const ttAccessToken = state.ttToken?.access_token || (typeof state.ttToken === 'string' ? state.ttToken : null);
   dbg('TT access token: ' + (ttAccessToken ? ttAccessToken.slice(0,12)+'...' : 'NONE'));
-  if (!ttAccessToken) { dbg('No TT access token'); showTikTokPlaceholder(); return; }
+  if (!ttAccessToken) { dbg('No TT access token'); return; }
 
   loadingEl.style.display = 'flex';
   infoEl.style.display = 'none';
