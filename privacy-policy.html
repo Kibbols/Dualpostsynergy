@@ -83,11 +83,16 @@
     <h2>Information We Access</h2>
     <p>When you connect your accounts, DualPost Synergy requests OAuth access tokens from Google (YouTube) and TikTok. These tokens are:</p>
     <ul>
-      <li>Stored only in your browser's <strong>sessionStorage</strong> — they are deleted when you close your browser tab</li>
+      <li>Stored only in your browser's <strong>localStorage</strong> — cleared when you disconnect your account or uninstall the app</li>
       <li>Never transmitted to any server other than Google's and TikTok's own APIs</li>
       <li>Never logged, saved to a database, or shared with third parties</li>
     </ul>
     <p>The only server-side component used by DualPost Synergy (a Cloudflare Worker) performs a one-time OAuth code exchange and does not log or retain any tokens or personal data.</p>
+    <p>Before uploading, DualPost Synergy fetches the following information from each connected account solely to display locally within the app interface:</p>
+    <ul>
+      <li><strong>YouTube:</strong> Channel name, username, and profile thumbnail — displayed locally within the app only. This information is never shared publicly, disclosed to other users, or transmitted to any server, database, or third party.</li>
+      <li><strong>TikTok:</strong> Account nickname, username, avatar, available privacy levels, and interaction settings — displayed locally within the app only to populate upload options. This information is never shared publicly, disclosed to other users, or transmitted to any server, database, or third party.</li>
+    </ul>
   </div>
 
   <div class="card">

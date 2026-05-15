@@ -167,23 +167,139 @@
       <!-- Step 3 -->
       <div class="step" id="step3">
         <div class="step-label">03 / PUBLISH TO</div>
-        <div class="platform-toggles">
-          <label class="platform-toggle yt-toggle">
-            <input type="checkbox" id="ytCheck" checked />
-            <div class="toggle-card">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg>
-              <span>YouTube Shorts</span>
-              <div class="status-dot" id="ytCardDot"></div>
+        <div class="platform-grid">
+
+          <!-- YouTube Column -->
+          <div class="platform-col" id="ytCol">
+            <label class="platform-col-header yt-header">
+              <input type="checkbox" id="ytCheck" checked onchange="togglePlatformSettings('yt')" />
+              <div class="platform-col-title">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg>
+                <span>YouTube Shorts</span>
+                <div class="status-dot" id="ytCardDot"></div>
+              </div>
+            </label>
+            <div class="platform-settings" id="ytSettings">
+              <!-- YouTube account info -->
+              <div class="tt-creator-info" id="ytCreatorInfo" style="display:none">
+                <img id="ytCreatorAvatar" src="" alt="" class="tt-avatar" />
+                <div class="tt-creator-text">
+                  <span id="ytCreatorName" class="tt-creator-name"></span>
+                  <span id="ytCreatorUsername" class="tt-creator-username"></span>
+                </div>
+              </div>
+              <div class="tt-creator-loading" id="ytCreatorLoading" style="display:none">
+                <span class="tt-loading-text">Loading account info...</span>
+              </div>
+              <!-- Privacy -->
+              <div class="setting-row">
+                <label class="setting-label" for="ytPrivacy">Visibility</label>
+                <select id="ytPrivacy" class="setting-select">
+                  <option value="">Select...</option>
+                  <option value="public">Public</option>
+                  <option value="unlisted">Unlisted</option>
+                  <option value="private">Private</option>
+                </select>
+              </div>
+              <!-- Category -->
+              <div class="setting-row">
+                <label class="setting-label" for="ytCategory">Category</label>
+                <select id="ytCategory" class="setting-select">
+                  <option value="">Select...</option>
+                  <option value="1">Film & Animation</option>
+                  <option value="2">Autos & Vehicles</option>
+                  <option value="10">Music</option>
+                  <option value="15">Pets & Animals</option>
+                  <option value="17">Sports</option>
+                  <option value="20">Gaming</option>
+                  <option value="22">People & Blogs</option>
+                  <option value="23">Comedy</option>
+                  <option value="24">Entertainment</option>
+                  <option value="25">News & Politics</option>
+                  <option value="26">Howto & Style</option>
+                  <option value="27">Education</option>
+                  <option value="28">Science & Technology</option>
+                </select>
+              </div>
+              <!-- Made for Kids -->
+              <div class="setting-row">
+                <label class="setting-label">Made for Kids?</label>
+                <div class="setting-toggle-group">
+                  <label class="radio-label"><input type="radio" name="ytKids" value="false" checked /> No</label>
+                  <label class="radio-label"><input type="radio" name="ytKids" value="true" /> Yes</label>
+                </div>
+              </div>
             </div>
-          </label>
-          <label class="platform-toggle tt-toggle">
-            <input type="checkbox" id="ttCheck" checked />
-            <div class="toggle-card">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.6 3.3A4.9 4.9 0 0 1 14.7 0h-3.6v16.4a2.9 2.9 0 0 1-2.9 2.5 2.9 2.9 0 0 1-2.9-2.9 2.9 2.9 0 0 1 2.9-2.9c.3 0 .5 0 .8.1V9.5a6.5 6.5 0 0 0-.8-.1A6.5 6.5 0 0 0 1.7 16a6.5 6.5 0 0 0 6.5 6.5A6.5 6.5 0 0 0 14.7 16V8.2a8.4 8.4 0 0 0 4.9 1.6V6.2a4.9 4.9 0 0 1-3-.9z"/></svg>
-              <span>TikTok</span>
-              <div class="status-dot" id="ttCardDot"></div>
+          </div>
+
+          <!-- TikTok Column -->
+          <div class="platform-col" id="ttCol">
+            <label class="platform-col-header tt-header">
+              <input type="checkbox" id="ttCheck" checked onchange="togglePlatformSettings('tt')" />
+              <div class="platform-col-title">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M19.6 3.3A4.9 4.9 0 0 1 14.7 0h-3.6v16.4a2.9 2.9 0 0 1-2.9 2.5 2.9 2.9 0 0 1-2.9-2.9 2.9 2.9 0 0 1 2.9-2.9c.3 0 .5 0 .8.1V9.5a6.5 6.5 0 0 0-.8-.1A6.5 6.5 0 0 0 1.7 16a6.5 6.5 0 0 0 6.5 6.5A6.5 6.5 0 0 0 14.7 16V8.2a8.4 8.4 0 0 0 4.9 1.6V6.2a4.9 4.9 0 0 1-3-.9z"/></svg>
+                <span>TikTok</span>
+                <div class="status-dot" id="ttCardDot"></div>
+              </div>
+            </label>
+            <div class="platform-settings" id="ttSettings">
+              <!-- Creator info display (loaded from API) -->
+              <div class="tt-creator-info" id="ttCreatorInfo" style="display:none">
+                <img id="ttCreatorAvatar" src="" alt="" class="tt-avatar" />
+                <div class="tt-creator-text">
+                  <span id="ttCreatorName" class="tt-creator-name"></span>
+                  <span id="ttCreatorUsername" class="tt-creator-username"></span>
+                </div>
+              </div>
+              <div class="tt-creator-loading" id="ttCreatorLoading" style="display:none">
+                <span class="tt-loading-text">Loading account info...</span>
+              </div>
+              <!-- Privacy -->
+              <div class="setting-row">
+                <label class="setting-label" for="ttPrivacy">Visibility</label>
+                <select id="ttPrivacy" class="setting-select">
+                  <option value="">Select...</option>
+                </select>
+              </div>
+              <!-- Interactions -->
+              <div class="setting-row setting-row-col">
+                <label class="setting-label">Interactions</label>
+                <div class="checkbox-group">
+                  <label class="check-label" id="ttCommentLabel">
+                    <input type="checkbox" id="ttComment" />
+                    Allow Comments
+                  </label>
+                  <label class="check-label" id="ttDuetLabel">
+                    <input type="checkbox" id="ttDuet" />
+                    Allow Duet
+                  </label>
+                  <label class="check-label" id="ttStitchLabel">
+                    <input type="checkbox" id="ttStitch" />
+                    Allow Stitch
+                  </label>
+                </div>
+              </div>
+              <!-- Commercial Content -->
+              <div class="setting-row setting-row-col">
+                <label class="setting-label">Content Disclosure</label>
+                <div class="checkbox-group">
+                  <label class="check-label">
+                    <input type="checkbox" id="ttYourBrand" onchange="updateTtDisclosure()" />
+                    Your Brand
+                  </label>
+                  <label class="check-label">
+                    <input type="checkbox" id="ttBrandedContent" onchange="updateTtDisclosure()" />
+                    Branded Content
+                  </label>
+                </div>
+              </div>
+              <!-- Music Usage Confirmation -->
+              <div class="tt-disclaimer" id="ttDisclaimer">
+                By posting, you agree to TikTok's <a href="https://www.tiktok.com/legal/music-usage-confirmation" target="_blank">Music Usage Confirmation</a>
+              </div>
             </div>
-          </label>
+          </div>
+
         </div>
       </div>
 

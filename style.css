@@ -673,3 +673,201 @@ body.live-mode .mode-banner-switch:hover { background: #16a34a; }
 
 /* ─── Logo link ─────────────────────────────────────────── */
 a.logo { text-decoration: none; color: var(--text); }
+
+/* ─── Platform Grid (Step 3) ────────────────────────────── */
+.platform-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.platform-col {
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--surface2);
+  box-shadow: 0 3px 0 var(--border);
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+/* Header row with checkbox + icon + name */
+.platform-col-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 12px 10px;
+  cursor: pointer;
+  background: var(--surface2);
+  border-bottom: 2px solid var(--border);
+}
+
+.platform-col-header input[type="checkbox"] { display: none; }
+
+.platform-col-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--muted);
+  flex: 1;
+  position: relative;
+}
+
+.platform-col-title svg { flex-shrink: 0; color: var(--muted); transition: color 0.25s; }
+.platform-col-title .status-dot { margin-left: auto; }
+
+/* YouTube checked state */
+.platform-col:has(#ytCheck:checked) { border-color: var(--yt); box-shadow: 0 3px 0 rgba(255,64,64,0.2); }
+.platform-col:has(#ytCheck:checked) .yt-header { background: #fff1f1; border-bottom-color: #ffc5c5; }
+.platform-col:has(#ytCheck:checked) .platform-col-title { color: var(--yt); }
+.platform-col:has(#ytCheck:checked) .platform-col-title svg { color: var(--yt); }
+
+/* TikTok checked state */
+.platform-col:has(#ttCheck:checked) { border-color: var(--tt); box-shadow: 0 3px 0 rgba(0,200,160,0.2); }
+.platform-col:has(#ttCheck:checked) .tt-header { background: #f0fffc; border-bottom-color: #a8f0e4; }
+.platform-col:has(#ttCheck:checked) .platform-col-title { color: var(--tt); }
+.platform-col:has(#ttCheck:checked) .platform-col-title svg { color: var(--tt); }
+
+/* Platform settings area */
+.platform-settings {
+  padding: 10px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: opacity 0.2s;
+}
+
+.platform-settings.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Setting rows */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.setting-row-col {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.setting-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.setting-select {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.setting-select:focus { border-color: var(--accent); }
+
+/* Radio buttons */
+.setting-toggle-group {
+  display: flex;
+  gap: 10px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.radio-label input { accent-color: var(--yt); cursor: pointer; }
+
+/* Checkboxes */
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
+.check-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.check-label input { accent-color: var(--tt); cursor: pointer; }
+.check-label.disabled { opacity: 0.4; pointer-events: none; }
+
+/* TikTok creator info */
+.tt-creator-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.tt-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+}
+
+.tt-creator-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.tt-creator-name { font-size: 0.72rem; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tt-creator-username { font-size: 0.65rem; font-weight: 600; color: var(--muted); }
+
+.tt-creator-loading .tt-loading-text {
+  font-size: 0.7rem; font-weight: 700; color: var(--muted);
+}
+
+/* TikTok disclaimer */
+.tt-disclaimer {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--muted);
+  line-height: 1.5;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 9px;
+}
+
+.tt-disclaimer a { color: var(--tt); text-decoration: none; font-weight: 800; }
+.tt-disclaimer a:hover { text-decoration: underline; }
+
+/* Responsive — stack on small screens */
+@media (max-width: 480px) {
+  .platform-grid { grid-template-columns: 1fr; }
+}

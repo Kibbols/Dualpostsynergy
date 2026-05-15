@@ -87,6 +87,9 @@ window.addEventListener('load', () => {
   restoreTokens();
   updateAuthUI();
   initDropZone();
+  // Fetch platform account info if already connected
+  if (state.ytToken || state.testMode) fetchYouTubeChannelInfo();
+  if (state.ttToken || state.testMode) fetchTikTokCreatorInfo();
 });
 
 
@@ -194,6 +197,7 @@ function updateAuthUI() {
     ytBtn.onclick = state.testMode ? null : () => {
       clearToken('yt'); updateAuthUI(); toast('YouTube disconnected');
     };
+    fetchYouTubeChannelInfo();
   } else {
     ytBtn.classList.remove('connected');
     if (ytDot)     ytDot.classList.remove('connected');
@@ -213,6 +217,8 @@ function updateAuthUI() {
     ttBtn.onclick = state.testMode ? null : () => {
       clearToken('tt'); updateAuthUI(); toast('TikTok disconnected');
     };
+    // Fetch creator info now that we have a token
+    fetchTikTokCreatorInfo();
   } else {
     ttBtn.classList.remove('connected');
     if (ttDot)     ttDot.classList.remove('connected');
@@ -472,6 +478,156 @@ function updateCharCount() {
     document.getElementById('videoTitle').value.length;
 }
 
+// ── Platform Settings Helpers ──────────────────────────────────
+function togglePlatformSettings(platform) {
+  const checked  = document.getElementById(platform + 'Check').checked;
+  const settings = document.getElementById(platform + 'Settings');
+  if (settings) settings.classList.toggle('disabled', !checked);
+}
+
+function updateTtDisclosure() {
+  const branded  = document.getElementById('ttBrandedContent').checked;
+  const disclaimer = document.getElementById('ttDisclaimer');
+  if (!disclaimer) return;
+  if (branded) {
+    disclaimer.innerHTML = 'By posting, you agree to TikTok's <a href="https://www.tiktok.com/legal/branded-content-policy" target="_blank">Branded Content Policy</a> and <a href="https://www.tiktok.com/legal/music-usage-confirmation" target="_blank">Music Usage Confirmation</a>';
+  } else {
+    disclaimer.innerHTML = 'By posting, you agree to TikTok's <a href="https://www.tiktok.com/legal/music-usage-confirmation" target="_blank">Music Usage Confirmation</a>';
+  }
+}
+
+// ── YouTube Channel Info ──────────────────────────────────────
+async function fetchYouTubeChannelInfo() {
+  if (!state.ytToken || state.testMode) {
+    if (state.testMode) {
+      populateYouTubeChannelInfo({
+        title: 'Demo Channel',
+        customUrl: '@demochannel',
+        thumbnails: { default: { url: '' } },
+      });
+    }
+    return;
+  }
+
+  document.getElementById('ytCreatorLoading').style.display = 'flex';
+  document.getElementById('ytCreatorInfo').style.display = 'none';
+
+  try {
+    const res = await fetch(
+      'https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true',
+      { headers: { Authorization: 'Bearer ' + state.ytToken.access_token } }
+    );
+    const data = await res.json();
+    if (data.items && data.items.length > 0) {
+      populateYouTubeChannelInfo(data.items[0].snippet);
+    }
+  } catch(e) {
+    dbg('YouTube channel info fetch failed: ' + e.message);
+  } finally {
+    document.getElementById('ytCreatorLoading').style.display = 'none';
+  }
+}
+
+function populateYouTubeChannelInfo(snippet) {
+  const infoEl = document.getElementById('ytCreatorInfo');
+  if (!infoEl) return;
+
+  document.getElementById('ytCreatorName').textContent     = snippet.title || '';
+  document.getElementById('ytCreatorUsername').textContent = snippet.customUrl || '';
+
+  const avatar = document.getElementById('ytCreatorAvatar');
+  const url    = snippet.thumbnails?.default?.url || snippet.thumbnails?.medium?.url || '';
+  if (url) { avatar.src = url; avatar.style.display = 'block'; }
+  else       { avatar.style.display = 'none'; }
+
+  infoEl.style.display = 'flex';
+}
+
+// ── TikTok Creator Info ────────────────────────────────────────
+async function fetchTikTokCreatorInfo() {
+  if (!state.ttToken || state.testMode) {
+    // In test mode populate with demo data
+    if (state.testMode) {
+      populateTikTokCreatorInfo({
+        creator_nickname: 'Demo User',
+        creator_username: '@demouser',
+        creator_avatar_url: '',
+        privacy_level_options: ['PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'SELF_ONLY'],
+        comment_disabled: false,
+        duet_disabled: false,
+        stitch_disabled: false,
+      });
+    }
+    return;
+  }
+
+  document.getElementById('ttCreatorLoading').style.display = 'flex';
+  document.getElementById('ttCreatorInfo').style.display = 'none';
+
+  try {
+    const res = await fetch('https://open.tiktokapis.com/v2/post/publish/creator_info/query/', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + state.ttToken.access_token,
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+    });
+
+    const data = await res.json();
+    if (data.data) populateTikTokCreatorInfo(data.data);
+  } catch(e) {
+    dbg('Creator info fetch failed: ' + e.message);
+  } finally {
+    document.getElementById('ttCreatorLoading').style.display = 'none';
+  }
+}
+
+function populateTikTokCreatorInfo(info) {
+  // Show creator info card
+  const infoEl = document.getElementById('ttCreatorInfo');
+  if (infoEl) {
+    document.getElementById('ttCreatorName').textContent     = info.creator_nickname || '';
+    document.getElementById('ttCreatorUsername').textContent = info.creator_username ? '@' + info.creator_username.replace('@','') : '';
+    const avatar = document.getElementById('ttCreatorAvatar');
+    if (info.creator_avatar_url) {
+      avatar.src = info.creator_avatar_url;
+      avatar.style.display = 'block';
+    } else {
+      avatar.style.display = 'none';
+    }
+    infoEl.style.display = 'flex';
+  }
+
+  // Populate privacy dropdown
+  const privacySelect = document.getElementById('ttPrivacy');
+  if (privacySelect) {
+    privacySelect.innerHTML = '<option value="">Select...</option>';
+    const labels = {
+      'PUBLIC_TO_EVERYONE':    'Everyone',
+      'MUTUAL_FOLLOW_FRIENDS': 'Friends',
+      'SELF_ONLY':             'Only Me',
+    };
+    (info.privacy_level_options || ['PUBLIC_TO_EVERYONE','MUTUAL_FOLLOW_FRIENDS','SELF_ONLY']).forEach(level => {
+      const opt = document.createElement('option');
+      opt.value = level;
+      opt.textContent = labels[level] || level;
+      privacySelect.appendChild(opt);
+    });
+  }
+
+  // Set interaction checkboxes
+  const setInteraction = (id, labelId, disabled) => {
+    const el    = document.getElementById(id);
+    const label = document.getElementById(labelId);
+    if (el)    { el.checked = false; el.disabled = !!disabled; }
+    if (label) label.classList.toggle('disabled', !!disabled);
+  };
+
+  setInteraction('ttComment', 'ttCommentLabel', info.comment_disabled);
+  setInteraction('ttDuet',    'ttDuetLabel',    info.duet_disabled);
+  setInteraction('ttStitch',  'ttStitchLabel',  info.stitch_disabled);
+}
+
 // ── Upload Orchestration ───────────────────────────────────────
 async function startUpload() {
   const title    = document.getElementById('videoTitle').value.trim();
@@ -482,8 +638,22 @@ async function startUpload() {
   dbg('Upload pressed. testMode=' + state.testMode + ' ytToken=' + (state.ytToken ? 'YES' : 'NO') + ' file=' + (state.file ? state.file.name : 'NONE'));
 
   if (!state.file && !state.testMode) { toast('Please select a video file first.', 'error'); return; }
-  if (!title)                   { toast('Please enter a video title.', 'error'); return; }
-  if (!uploadYT && !uploadTT)   { toast('Select at least one platform.', 'error'); return; }
+  if (!title)                         { toast('Please enter a video title.', 'error'); return; }
+  if (!uploadYT && !uploadTT)         { toast('Select at least one platform.', 'error'); return; }
+
+  // YouTube validation
+  if (uploadYT) {
+    const ytPrivacy  = document.getElementById('ytPrivacy').value;
+    const ytCategory = document.getElementById('ytCategory').value;
+    if (!ytPrivacy)  { toast('Please select a YouTube visibility.', 'error'); return; }
+    if (!ytCategory) { toast('Please select a YouTube category.', 'error'); return; }
+  }
+
+  // TikTok validation
+  if (uploadTT) {
+    const ttPrivacy = document.getElementById('ttPrivacy').value;
+    if (!ttPrivacy) { toast('Please select a TikTok visibility.', 'error'); return; }
+  }
 
   // Live mode auth checks
   if (!state.testMode) {
@@ -565,8 +735,15 @@ async function uploadToYouTube(file, title, description) {
         'X-Upload-Content-Length': file.size,
       },
       body: JSON.stringify({
-        snippet: { title, description, categoryId: '22' },
-        status:  { privacyStatus: 'public', selfDeclaredMadeForKids: false },
+        snippet: {
+          title,
+          description,
+          categoryId: document.getElementById('ytCategory').value || '22',
+        },
+        status: {
+          privacyStatus: document.getElementById('ytPrivacy').value || 'public',
+          selfDeclaredMadeForKids: document.querySelector('input[name="ytKids"]:checked')?.value === 'true',
+        },
       }),
     }
   );
@@ -632,8 +809,12 @@ async function uploadToTikTok(file, title, description) {
     body: JSON.stringify({
       post_info: {
         title: title.slice(0, 150),
-        privacy_level: 'PUBLIC_TO_EVERYONE',
-        disable_duet: false, disable_comment: false, disable_stitch: false,
+        privacy_level: document.getElementById('ttPrivacy').value || 'PUBLIC_TO_EVERYONE',
+        disable_comment: !document.getElementById('ttComment').checked,
+        disable_duet:    !document.getElementById('ttDuet').checked,
+        disable_stitch:  !document.getElementById('ttStitch').checked,
+        brand_content_toggle: document.getElementById('ttBrandedContent').checked,
+        brand_organic_toggle: document.getElementById('ttYourBrand').checked,
       },
       source_info: {
         source: 'FILE_UPLOAD',
