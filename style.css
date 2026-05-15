@@ -718,17 +718,17 @@ a.logo { text-decoration: none; color: var(--text); }
 .platform-col-title svg { flex-shrink: 0; color: var(--muted); transition: color 0.25s; }
 .platform-col-title .status-dot { margin-left: auto; }
 
-/* YouTube checked state */
-.platform-col:has(#ytCheck:checked) { border-color: var(--yt); box-shadow: 0 3px 0 rgba(255,64,64,0.2); }
-.platform-col:has(#ytCheck:checked) .yt-header { background: #fff1f1; border-bottom-color: #ffc5c5; }
-.platform-col:has(#ytCheck:checked) .platform-col-title { color: var(--yt); }
-.platform-col:has(#ytCheck:checked) .platform-col-title svg { color: var(--yt); }
+/* YouTube checked state — driven by JS class */
+.platform-col.yt-active { border-color: var(--yt); box-shadow: 0 3px 0 rgba(255,64,64,0.2); }
+.platform-col.yt-active .yt-header { background: #fff1f1; border-bottom-color: #ffc5c5; }
+.platform-col.yt-active .platform-col-title { color: var(--yt); }
+.platform-col.yt-active .platform-col-title svg { color: var(--yt); }
 
-/* TikTok checked state */
-.platform-col:has(#ttCheck:checked) { border-color: var(--tt); box-shadow: 0 3px 0 rgba(0,200,160,0.2); }
-.platform-col:has(#ttCheck:checked) .tt-header { background: #f0fffc; border-bottom-color: #a8f0e4; }
-.platform-col:has(#ttCheck:checked) .platform-col-title { color: var(--tt); }
-.platform-col:has(#ttCheck:checked) .platform-col-title svg { color: var(--tt); }
+/* TikTok checked state — driven by JS class */
+.platform-col.tt-active { border-color: var(--tt); box-shadow: 0 3px 0 rgba(0,200,160,0.2); }
+.platform-col.tt-active .tt-header { background: #f0fffc; border-bottom-color: #a8f0e4; }
+.platform-col.tt-active .platform-col-title { color: var(--tt); }
+.platform-col.tt-active .platform-col-title svg { color: var(--tt); }
 
 /* Platform settings area */
 .platform-settings {

@@ -87,6 +87,8 @@ window.addEventListener('load', () => {
   restoreTokens();
   updateAuthUI();
   initDropZone();
+  // Set initial platform column states
+  initPlatformStates();
   // Fetch platform account info if already connected
   if (state.ytToken || state.testMode) fetchYouTubeChannelInfo();
   if (state.ttToken || state.testMode) fetchTikTokCreatorInfo();
@@ -482,7 +484,14 @@ function updateCharCount() {
 function togglePlatformSettings(platform) {
   const checked  = document.getElementById(platform + 'Check').checked;
   const settings = document.getElementById(platform + 'Settings');
+  const col      = document.getElementById(platform + 'Col');
   if (settings) settings.classList.toggle('disabled', !checked);
+  if (col)      col.classList.toggle(platform + '-active', checked);
+}
+
+function initPlatformStates() {
+  togglePlatformSettings('yt');
+  togglePlatformSettings('tt');
 }
 
 function updateTtDisclosure() {
