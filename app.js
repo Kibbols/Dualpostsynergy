@@ -89,9 +89,11 @@ window.addEventListener('load', () => {
   initDropZone();
   // Set initial platform column states
   initPlatformStates();
-  // Fetch platform account info if already connected
-  if (state.ytToken || state.testMode) fetchYouTubeChannelInfo();
-  if (state.ttToken || state.testMode) fetchTikTokCreatorInfo();
+  // Small delay to ensure DOM is fully painted before fetching account info
+  setTimeout(() => {
+    if (state.ytToken || state.testMode) fetchYouTubeChannelInfo();
+    if (state.ttToken || state.testMode) fetchTikTokCreatorInfo();
+  }, 200);
 });
 
 
