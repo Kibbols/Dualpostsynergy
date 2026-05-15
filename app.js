@@ -752,7 +752,9 @@ async function uploadToYouTube(file, title, description) {
         status: {
           privacyStatus: document.getElementById('ytPrivacy').value || 'public',
           selfDeclaredMadeForKids: document.querySelector('input[name="ytKids"]:checked')?.value === 'true',
+          containsSyntheticMedia: false,
         },
+        paidProductPlacementAndPromotion: document.getElementById('ytPaidPromotion')?.checked || false,
       }),
     }
   );
