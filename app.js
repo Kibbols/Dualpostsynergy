@@ -89,12 +89,16 @@ window.addEventListener('load', () => {
   initDropZone();
   // Set initial platform column states
   initPlatformStates();
-  // Small delay to ensure DOM is fully painted before fetching account info
+  // Delay to ensure DOM is fully painted before fetching account info
   setTimeout(() => {
     dbg('Fetching creator info. ytToken=' + (state.ytToken?'YES':'NO') + ' ttToken=' + (state.ttToken?'YES':'NO') + ' testMode=' + state.testMode);
     if (state.ytToken || state.testMode) fetchYouTubeChannelInfo();
     if (state.ttToken || state.testMode) fetchTikTokCreatorInfo();
-  }, 200);
+    else if (state.ttToken === null) {
+      // TikTok connected but no info — show placeholder directly
+      showTikTokPlaceholder();
+    }
+  }, 500);
 });
 
 
@@ -650,8 +654,12 @@ async function fetchTikTokCreatorInfo() {
     const text = await res.text();
     dbg('TT proxy response: ' + res.status + ' | ' + text.slice(0, 100));
     const data = JSON.parse(text);
-    if (data.data) populateTikTokCreatorInfo(data.data);
-    else dbg('TT no data in response');
+    if (data.data) {
+      populateTikTokCreatorInfo(data.data);
+    } else {
+      dbg('TT no data in response — showing placeholder');
+      showTikTokPlaceholder();
+    }
   } catch(e) {
     dbg('Creator info fetch failed: ' + e.message);
     showTikTokPlaceholder();
