@@ -528,16 +528,21 @@ async function fetchYouTubeChannelInfo() {
   infoEl.style.display = 'none';
 
   try {
-    const res = await fetch(
-      'https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true',
-      { headers: { Authorization: 'Bearer ' + state.ytToken.access_token } }
-    );
+    const res = await fetch(CONFIG.WORKER_URL + '/proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url: 'https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true',
+        token: state.ytToken.access_token,
+      }),
+    });
     const data = await res.json();
     if (data.items && data.items.length > 0) {
       populateYouTubeChannelInfo(data.items[0].snippet);
     }
   } catch(e) {
     dbg('YouTube channel info fetch failed: ' + e.message);
+    populateYouTubeChannelInfo({ title: 'YouTube Connected', customUrl: '', thumbnails: {} });
   } finally {
     loadingEl.style.display = 'none';
   }
@@ -583,18 +588,28 @@ async function fetchTikTokCreatorInfo() {
   infoEl.style.display = 'none';
 
   try {
-    const res = await fetch('https://open.tiktokapis.com/v2/post/publish/creator_info/query/', {
+    const res = await fetch(CONFIG.WORKER_URL + '/proxy', {
       method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + state.ttToken.access_token,
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url: 'https://open.tiktokapis.com/v2/post/publish/creator_info/query/',
+        token: state.ttToken.access_token,
+        method: 'POST',
+      }),
     });
-
     const data = await res.json();
     if (data.data) populateTikTokCreatorInfo(data.data);
   } catch(e) {
     dbg('Creator info fetch failed: ' + e.message);
+    populateTikTokCreatorInfo({
+      creator_nickname: 'TikTok Connected',
+      creator_username: '',
+      creator_avatar_url: '',
+      privacy_level_options: ['PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'SELF_ONLY'],
+      comment_disabled: false,
+      duet_disabled: false,
+      stitch_disabled: false,
+    });
   } finally {
     document.getElementById('ttCreatorLoading').style.display = 'none';
   }
