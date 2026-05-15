@@ -537,17 +537,23 @@ async function fetchYouTubeChannelInfo() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        url: 'https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true',
+        url: 'https://www.googleapis.com/oauth2/v3/userinfo',
         token: ytAccessToken,
       }),
     });
     const text = await res.text();
     dbg('YT proxy response: ' + res.status + ' | ' + text.slice(0, 100));
     const data = JSON.parse(text);
-    if (data.items && data.items.length > 0) {
+    if (data.name || data.email) {
+      populateYouTubeChannelInfo({
+        title: data.name || data.email || 'YouTube Connected',
+        customUrl: data.email || '',
+        thumbnails: { default: { url: data.picture || '' } },
+      });
+    } else if (data.items && data.items.length > 0) {
       populateYouTubeChannelInfo(data.items[0].snippet);
     } else {
-      dbg('YT no items in response');
+      dbg('YT no data in response');
       populateYouTubeChannelInfo({ title: 'YouTube Connected', customUrl: '', thumbnails: {} });
     }
   } catch(e) {
@@ -618,15 +624,22 @@ async function fetchTikTokCreatorInfo() {
     else dbg('TT no data in response');
   } catch(e) {
     dbg('Creator info fetch failed: ' + e.message);
-    populateTikTokCreatorInfo({
-      creator_nickname: 'TikTok Connected',
-      creator_username: '',
-      creator_avatar_url: '',
-      privacy_level_options: ['PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'SELF_ONLY'],
-      comment_disabled: false,
-      duet_disabled: false,
-      stitch_disabled: false,
-    });
+    // Show a placeholder explaining why info isn't visible
+    const infoEl = document.getElementById('ttCreatorInfo');
+    if (infoEl) {
+      infoEl.innerHTML = '<span style="font-size:0.72rem;font-weight:700;color:#a07850;line-height:1.5;">Account connected. Profile info requires production API access — not available in sandbox mode.</span>';
+      infoEl.style.display = 'flex';
+    }
+    // Still populate privacy options with defaults
+    const privacySelect = document.getElementById('ttPrivacy');
+    if (privacySelect) {
+      privacySelect.innerHTML = '<option value="">Select...</option>';
+      [['PUBLIC_TO_EVERYONE','Everyone'],['MUTUAL_FOLLOW_FRIENDS','Friends'],['SELF_ONLY','Only Me']].forEach(([val, label]) => {
+        const opt = document.createElement('option');
+        opt.value = val; opt.textContent = label;
+        privacySelect.appendChild(opt);
+      });
+    }
   } finally {
     document.getElementById('ttCreatorLoading').style.display = 'none';
   }
@@ -693,10 +706,8 @@ async function startUpload() {
 
   // YouTube validation
   if (uploadYT) {
-    const ytPrivacy  = document.getElementById('ytPrivacy').value;
-    const ytCategory = document.getElementById('ytCategory').value;
-    if (!ytPrivacy)  { toast('Please select a YouTube visibility.', 'error'); return; }
-    if (!ytCategory) { toast('Please select a YouTube category.', 'error'); return; }
+    const ytPrivacy = document.getElementById('ytPrivacy').value;
+    if (!ytPrivacy) { toast('Please select a YouTube visibility.', 'error'); return; }
   }
 
   // TikTok validation
@@ -788,7 +799,7 @@ async function uploadToYouTube(file, title, description) {
         snippet: {
           title,
           description,
-          categoryId: document.getElementById('ytCategory').value || '22',
+          categoryId: document.getElementById('ytCategory').value || undefined,
         },
         status: {
           privacyStatus: document.getElementById('ytPrivacy').value || 'public',
