@@ -524,7 +524,9 @@ async function fetchYouTubeChannelInfo() {
     return;
   }
 
-  if (!state.ytToken) { dbg('No YT token, skipping'); return; }
+  const ytAccessToken = state.ytToken?.access_token || (typeof state.ytToken === 'string' ? state.ytToken : null);
+  dbg('YT access token: ' + (ytAccessToken ? ytAccessToken.slice(0,12)+'...' : 'NONE'));
+  if (!ytAccessToken) { dbg('No YT access token'); return; }
 
   loadingEl.style.display = 'flex';
   infoEl.style.display = 'none';
@@ -536,7 +538,7 @@ async function fetchYouTubeChannelInfo() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         url: 'https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true',
-        token: state.ytToken.access_token,
+        token: ytAccessToken,
       }),
     });
     const text = await res.text();
@@ -591,7 +593,9 @@ async function fetchTikTokCreatorInfo() {
     return;
   }
 
-  if (!state.ttToken) { dbg('No TT token, skipping'); return; }
+  const ttAccessToken = state.ttToken?.access_token || (typeof state.ttToken === 'string' ? state.ttToken : null);
+  dbg('TT access token: ' + (ttAccessToken ? ttAccessToken.slice(0,12)+'...' : 'NONE'));
+  if (!ttAccessToken) { dbg('No TT access token'); return; }
 
   loadingEl.style.display = 'flex';
   infoEl.style.display = 'none';
@@ -603,7 +607,7 @@ async function fetchTikTokCreatorInfo() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         url: 'https://open.tiktokapis.com/v2/post/publish/creator_info/query/',
-        token: state.ttToken.access_token,
+        token: ttAccessToken,
         method: 'POST',
       }),
     });
