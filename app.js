@@ -499,9 +499,9 @@ function updateTtDisclosure() {
   const disclaimer = document.getElementById('ttDisclaimer');
   if (!disclaimer) return;
   if (branded) {
-    disclaimer.innerHTML = 'By posting, you agree to TikTok's <a href="https://www.tiktok.com/legal/branded-content-policy" target="_blank">Branded Content Policy</a> and <a href="https://www.tiktok.com/legal/music-usage-confirmation" target="_blank">Music Usage Confirmation</a>';
+    disclaimer.innerHTML = "By posting, you agree to TikTok's <a href='https://www.tiktok.com/legal/branded-content-policy' target='_blank'>Branded Content Policy</a> and <a href='https://www.tiktok.com/legal/music-usage-confirmation' target='_blank'>Music Usage Confirmation</a>";
   } else {
-    disclaimer.innerHTML = 'By posting, you agree to TikTok's <a href="https://www.tiktok.com/legal/music-usage-confirmation" target="_blank">Music Usage Confirmation</a>';
+    disclaimer.innerHTML = `By posting, you agree to TikTok's <a href="https://www.tiktok.com/legal/music-usage-confirmation" target="_blank">Music Usage Confirmation</a>`;
   }
 }
 
