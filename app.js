@@ -91,6 +91,7 @@ window.addEventListener('load', () => {
   initPlatformStates();
   // Small delay to ensure DOM is fully painted before fetching account info
   setTimeout(() => {
+    dbg('Fetching creator info. ytToken=' + (state.ytToken?'YES':'NO') + ' ttToken=' + (state.ttToken?'YES':'NO') + ' testMode=' + state.testMode);
     if (state.ytToken || state.testMode) fetchYouTubeChannelInfo();
     if (state.ttToken || state.testMode) fetchTikTokCreatorInfo();
   }, 200);
@@ -513,6 +514,7 @@ async function fetchYouTubeChannelInfo() {
   const infoEl    = document.getElementById('ytCreatorInfo');
   if (!loadingEl || !infoEl) return;
 
+  dbg('fetchYouTubeChannelInfo called. testMode=' + state.testMode);
   if (state.testMode) {
     populateYouTubeChannelInfo({
       title: 'Demo Channel',
@@ -522,7 +524,7 @@ async function fetchYouTubeChannelInfo() {
     return;
   }
 
-  if (!state.ytToken) return;
+  if (!state.ytToken) { dbg('No YT token, skipping'); return; }
 
   loadingEl.style.display = 'flex';
   infoEl.style.display = 'none';
@@ -569,6 +571,7 @@ async function fetchTikTokCreatorInfo() {
   const infoEl    = document.getElementById('ttCreatorInfo');
   if (!loadingEl || !infoEl) return;
 
+  dbg('fetchTikTokCreatorInfo called. testMode=' + state.testMode);
   if (state.testMode) {
     populateTikTokCreatorInfo({
       creator_nickname: 'Demo User',
@@ -582,7 +585,7 @@ async function fetchTikTokCreatorInfo() {
     return;
   }
 
-  if (!state.ttToken) return;
+  if (!state.ttToken) { dbg('No TT token, skipping'); return; }
 
   loadingEl.style.display = 'flex';
   infoEl.style.display = 'none';
