@@ -530,6 +530,7 @@ async function fetchYouTubeChannelInfo() {
   infoEl.style.display = 'none';
 
   try {
+    dbg('Calling YT proxy...');
     const res = await fetch(CONFIG.WORKER_URL + '/proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -538,9 +539,14 @@ async function fetchYouTubeChannelInfo() {
         token: state.ytToken.access_token,
       }),
     });
-    const data = await res.json();
+    const text = await res.text();
+    dbg('YT proxy response: ' + res.status + ' | ' + text.slice(0, 100));
+    const data = JSON.parse(text);
     if (data.items && data.items.length > 0) {
       populateYouTubeChannelInfo(data.items[0].snippet);
+    } else {
+      dbg('YT no items in response');
+      populateYouTubeChannelInfo({ title: 'YouTube Connected', customUrl: '', thumbnails: {} });
     }
   } catch(e) {
     dbg('YouTube channel info fetch failed: ' + e.message);
@@ -591,6 +597,7 @@ async function fetchTikTokCreatorInfo() {
   infoEl.style.display = 'none';
 
   try {
+    dbg('Calling TT proxy...');
     const res = await fetch(CONFIG.WORKER_URL + '/proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -600,8 +607,11 @@ async function fetchTikTokCreatorInfo() {
         method: 'POST',
       }),
     });
-    const data = await res.json();
+    const text = await res.text();
+    dbg('TT proxy response: ' + res.status + ' | ' + text.slice(0, 100));
+    const data = JSON.parse(text);
     if (data.data) populateTikTokCreatorInfo(data.data);
+    else dbg('TT no data in response');
   } catch(e) {
     dbg('Creator info fetch failed: ' + e.message);
     populateTikTokCreatorInfo({
