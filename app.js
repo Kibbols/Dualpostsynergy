@@ -507,19 +507,23 @@ function updateTtDisclosure() {
 
 // ── YouTube Channel Info ──────────────────────────────────────
 async function fetchYouTubeChannelInfo() {
-  if (!state.ytToken || state.testMode) {
-    if (state.testMode) {
-      populateYouTubeChannelInfo({
-        title: 'Demo Channel',
-        customUrl: '@demochannel',
-        thumbnails: { default: { url: '' } },
-      });
-    }
+  const loadingEl = document.getElementById('ytCreatorLoading');
+  const infoEl    = document.getElementById('ytCreatorInfo');
+  if (!loadingEl || !infoEl) return;
+
+  if (state.testMode) {
+    populateYouTubeChannelInfo({
+      title: 'Demo Channel',
+      customUrl: '@demochannel',
+      thumbnails: { default: { url: '' } },
+    });
     return;
   }
 
-  document.getElementById('ytCreatorLoading').style.display = 'flex';
-  document.getElementById('ytCreatorInfo').style.display = 'none';
+  if (!state.ytToken) return;
+
+  loadingEl.style.display = 'flex';
+  infoEl.style.display = 'none';
 
   try {
     const res = await fetch(
@@ -533,7 +537,7 @@ async function fetchYouTubeChannelInfo() {
   } catch(e) {
     dbg('YouTube channel info fetch failed: ' + e.message);
   } finally {
-    document.getElementById('ytCreatorLoading').style.display = 'none';
+    loadingEl.style.display = 'none';
   }
 }
 
@@ -554,24 +558,27 @@ function populateYouTubeChannelInfo(snippet) {
 
 // ── TikTok Creator Info ────────────────────────────────────────
 async function fetchTikTokCreatorInfo() {
-  if (!state.ttToken || state.testMode) {
-    // In test mode populate with demo data
-    if (state.testMode) {
-      populateTikTokCreatorInfo({
-        creator_nickname: 'Demo User',
-        creator_username: '@demouser',
-        creator_avatar_url: '',
-        privacy_level_options: ['PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'SELF_ONLY'],
-        comment_disabled: false,
-        duet_disabled: false,
-        stitch_disabled: false,
-      });
-    }
+  const loadingEl = document.getElementById('ttCreatorLoading');
+  const infoEl    = document.getElementById('ttCreatorInfo');
+  if (!loadingEl || !infoEl) return;
+
+  if (state.testMode) {
+    populateTikTokCreatorInfo({
+      creator_nickname: 'Demo User',
+      creator_username: '@demouser',
+      creator_avatar_url: '',
+      privacy_level_options: ['PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'SELF_ONLY'],
+      comment_disabled: false,
+      duet_disabled: false,
+      stitch_disabled: false,
+    });
     return;
   }
 
-  document.getElementById('ttCreatorLoading').style.display = 'flex';
-  document.getElementById('ttCreatorInfo').style.display = 'none';
+  if (!state.ttToken) return;
+
+  loadingEl.style.display = 'flex';
+  infoEl.style.display = 'none';
 
   try {
     const res = await fetch('https://open.tiktokapis.com/v2/post/publish/creator_info/query/', {
