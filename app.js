@@ -94,10 +94,6 @@ window.addEventListener('load', () => {
     dbg('Fetching creator info. ytToken=' + (state.ytToken?'YES':'NO') + ' ttToken=' + (state.ttToken?'YES':'NO') + ' testMode=' + state.testMode);
     if (state.ytToken || state.testMode) fetchYouTubeChannelInfo();
     if (state.ttToken || state.testMode) fetchTikTokCreatorInfo();
-    else if (state.ttToken === null) {
-      // TikTok connected but no info — show placeholder directly
-      showTikTokPlaceholder();
-    }
   }, 500);
 });
 
