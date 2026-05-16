@@ -126,14 +126,14 @@ function applyModeUI() {
 
   if (state.testMode) {
     uploadBtn.querySelector('.btn-text').textContent = 'Simulate Upload';
-    if (pill)    { pill.textContent = '🧪 Test'; pill.classList.remove('live-pill'); }
+    // mode pill hidden — if (pill) { pill.textContent = '🧪 Test'; }
     if (sbIcon)  sbIcon.textContent  = '🧪';
     if (sbTitle) sbTitle.textContent = 'Test Mode';
     if (sbSub)   sbSub.textContent   = 'Simulated uploads';
     document.body.classList.remove('live-mode');
   } else {
     uploadBtn.querySelector('.btn-text').textContent = 'Publish Now';
-    if (pill)    { pill.textContent = '🚀 Live'; pill.classList.add('live-pill'); }
+    // mode pill hidden — if (pill) { pill.textContent = '🚀 Live'; }
     if (sbIcon)  sbIcon.textContent  = '🚀';
     if (sbTitle) sbTitle.textContent = 'Live Mode';
     if (sbSub)   sbSub.textContent   = 'Real uploads';
