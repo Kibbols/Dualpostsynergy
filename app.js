@@ -777,14 +777,14 @@ async function startUpload() {
 
   if (uploadYT) uploads.push(
     (state.testMode ? simulateUpload('yt') : uploadToYouTube(state.file, title, desc))
-      .then(url  => { results.yt = { url, ok: true }; })
-      .catch(err => { results.yt = { ok: false, err }; console.error(err); })
+      .then(url  => { dbg('YT upload success: ' + url); results.yt = { url, ok: true }; })
+      .catch(err => { dbg('YT upload FAILED: ' + err.message); results.yt = { ok: false, err }; })
   );
 
   if (uploadTT) uploads.push(
     (state.testMode ? simulateUpload('tt') : uploadToTikTok(state.file, title, desc))
-      .then(url  => { results.tt = { url, ok: true }; })
-      .catch(err => { results.tt = { ok: false, err }; console.error(err); })
+      .then(url  => { dbg('TT upload success: ' + url); results.tt = { url, ok: true }; })
+      .catch(err => { dbg('TT upload FAILED: ' + err.message); results.tt = { ok: false, err }; })
   );
 
   await Promise.all(uploads);
@@ -822,9 +822,11 @@ function simulateUpload(platform) {
 
 // ── YouTube Upload (Live) ──────────────────────────────────────
 async function uploadToYouTube(file, title, description) {
+  dbg('uploadToYouTube started. file=' + (file?file.name:'NULL') + ' size=' + (file?file.size:'0'));
   setProgress('yt', 2, 'Creating upload session...');
 
   const token = state.ytToken.access_token;
+  dbg('YT token: ' + (token ? token.slice(0,12)+'...' : 'NULL'));
 
   const initRes = await fetch(
     'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
