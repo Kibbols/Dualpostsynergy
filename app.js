@@ -175,7 +175,16 @@ function restoreTokens() {
 }
 
 function clearToken(platform) {
-  if (platform === 'yt') { state.ytToken = null; localStorage.removeItem('dp_yt'); }
+  if (platform === 'yt') {
+    // Revoke token with Google so next connect always gets a fresh refresh token
+    const token = state.ytToken?.access_token;
+    if (token) {
+      fetch('https://oauth2.googleapis.com/revoke?token=' + token, { method: 'POST' })
+        .catch(() => {}); // fire and forget
+    }
+    state.ytToken = null;
+    localStorage.removeItem('dp_yt');
+  }
   if (platform === 'tt') { state.ttToken = null; localStorage.removeItem('dp_tt'); }
 }
 
