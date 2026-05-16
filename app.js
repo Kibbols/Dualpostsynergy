@@ -268,7 +268,7 @@ async function authYouTube() {
 
   const params = new URLSearchParams({
     client_id: CONFIG.GOOGLE_CLIENT_ID,
-    redirect_uri: CONFIG.REDIRECT_URI,
+    redirect_uri: CONFIG.YT_REDIRECT_URI,
     response_type: 'code',
     scope: 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly',
     code_challenge: challenge,
@@ -372,9 +372,13 @@ async function exchangeYouTubeCode(code, verifierOverride) {
 
   if (!data.access_token) throw new Error('No access_token in response: ' + rawText);
 
-  state.ytToken = { access_token: data.access_token };
+  state.ytToken = { 
+    access_token: data.access_token,
+    refresh_token: data.refresh_token || null,
+    expires_at: Date.now() + (data.expires_in ? data.expires_in * 1000 : 3600000),
+  };
   saveTokens();
-  dbg('YouTube token saved OK');
+  dbg('YouTube token saved OK. expires_in=' + data.expires_in + ' has_refresh=' + !!data.refresh_token);
   toast('YouTube connected! 🎉', 'success');
 }
 
@@ -524,6 +528,9 @@ async function fetchYouTubeChannelInfo() {
     return;
   }
 
+  // Refresh if needed before fetching
+  await ensureYouTubeToken();
+  
   const ytAccessToken = state.ytToken?.access_token || (typeof state.ytToken === 'string' ? state.ytToken : null);
   dbg('YT access token: ' + (ytAccessToken ? ytAccessToken.slice(0,12)+'...' : 'NONE'));
   if (!ytAccessToken) { dbg('No YT access token'); return; }
@@ -821,8 +828,51 @@ function simulateUpload(platform) {
 }
 
 // ── YouTube Upload (Live) ──────────────────────────────────────
+async function refreshYouTubeToken() {
+  if (!state.ytToken?.refresh_token) {
+    dbg('No refresh token available — need to reconnect');
+    return false;
+  }
+  dbg('Refreshing YouTube token...');
+  try {
+    const res = await fetch(CONFIG.WORKER_URL + '/yt-refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: state.ytToken.refresh_token }),
+    });
+    const data = await res.json();
+    if (data.access_token) {
+      state.ytToken.access_token = data.access_token;
+      state.ytToken.expires_at = Date.now() + (data.expires_in ? data.expires_in * 1000 : 3600000);
+      saveTokens();
+      dbg('YouTube token refreshed OK');
+      return true;
+    }
+    dbg('Token refresh failed: ' + JSON.stringify(data));
+    return false;
+  } catch(e) {
+    dbg('Token refresh error: ' + e.message);
+    return false;
+  }
+}
+
+async function ensureYouTubeToken() {
+  if (!state.ytToken) return false;
+  const expiresAt = state.ytToken.expires_at || 0;
+  // Refresh if expired or expiring within 5 minutes
+  if (Date.now() > expiresAt - 300000) {
+    dbg('YT token expired or expiring soon — refreshing');
+    return await refreshYouTubeToken();
+  }
+  return true;
+}
+
 async function uploadToYouTube(file, title, description) {
   dbg('uploadToYouTube started. file=' + (file?file.name:'NULL') + ' size=' + (file?file.size:'0'));
+  
+  // Refresh token if needed
+  await ensureYouTubeToken();
+  
   setProgress('yt', 2, 'Creating upload session...');
 
   const token = state.ytToken.access_token;
