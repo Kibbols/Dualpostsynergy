@@ -842,13 +842,11 @@ async function uploadToYouTube(file, title, description) {
         snippet: {
           title,
           description,
-          categoryId: document.getElementById('ytCategory').value || undefined,
+          ...(document.getElementById('ytCategory').value ? { categoryId: document.getElementById('ytCategory').value } : {}),
         },
         status: {
           privacyStatus: document.getElementById('ytPrivacy').value || 'public',
           selfDeclaredMadeForKids: document.querySelector('input[name="ytKids"]:checked')?.value === 'true',
-          containsSyntheticMedia: false,
-          paidProductPlacementAndPromotion: document.getElementById('ytPaidPromotion')?.checked || false,
         },
       }),
     }
