@@ -9,7 +9,7 @@ const state = {
   ytToken: null,
   ttToken: null,
   uploading: false,
-  testMode: true,   // default to test mode for safety
+  testMode: false,  // default to live mode
 };
 
 // ── Force drawer closed on load ───────────────────────────────
@@ -69,14 +69,17 @@ function dbg(msg) {
 // ── On Load ───────────────────────────────────────────────────
 window.addEventListener('load', () => {
   const savedMode = localStorage.getItem('dp_mode');
-  dbg('Saved mode: ' + (savedMode || 'none') + ' | testMode starts as: ' + state.testMode);
-  if (savedMode === 'live') {
+  dbg('Saved mode: ' + (savedMode || 'none'));
+  // Default to live mode unless explicitly saved as test
+  if (savedMode === 'test') {
+    state.testMode = true;
+    document.getElementById('modeToggle').checked = false;
+  } else {
     state.testMode = false;
     document.getElementById('modeToggle').checked = true;
     document.body.classList.add('live-mode');
   }
   applyModeUI();
-  dbg('After applyModeUI: testMode=' + state.testMode);
 
   const urlParams = new URLSearchParams(window.location.search);
   const code      = urlParams.get('code');
