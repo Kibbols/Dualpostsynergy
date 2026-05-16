@@ -567,8 +567,25 @@ async function fetchYouTubeChannelInfo() {
       });
     }
   } catch(e) {
-    dbg('YouTube channel info fetch failed: ' + e.message);
-    populateYouTubeChannelInfo({ title: 'YouTube Connected', customUrl: '', thumbnails: {} });
+    dbg('YouTube channel info fetch failed: ' + e.message + ' — trying userinfo fallback');
+    try {
+      const uiRes = await fetch(CONFIG.WORKER_URL + '/proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: 'https://www.googleapis.com/oauth2/v3/userinfo',
+          token: ytAccessToken,
+        }),
+      });
+      const uiData = JSON.parse(await uiRes.text());
+      populateYouTubeChannelInfo({
+        title: uiData.name || 'YouTube Connected',
+        customUrl: uiData.email || '',
+        thumbnails: { default: { url: uiData.picture || '' } },
+      });
+    } catch(e2) {
+      populateYouTubeChannelInfo({ title: 'YouTube Connected', customUrl: '', thumbnails: {} });
+    }
   } finally {
     loadingEl.style.display = 'none';
   }
