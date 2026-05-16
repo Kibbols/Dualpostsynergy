@@ -848,11 +848,12 @@ async function uploadToYouTube(file, title, description) {
           privacyStatus: document.getElementById('ytPrivacy').value || 'public',
           selfDeclaredMadeForKids: document.querySelector('input[name="ytKids"]:checked')?.value === 'true',
           containsSyntheticMedia: false,
+          paidProductPlacementAndPromotion: document.getElementById('ytPaidPromotion')?.checked || false,
         },
-        paidProductPlacementAndPromotion: document.getElementById('ytPaidPromotion')?.checked || false,
       }),
     }
   );
+  dbg('YT init response: ' + initRes.status);
 
   if (initRes.status === 401) {
     clearToken('yt'); updateAuthUI();
