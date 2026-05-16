@@ -3,7 +3,7 @@ const CONFIG = {
   TIKTOK_CLIENT_KEY: 'sbaw1fqf7tahqg4aor',
   WORKER_URL: 'https://withered-mud-dc44.portgamingsttv.workers.dev',
   // Google redirect — now uses dedicated callback page
-  REDIRECT_URI: 'https://kibbols.github.io/Dualpostsynergy',
+  REDIRECT_URI: 'https://dualpost.app/yt-callback.html,
   YT_REDIRECT_URI: 'https://dualpost.app/yt-callback.html',
   // TikTok redirect
   TIKTOK_REDIRECT_URI: 'https://dualpost.app/tiktok-callback.html',
