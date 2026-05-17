@@ -1,5 +1,5 @@
 export default {
-  async fetch(request, env) {
+  async fetch(request, env) { 
     const corsHeaders = {
       "Access-Control-Allow-Origin": "https://dualpost.app",
       "Access-Control-Allow-Methods": "POST, OPTIONS",
