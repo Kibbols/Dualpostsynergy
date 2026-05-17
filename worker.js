@@ -1,0 +1,97 @@
+export default {
+  async fetch(request, env) {
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "https://dualpost.app",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Max-Age": "86400",
+    };
+
+    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+    if (request.method !== "POST") return new Response("Method not allowed", { status: 405, headers: corsHeaders });
+
+    let body;
+    try { body = await request.json(); } catch (e) { return new Response("Invalid JSON", { status: 400, headers: corsHeaders }); }
+
+    const url = new URL(request.url);
+
+    // ── Proxy route ───────────────────────────────────────────────
+    if (url.pathname === "/proxy") {
+      try {
+        const apiRes = await fetch(body.url, {
+          method: body.method || "GET",
+          headers: {
+            "Authorization": "Bearer " + body.token,
+            "Content-Type": "application/json; charset=UTF-8",
+          },
+          body: body.method === "POST" ? "{}" : undefined,
+        });
+        const data = await apiRes.json();
+        return new Response(JSON.stringify(data), {
+          status: apiRes.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // ── YouTube token refresh route ───────────────────────────────
+    if (url.pathname === "/yt-refresh") {
+      try {
+        const refreshRes = await fetch("https://oauth2.googleapis.com/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            client_id: env.GOOGLE_CLIENT_ID,
+            client_secret: env.GOOGLE_CLIENT_SECRET,
+            refresh_token: body.refresh_token,
+            grant_type: "refresh_token",
+          }),
+        });
+        const data = await refreshRes.json();
+        if (!data.access_token) {
+          return new Response(JSON.stringify({ error: "Refresh failed", details: data }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify({ access_token: data.access_token, expires_in: data.expires_in }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // ── Token exchange route ───────────────────────────────────────
+    const code = body.code;
+    const platform = body.platform;
+    const verifier = body.verifier;
+
+    try {
+      let tokenRes;
+      if (platform === "youtube") {
+        tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ code, client_id: env.GOOGLE_CLIENT_ID, client_secret: env.GOOGLE_CLIENT_SECRET, redirect_uri: body.redirect_uri || env.REDIRECT_URI, grant_type: "authorization_code", code_verifier: verifier }),
+        });
+      } else if (platform === "tiktok") {
+        tokenRes = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ code, client_key: env.TIKTOK_CLIENT_KEY, client_secret: env.TIKTOK_CLIENT_SECRET, redirect_uri: body.redirect_uri || env.REDIRECT_URI, grant_type: "authorization_code", code_verifier: verifier }),
+        });
+      } else {
+        return new Response("Unknown platform", { status: 400, headers: corsHeaders });
+      }
+      const data = await tokenRes.json();
+      if (!data.access_token) return new Response(JSON.stringify({ error: data.error, error_description: data.error_description, full: data }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ access_token: data.access_token, refresh_token: data.refresh_token, expires_in: data.expires_in }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+  }
+};

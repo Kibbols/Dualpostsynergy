@@ -1,0 +1,7 @@
+name = "withered-mud-dc44"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+ALLOWED_ORIGIN = "https://dualpost.app"
+REDIRECT_URI = "https://dualpost.app/yt-callback.html"
