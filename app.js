@@ -88,6 +88,16 @@ window.addEventListener('load', () => {
 
   handleOAuthCallback();
   restoreTokens();
+
+  // Dev shortcut: ?expireyt in URL forces token to appear expired for testing
+  if (new URLSearchParams(window.location.search).has('expireyt')) {
+    if (state.ytToken) {
+      state.ytToken.expires_at = Date.now() - 1;
+      saveTokens();
+      dbg('YT token manually expired for testing');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }
   updateAuthUI();
   initDropZone();
   // Read any pending debug logs from callback pages
@@ -96,6 +106,8 @@ window.addEventListener('load', () => {
   localStorage.removeItem('dp_debug_log');
   // Set initial platform column states
   initPlatformStates();
+  // Proactively refresh YouTube token on load if expired or expiring soon
+  if (state.ytToken) ensureYouTubeToken();
   // Delay to ensure DOM is fully painted before fetching account info
   setTimeout(() => {
     dbg('Fetching creator info. ytToken=' + (state.ytToken?'YES':'NO') + ' ttToken=' + (state.ttToken?'YES':'NO') + ' testMode=' + state.testMode);
