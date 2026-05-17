@@ -253,6 +253,12 @@
 
         const data = await res.json();
 
+        console.log('YT callback data:', JSON.stringify({
+          has_access_token: !!data.access_token,
+          has_refresh_token: !!data.refresh_token,
+          expires_in: data.expires_in,
+        }));
+
         if (!data.access_token) {
           throw new Error(data.error_description || data.error || 'No access token returned');
         }
@@ -264,6 +270,11 @@
         }));
         localStorage.removeItem('yt_verifier');
         localStorage.removeItem('oauth_pending');
+
+        // Log refresh token status to debug panel in app
+        const debugLog = JSON.parse(localStorage.getItem('dp_debug_log') || '[]');
+        debugLog.push((new Date().toLocaleTimeString()) + ' — YT refresh_token: ' + (data.refresh_token ? 'RECEIVED' : 'NOT received') + ' | expires_in: ' + (data.expires_in || 'NONE'));
+        localStorage.setItem('dp_debug_log', JSON.stringify(debugLog));
 
         showState('Success');
 

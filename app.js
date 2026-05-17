@@ -90,6 +90,10 @@ window.addEventListener('load', () => {
   restoreTokens();
   updateAuthUI();
   initDropZone();
+  // Read any pending debug logs from callback pages
+  const pendingLogs = JSON.parse(localStorage.getItem('dp_debug_log') || '[]');
+  pendingLogs.forEach(log => dbg(log));
+  localStorage.removeItem('dp_debug_log');
   // Set initial platform column states
   initPlatformStates();
   // Delay to ensure DOM is fully painted before fetching account info
