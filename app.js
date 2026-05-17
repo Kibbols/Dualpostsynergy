@@ -173,7 +173,10 @@ function restoreTokens() {
   try {
     const yt = localStorage.getItem('dp_yt');
     const tt = localStorage.getItem('dp_tt');
-    if (yt) state.ytToken = JSON.parse(yt);
+    if (yt) {
+      state.ytToken = JSON.parse(yt);
+      dbg('YT token restored. has_refresh=' + !!state.ytToken.refresh_token + ' expires_at=' + (state.ytToken.expires_at ? new Date(state.ytToken.expires_at).toLocaleTimeString() : 'NONE'));
+    }
     if (tt) state.ttToken = JSON.parse(tt);
   } catch(e) {}
 }
