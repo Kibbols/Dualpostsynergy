@@ -979,6 +979,7 @@ async function uploadToYouTube(file, title, description) {
 
 // ── TikTok Upload (Live) ───────────────────────────────────────
 async function uploadToTikTok(file, title, description) {
+  dbg('uploadToTikTok started. ttToken=' + (state.ttToken?'YES':'NO'));
   setProgress('tt', 2, 'Creating upload session...');
 
   const token = state.ttToken.access_token;
