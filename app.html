@@ -309,10 +309,10 @@
               <div class="setting-row setting-row-col">
                 <label class="setting-label">Post Mode</label>
                 <div class="checkbox-group">
-                  <label class="check-label">
-                    <input type="checkbox" id="ttDraftMode" onchange="updateTtDraftMode()" onclick="updateTtDraftMode()" />
+                  <div class="check-label" onclick="document.getElementById('ttDraftMode').click();updateTtDraftMode();" style="cursor:pointer;">
+                    <input type="checkbox" id="ttDraftMode" style="pointer-events:none;" />
                     Upload as Draft
-                  </label>
+                  </div>
                 </div>
                 <span style="font-size:0.65rem;font-weight:600;color:var(--muted);line-height:1.4;">Draft goes to your TikTok inbox to review and post yourself.</span>
               </div>
