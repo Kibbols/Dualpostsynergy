@@ -1082,6 +1082,7 @@ async function uploadToTikTok(file, title, description) {
     };
 
     xhr.onload = async () => {
+      dbg('TT XHR status: ' + xhr.status + ' | ' + xhr.responseText.slice(0, 100));
       if ([200, 201, 206].includes(xhr.status)) {
         setProgress('tt', 100, 'Processing...');
         // Poll status until processed or failed
