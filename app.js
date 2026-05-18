@@ -1071,13 +1071,13 @@ async function uploadToTikTok(file, title, description) {
 
   const initData = await initRes.json();
   const { publish_id, upload_url } = initData;
-  dbg('TT publish_id=' + publish_id);
-  dbg('TT upload_url=' + upload_url);
+  dbg('TT publish_id=' + publish_id + ' upload_url=' + (upload_url ? upload_url.slice(0,60)+'...' : 'NONE'));
   if (!upload_url) throw new Error('TikTok did not return an upload URL.');
   setProgress('tt', 5, 'Uploading...');
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    dbg('TT XHR upload starting. file.size=' + file.size + ' Content-Range=bytes 0-' + (file.size-1) + '/' + file.size);
     xhr.open('PUT', upload_url);
     xhr.setRequestHeader('Content-Range', `bytes 0-${file.size - 1}/${file.size}`);
     xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
