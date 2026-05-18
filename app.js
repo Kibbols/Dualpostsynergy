@@ -1024,7 +1024,8 @@ async function uploadToTikTok(file, title, description) {
   setProgress('tt', 2, 'Creating upload session...');
 
   const token = state.ttToken?.access_token;
-  dbg('TT token: ' + (token ? token.slice(0,12)+'...' : 'NULL'));
+  const openId = state.ttToken?.open_id || null;
+  dbg('TT token: ' + (token ? token.slice(0,12)+'...' : 'NULL') + ' open_id=' + (openId ? 'YES' : 'NONE'));
 
   const isDraft = document.getElementById('ttDraftMode')?.checked || false;
   dbg('TT post mode: ' + (isDraft ? 'DRAFT' : 'DIRECT POST'));
@@ -1034,6 +1035,7 @@ async function uploadToTikTok(file, title, description) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       token,
+      open_id: openId,
       draft: isDraft,
       post_info: {
         title: title.slice(0, 150),

@@ -274,7 +274,7 @@
         }
 
         // Save token to localStorage so app.html picks it up when opened
-        localStorage.setItem('dp_tt', JSON.stringify({ access_token: data.access_token }));
+        localStorage.setItem('dp_tt', JSON.stringify({ access_token: data.access_token, open_id: data.open_id || null }));
         localStorage.removeItem('tt_verifier');
         localStorage.removeItem('oauth_pending');
 

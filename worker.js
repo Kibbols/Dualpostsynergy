@@ -146,7 +146,7 @@ export default {
       }
       const data = await tokenRes.json();
       if (!data.access_token) return new Response(JSON.stringify({ error: data.error, error_description: data.error_description, full: data }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      return new Response(JSON.stringify({ access_token: data.access_token, refresh_token: data.refresh_token, expires_in: data.expires_in }), {
+      return new Response(JSON.stringify({ access_token: data.access_token, refresh_token: data.refresh_token, expires_in: data.expires_in, open_id: data.open_id }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch (e) {
