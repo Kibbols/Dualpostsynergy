@@ -42,16 +42,18 @@ export default {
         const ttEndpoint = body.draft
           ? "https://open.tiktokapis.com/v2/post/publish/inbox/video/init/"
           : "https://open.tiktokapis.com/v2/post/publish/video/init/";
+        // Draft mode only takes source_info, not post_info
+        const ttBody = body.draft
+          ? { source_info: body.source_info }
+          : { post_info: body.post_info, source_info: body.source_info };
+
         const ttRes = await fetch(ttEndpoint, {
           method: "POST",
           headers: {
             "Authorization": "Bearer " + body.token,
             "Content-Type": "application/json; charset=UTF-8",
           },
-          body: JSON.stringify({
-            post_info: body.post_info,
-            source_info: body.source_info,
-          }),
+          body: JSON.stringify(ttBody),
         });
         const ttData = await ttRes.json();
         if (!ttRes.ok) {

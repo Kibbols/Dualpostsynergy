@@ -529,6 +529,38 @@ function initPlatformStates() {
   togglePlatformSettings('tt');
 }
 
+function updateTtDraftMode() {
+  const isDraft = document.getElementById('ttDraftMode')?.checked || false;
+  const fieldsToToggle = ['ttPrivacy', 'ttComment', 'ttDuet', 'ttStitch', 'ttYourBrand', 'ttBrandedContent'];
+  const labelsToToggle = ['ttCommentLabel', 'ttDuetLabel', 'ttStitchLabel'];
+
+  fieldsToToggle.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.disabled = isDraft;
+      el.closest('label') && (el.closest('label').style.opacity = isDraft ? '0.4' : '1');
+    }
+  });
+
+  labelsToToggle.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('disabled', isDraft);
+  });
+
+  // Grey out visibility row
+  const visRow = document.getElementById('ttPrivacy')?.closest('.setting-row');
+  if (visRow) visRow.style.opacity = isDraft ? '0.4' : '1';
+
+  // Grey out disclaimer
+  const disclaimer = document.getElementById('ttDisclaimer');
+  if (disclaimer) disclaimer.style.opacity = isDraft ? '0.4' : '1';
+
+  // Update validation — remove required for visibility if draft
+  if (isDraft) {
+    document.getElementById('ttPrivacy').value = '';
+  }
+}
+
 function updateTtDisclosure() {
   const branded  = document.getElementById('ttBrandedContent').checked;
   const disclaimer = document.getElementById('ttDisclaimer');
@@ -789,7 +821,8 @@ async function startUpload() {
   // TikTok validation
   if (uploadTT) {
     const ttPrivacy = document.getElementById('ttPrivacy').value;
-    if (!ttPrivacy) { toast('Please select a TikTok visibility.', 'error'); return; }
+    const ttDraft = document.getElementById('ttDraftMode')?.checked || false;
+    if (!ttPrivacy && !ttDraft) { toast('Please select a TikTok visibility.', 'error'); return; }
   }
 
   // Live mode auth checks
@@ -996,7 +1029,7 @@ async function uploadToTikTok(file, title, description) {
       draft: isDraft,
       post_info: {
         title: title.slice(0, 150),
-        privacy_level: document.getElementById('ttPrivacy').value || 'PUBLIC_TO_EVERYONE',
+        privacy_level: document.getElementById('ttPrivacy').value || 'SELF_ONLY',
         disable_comment: !document.getElementById('ttComment').checked,
         disable_duet:    !document.getElementById('ttDuet').checked,
         disable_stitch:  !document.getElementById('ttStitch').checked,
@@ -1046,7 +1079,7 @@ async function uploadToTikTok(file, title, description) {
         // Poll status until processed or failed
         try {
           let attempts = 0;
-          const maxAttempts = 10;
+          const maxAttempts = 20;
           const pollStatus = async () => {
             attempts++;
             const statusRes = await fetch(CONFIG.WORKER_URL + '/tt-status', {
@@ -1058,7 +1091,7 @@ async function uploadToTikTok(file, title, description) {
             const status = statusData?.data?.status;
             dbg('TT publish status (' + attempts + '): ' + status);
             if (status === 'PROCESSING_UPLOAD' && attempts < maxAttempts) {
-              await new Promise(r => setTimeout(r, 3000));
+              await new Promise(r => setTimeout(r, 5000));
               return pollStatus();
             }
           };
