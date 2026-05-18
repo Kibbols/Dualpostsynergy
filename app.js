@@ -983,13 +983,11 @@ async function uploadToTikTok(file, title, description) {
 
   const token = state.ttToken.access_token;
 
-  const initRes = await fetch('https://open.tiktokapis.com/v2/post/publish/video/init/', {
+  const initRes = await fetch(CONFIG.WORKER_URL + '/tt-init', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json; charset=UTF-8',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      token,
       post_info: {
         title: title.slice(0, 150),
         privacy_level: document.getElementById('ttPrivacy').value || 'PUBLIC_TO_EVERYONE',
@@ -1008,17 +1006,19 @@ async function uploadToTikTok(file, title, description) {
     }),
   });
 
+  dbg('TT init response: ' + initRes.status);
+
   if (initRes.status === 401) {
     clearToken('tt'); updateAuthUI();
     throw new Error('TikTok token expired — please reconnect.');
   }
   if (!initRes.ok) {
-    const body = await initRes.json().catch(() => ({}));
-    throw new Error(body?.error?.message || `TikTok init failed (${initRes.status})`);
+    const errData = await initRes.json().catch(() => ({}));
+    throw new Error(errData?.error || `TikTok init failed (${initRes.status})`);
   }
 
-  const { data } = await initRes.json();
-  const { publish_id, upload_url } = data;
+  const initData = await initRes.json();
+  const { publish_id, upload_url } = initData;
   if (!upload_url) throw new Error('TikTok did not return an upload URL.');
   setProgress('tt', 5, 'Uploading...');
 
