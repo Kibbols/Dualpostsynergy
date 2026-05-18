@@ -1040,8 +1040,21 @@ async function uploadToTikTok(file, title, description) {
           `${Math.round((e.loaded / e.total) * 93) + 5}%`);
     };
 
-    xhr.onload = () => {
+    xhr.onload = async () => {
       if ([200, 201, 206].includes(xhr.status)) {
+        setProgress('tt', 100, 'Processing...');
+        // Poll status to confirm delivery
+        try {
+          const statusRes = await fetch(CONFIG.WORKER_URL + '/tt-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, publish_id }),
+          });
+          const statusData = await statusRes.json();
+          dbg('TT publish status: ' + JSON.stringify(statusData).slice(0, 150));
+        } catch(e) {
+          dbg('TT status check failed: ' + e.message);
+        }
         setProgress('tt', 100, 'Done ✓');
         resolve(`https://www.tiktok.com/upload?publish_id=${publish_id}`);
       } else {

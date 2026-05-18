@@ -72,6 +72,27 @@ export default {
       }
     }
 
+    // ── TikTok publish status check ──────────────────────────────
+    if (url.pathname === "/tt-status") {
+      try {
+        const statusRes = await fetch("https://open.tiktokapis.com/v2/post/publish/status/fetch/", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + body.token,
+            "Content-Type": "application/json; charset=UTF-8",
+          },
+          body: JSON.stringify({ publish_id: body.publish_id }),
+        });
+        const data = await statusRes.json();
+        return new Response(JSON.stringify(data), {
+          status: statusRes.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     // ── YouTube token refresh route ───────────────────────────────
     if (url.pathname === "/yt-refresh") {
       try {
