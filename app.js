@@ -196,7 +196,10 @@ function restoreTokens() {
       state.ytToken = JSON.parse(yt);
       dbg('YT token restored. has_refresh=' + !!state.ytToken.refresh_token + ' expires_at=' + (state.ytToken.expires_at ? new Date(state.ytToken.expires_at).toLocaleTimeString() : 'NONE'));
     }
-    if (tt) state.ttToken = JSON.parse(tt);
+    if (tt) {
+      state.ttToken = JSON.parse(tt);
+      dbg('TT token restored. open_id=' + (state.ttToken.open_id ? 'YES' : 'NONE'));
+    }
   } catch(e) {}
 }
 
