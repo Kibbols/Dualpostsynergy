@@ -979,16 +979,21 @@ async function uploadToYouTube(file, title, description) {
 
 // ── TikTok Upload (Live) ───────────────────────────────────────
 async function uploadToTikTok(file, title, description) {
-  dbg('uploadToTikTok started. ttToken=' + (state.ttToken?'YES':'NO'));
+  dbg('uploadToTikTok started. file=' + (file?file.name:'NULL') + ' ttToken=' + (state.ttToken?'YES':'NO'));
   setProgress('tt', 2, 'Creating upload session...');
 
-  const token = state.ttToken.access_token;
+  const token = state.ttToken?.access_token;
+  dbg('TT token: ' + (token ? token.slice(0,12)+'...' : 'NULL'));
+
+  const isDraft = document.getElementById('ttDraftMode')?.checked || false;
+  dbg('TT post mode: ' + (isDraft ? 'DRAFT' : 'DIRECT POST'));
 
   const initRes = await fetch(CONFIG.WORKER_URL + '/tt-init', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       token,
+      draft: isDraft,
       post_info: {
         title: title.slice(0, 150),
         privacy_level: document.getElementById('ttPrivacy').value || 'PUBLIC_TO_EVERYONE',

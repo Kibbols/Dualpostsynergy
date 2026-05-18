@@ -39,7 +39,10 @@ export default {
     // ── TikTok upload init route ─────────────────────────────────
     if (url.pathname === "/tt-init") {
       try {
-        const ttRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
+        const ttEndpoint = body.draft
+          ? "https://open.tiktokapis.com/v2/post/publish/inbox/video/init/"
+          : "https://open.tiktokapis.com/v2/post/publish/video/init/";
+        const ttRes = await fetch(ttEndpoint, {
           method: "POST",
           headers: {
             "Authorization": "Bearer " + body.token,
