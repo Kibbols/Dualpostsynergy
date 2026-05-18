@@ -330,7 +330,7 @@ async function authTikTok() {
     client_key: CONFIG.TIKTOK_CLIENT_KEY,
     redirect_uri: CONFIG.TIKTOK_REDIRECT_URI,
     response_type: 'code',
-    scope: 'video.upload,user.info.basic',
+    scope: 'video.upload,video.publish,user.info.basic',
     code_challenge: challenge,
     code_challenge_method: 'S256',
     state: stateParam,
