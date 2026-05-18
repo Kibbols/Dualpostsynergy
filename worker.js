@@ -1,5 +1,5 @@
 export default {
-  async fetch(request, env) { 
+  async fetch(request, env) {
     const corsHeaders = {
       "Access-Control-Allow-Origin": "https://dualpost.app",
       "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -29,6 +29,39 @@ export default {
         const data = await apiRes.json();
         return new Response(JSON.stringify(data), {
           status: apiRes.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // ── TikTok upload init route ─────────────────────────────────
+    if (url.pathname === "/tt-init") {
+      try {
+        const ttRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + body.token,
+            "Content-Type": "application/json; charset=UTF-8",
+          },
+          body: JSON.stringify({
+            post_info: body.post_info,
+            source_info: body.source_info,
+          }),
+        });
+        const ttData = await ttRes.json();
+        if (!ttRes.ok) {
+          return new Response(JSON.stringify({ error: ttData?.error?.message || "TikTok init failed", status: ttRes.status }), {
+            status: ttRes.status,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify({
+          publish_id: ttData.data?.publish_id,
+          upload_url: ttData.data?.upload_url,
+        }), {
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (e) {
@@ -80,7 +113,7 @@ export default {
         tokenRes = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({ code, client_key: env.TIKTOK_CLIENT_KEY, client_secret: env.TIKTOK_CLIENT_SECRET, redirect_uri: body.redirect_uri || env.TIKTOK_REDIRECT_URI, grant_type: "authorization_code", code_verifier: verifier }),
+          body: new URLSearchParams({ code, client_key: env.TIKTOK_CLIENT_KEY, client_secret: env.TIKTOK_CLIENT_SECRET, redirect_uri: body.redirect_uri || env.REDIRECT_URI, grant_type: "authorization_code", code_verifier: verifier }),
         });
       } else {
         return new Response("Unknown platform", { status: 400, headers: corsHeaders });
