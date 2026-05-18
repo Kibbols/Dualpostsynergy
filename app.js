@@ -530,6 +530,7 @@ function initPlatformStates() {
 }
 
 function updateTtDraftMode() {
+  dbg('updateTtDraftMode called. isDraft=' + isDraft);
   const isDraft = document.getElementById('ttDraftMode')?.checked || false;
   const fieldsToToggle = ['ttPrivacy', 'ttComment', 'ttDuet', 'ttStitch', 'ttYourBrand', 'ttBrandedContent'];
   const labelsToToggle = ['ttCommentLabel', 'ttDuetLabel', 'ttStitchLabel'];
