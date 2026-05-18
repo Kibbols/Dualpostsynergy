@@ -1043,15 +1043,26 @@ async function uploadToTikTok(file, title, description) {
     xhr.onload = async () => {
       if ([200, 201, 206].includes(xhr.status)) {
         setProgress('tt', 100, 'Processing...');
-        // Poll status to confirm delivery
+        // Poll status until processed or failed
         try {
-          const statusRes = await fetch(CONFIG.WORKER_URL + '/tt-status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token, publish_id }),
-          });
-          const statusData = await statusRes.json();
-          dbg('TT publish status: ' + JSON.stringify(statusData).slice(0, 150));
+          let attempts = 0;
+          const maxAttempts = 10;
+          const pollStatus = async () => {
+            attempts++;
+            const statusRes = await fetch(CONFIG.WORKER_URL + '/tt-status', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token, publish_id }),
+            });
+            const statusData = await statusRes.json();
+            const status = statusData?.data?.status;
+            dbg('TT publish status (' + attempts + '): ' + status);
+            if (status === 'PROCESSING_UPLOAD' && attempts < maxAttempts) {
+              await new Promise(r => setTimeout(r, 3000));
+              return pollStatus();
+            }
+          };
+          await pollStatus();
         } catch(e) {
           dbg('TT status check failed: ' + e.message);
         }
