@@ -1071,7 +1071,8 @@ async function uploadToTikTok(file, title, description) {
 
   const initData = await initRes.json();
   const { publish_id, upload_url } = initData;
-  dbg('TT publish_id=' + publish_id + ' upload_url=' + (upload_url ? upload_url.slice(0,150)+'...' : 'NONE'));
+  dbg('TT publish_id=' + publish_id);
+  dbg('TT upload_url=' + upload_url);
   if (!upload_url) throw new Error('TikTok did not return an upload URL.');
   setProgress('tt', 5, 'Uploading...');
 
