@@ -89,6 +89,13 @@ window.addEventListener('load', () => {
   handleOAuthCallback();
   restoreTokens();
 
+  // Attach draft mode listener via JS
+  const draftCheckbox = document.getElementById('ttDraftMode');
+  if (draftCheckbox) {
+    draftCheckbox.addEventListener('change', updateTtDraftMode);
+    draftCheckbox.addEventListener('click', updateTtDraftMode);
+  }
+
   // Dev shortcut: ?expireyt in URL forces token to appear expired for testing
   if (new URLSearchParams(window.location.search).has('expireyt')) {
     if (state.ytToken) {
@@ -530,8 +537,8 @@ function initPlatformStates() {
 }
 
 function updateTtDraftMode() {
-  dbg('updateTtDraftMode called. isDraft=' + isDraft);
   const isDraft = document.getElementById('ttDraftMode')?.checked || false;
+  dbg('updateTtDraftMode called. isDraft=' + isDraft);
   const fieldsToToggle = ['ttPrivacy', 'ttComment', 'ttDuet', 'ttStitch', 'ttYourBrand', 'ttBrandedContent'];
   const labelsToToggle = ['ttCommentLabel', 'ttDuetLabel', 'ttStitchLabel'];
 
