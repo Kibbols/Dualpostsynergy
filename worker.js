@@ -85,11 +85,43 @@ export default {
           },
           body: JSON.stringify({ publish_id: body.publish_id }),
         });
-        const data = await statusRes.json();
+        // Log raw response for debugging
+        const rawText = await statusRes.text();
+        const data = JSON.parse(rawText);
         return new Response(JSON.stringify(data), {
           status: statusRes.status,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // ── TikTok token refresh route ───────────────────────────────
+    if (url.pathname === "/tt-refresh") {
+      try {
+        const refreshRes = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            client_key: env.TIKTOK_CLIENT_KEY,
+            client_secret: env.TIKTOK_CLIENT_SECRET,
+            grant_type: "refresh_token",
+            refresh_token: body.refresh_token,
+          }),
+        });
+        const data = await refreshRes.json();
+        if (!data.access_token) {
+          return new Response(JSON.stringify({ error: "TT refresh failed", details: data }), {
+            status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          expires_in: data.expires_in,
+          open_id: data.open_id,
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       } catch (e) {
         return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }

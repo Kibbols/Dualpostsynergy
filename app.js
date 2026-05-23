@@ -113,8 +113,9 @@ window.addEventListener('load', () => {
   localStorage.removeItem('dp_debug_log');
   // Set initial platform column states
   initPlatformStates();
-  // Proactively refresh YouTube token on load if expired or expiring soon
+  // Proactively refresh tokens on load if expired or expiring soon
   if (state.ytToken) ensureYouTubeToken();
+  if (state.ttToken) ensureTikTokToken();
   // Delay to ensure DOM is fully painted before fetching account info
   setTimeout(() => {
     dbg('Fetching creator info. ytToken=' + (state.ytToken?'YES':'NO') + ' ttToken=' + (state.ttToken?'YES':'NO') + ' testMode=' + state.testMode);
@@ -198,7 +199,7 @@ function restoreTokens() {
     }
     if (tt) {
       state.ttToken = JSON.parse(tt);
-      dbg('TT token restored. open_id=' + (state.ttToken.open_id ? 'YES' : 'NONE'));
+      dbg('TT token restored. open_id=' + (state.ttToken.open_id ? 'YES' : 'NONE') + ' has_refresh=' + !!state.ttToken.refresh_token + ' expires_at=' + (state.ttToken.expires_at ? new Date(state.ttToken.expires_at).toLocaleTimeString() : 'NONE'));
     }
   } catch(e) {}
 }
@@ -900,6 +901,46 @@ function simulateUpload(platform) {
 }
 
 // ── YouTube Upload (Live) ──────────────────────────────────────
+async function refreshTikTokToken() {
+  if (!state.ttToken?.refresh_token) {
+    dbg('No TT refresh token available — need to reconnect');
+    return false;
+  }
+  dbg('Refreshing TikTok token...');
+  try {
+    const res = await fetch(CONFIG.WORKER_URL + '/tt-refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: state.ttToken.refresh_token }),
+    });
+    const data = await res.json();
+    if (data.access_token) {
+      state.ttToken.access_token = data.access_token;
+      if (data.refresh_token) state.ttToken.refresh_token = data.refresh_token;
+      if (data.open_id) state.ttToken.open_id = data.open_id;
+      state.ttToken.expires_at = Date.now() + (data.expires_in ? data.expires_in * 1000 : 86400000);
+      saveTokens();
+      dbg('TikTok token refreshed OK');
+      return true;
+    }
+    dbg('TT token refresh failed: ' + JSON.stringify(data));
+    return false;
+  } catch(e) {
+    dbg('TT token refresh error: ' + e.message);
+    return false;
+  }
+}
+
+async function ensureTikTokToken() {
+  if (!state.ttToken) return false;
+  const expiresAt = state.ttToken.expires_at || 0;
+  if (Date.now() > expiresAt - 300000) {
+    dbg('TT token expired or expiring soon — refreshing');
+    return await refreshTikTokToken();
+  }
+  return true;
+}
+
 async function refreshYouTubeToken() {
   if (!state.ytToken?.refresh_token) {
     dbg('No refresh token available — need to reconnect');
@@ -1024,6 +1065,7 @@ async function uploadToYouTube(file, title, description) {
 // ── TikTok Upload (Live) ───────────────────────────────────────
 async function uploadToTikTok(file, title, description) {
   dbg('uploadToTikTok started. file=' + (file?file.name:'NULL') + ' ttToken=' + (state.ttToken?'YES':'NO'));
+  await ensureTikTokToken();
   setProgress('tt', 2, 'Creating upload session...');
 
   const token = state.ttToken?.access_token;
