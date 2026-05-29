@@ -293,8 +293,15 @@
               </div>
               <!-- Commercial Content -->
               <div class="setting-row setting-row-col">
-                <label class="setting-label">Content Disclosure</label>
-                <div class="checkbox-group">
+                <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                  <label class="setting-label" style="margin-bottom:0;">Content Disclosure</label>
+                  <label class="tt-toggle-label">
+                    <input type="checkbox" id="ttDisclosureToggle" onchange="updateTtDisclosure()" />
+                    <span class="tt-toggle-slider"></span>
+                  </label>
+                </div>
+                <span style="font-size:0.65rem;font-weight:600;color:var(--muted);line-height:1.4;margin-top:2px;">Turn on to disclose that this video promotes goods or services.</span>
+                <div class="checkbox-group" id="ttDisclosureOptions" style="display:none;margin-top:8px;">
                   <label class="check-label">
                     <input type="checkbox" id="ttYourBrand" onchange="updateTtDisclosure()" />
                     Your Brand
@@ -303,6 +310,7 @@
                     <input type="checkbox" id="ttBrandedContent" onchange="updateTtDisclosure()" />
                     Branded Content
                   </label>
+                  <div id="ttDisclosurePrompt" style="font-size:0.65rem;font-weight:700;color:var(--accent);line-height:1.5;margin-top:4px;display:none;"></div>
                 </div>
               </div>
               <!-- Post Mode -->
@@ -383,6 +391,6 @@
   <div class="toast" id="toast"></div>
 
   <script src="config.js"></script>
-  <script src="app.js?v=2"></script>
+  <script src="app.js"></script>
 </body>
 </html>

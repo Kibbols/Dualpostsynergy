@@ -543,7 +543,7 @@ function initPlatformStates() {
 function updateTtDraftMode() {
   const isDraft = document.getElementById('ttDraftMode')?.checked || false;
   dbg('updateTtDraftMode called. isDraft=' + isDraft);
-  const fieldsToToggle = ['ttPrivacy', 'ttComment', 'ttDuet', 'ttStitch', 'ttYourBrand', 'ttBrandedContent'];
+  const fieldsToToggle = ['ttPrivacy', 'ttComment', 'ttDuet', 'ttStitch', 'ttYourBrand', 'ttBrandedContent', 'ttDisclosureToggle'];
   const labelsToToggle = ['ttCommentLabel', 'ttDuetLabel', 'ttStitchLabel'];
 
   fieldsToToggle.forEach(id => {
@@ -574,13 +574,55 @@ function updateTtDraftMode() {
 }
 
 function updateTtDisclosure() {
-  const branded  = document.getElementById('ttBrandedContent').checked;
-  const disclaimer = document.getElementById('ttDisclaimer');
-  if (!disclaimer) return;
-  if (branded) {
-    disclaimer.innerHTML = "By posting, you agree to TikTok's <a href='https://www.tiktok.com/legal/branded-content-policy' target='_blank'>Branded Content Policy</a> and <a href='https://www.tiktok.com/legal/music-usage-confirmation' target='_blank'>Music Usage Confirmation</a>";
-  } else {
-    disclaimer.innerHTML = `By posting, you agree to TikTok's <a href="https://www.tiktok.com/legal/music-usage-confirmation" target="_blank">Music Usage Confirmation</a>`;
+  const toggle    = document.getElementById('ttDisclosureToggle');
+  const options   = document.getElementById('ttDisclosureOptions');
+  const yourBrand = document.getElementById('ttYourBrand');
+  const branded   = document.getElementById('ttBrandedContent');
+  const prompt    = document.getElementById('ttDisclosurePrompt');
+  const disclaimer= document.getElementById('ttDisclaimer');
+  const privacy   = document.getElementById('ttPrivacy');
+  if (!toggle) return;
+
+  const isOn = toggle.checked;
+
+  // Show/hide disclosure options
+  if (options) options.style.display = isOn ? 'flex' : 'none';
+  if (!isOn && yourBrand) yourBrand.checked = false;
+  if (!isOn && branded)   branded.checked = false;
+
+  // Show label prompt based on selection
+  if (prompt) {
+    const yb = yourBrand?.checked;
+    const bc = branded?.checked;
+    if (isOn && (yb || bc)) {
+      prompt.textContent = (yb && bc) || bc
+        ? "Your photo/video will be labeled as 'Paid partnership'"
+        : "Your photo/video will be labeled as 'Promotional content'";
+      prompt.style.display = 'block';
+    } else {
+      prompt.style.display = 'none';
+    }
+  }
+
+  // Disable "Only Me" when Branded Content is selected
+  if (privacy) {
+    const onlyMeOpt = [...privacy.options].find(o => o.value === 'SELF_ONLY');
+    if (onlyMeOpt) {
+      onlyMeOpt.disabled = branded?.checked || false;
+      if (branded?.checked && privacy.value === 'SELF_ONLY') {
+        privacy.value = '';
+      }
+    }
+  }
+
+  // Update disclaimer
+  if (disclaimer) {
+    const bc = branded?.checked;
+    if (bc) {
+      disclaimer.innerHTML = "By posting, you agree to TikTok's <a href='https://www.tiktok.com/legal/branded-content-policy' target='_blank'>Branded Content Policy</a> and <a href='https://www.tiktok.com/legal/music-usage-confirmation' target='_blank'>Music Usage Confirmation</a>";
+    } else {
+      disclaimer.innerHTML = "By posting, you agree to TikTok's <a href='https://www.tiktok.com/legal/music-usage-confirmation' target='_blank'>Music Usage Confirmation</a>";
+    }
   }
 }
 
@@ -809,6 +851,11 @@ function populateTikTokCreatorInfo(info) {
   setInteraction('ttComment', 'ttCommentLabel', info.comment_disabled);
   setInteraction('ttDuet',    'ttDuetLabel',    info.duet_disabled);
   setInteraction('ttStitch',  'ttStitchLabel',  info.stitch_disabled);
+
+  // Store max duration for validation
+  if (info.max_video_post_duration_sec) {
+    state.ttMaxDuration = info.max_video_post_duration_sec;
+  }
 }
 
 // ── Upload Orchestration ───────────────────────────────────────
@@ -835,6 +882,23 @@ async function startUpload() {
     const ttPrivacy = document.getElementById('ttPrivacy').value;
     const ttDraft = document.getElementById('ttDraftMode')?.checked || false;
     if (!ttPrivacy && !ttDraft) { toast('Please select a TikTok visibility.', 'error'); return; }
+    // Check video duration against max_video_post_duration_sec
+    if (state.ttMaxDuration && state.file) {
+      const videoEl = document.createElement('video');
+      videoEl.src = URL.createObjectURL(state.file);
+      await new Promise(r => { videoEl.onloadedmetadata = r; videoEl.onerror = r; });
+      if (videoEl.duration > state.ttMaxDuration) {
+        toast(`Video is too long for TikTok. Max duration is ${state.ttMaxDuration} seconds.`, 'error');
+        return;
+      }
+    }
+    // Disclosure validation
+    const disclosureOn = document.getElementById('ttDisclosureToggle')?.checked;
+    if (disclosureOn) {
+      const yb = document.getElementById('ttYourBrand')?.checked;
+      const bc = document.getElementById('ttBrandedContent')?.checked;
+      if (!yb && !bc) { toast('Please select at least one Content Disclosure option.', 'error'); return; }
+    }
   }
 
   // Live mode auth checks
@@ -1231,6 +1295,12 @@ function showSuccess(results, uploadYT, uploadTT) {
       a.style.borderColor = '#f97316';
     }
     linksDiv.appendChild(a);
+    if (!state.testMode && results.tt?.ok) {
+      const note = document.createElement('p');
+      note.style.cssText = 'font-size:0.72rem;font-weight:600;color:#a07850;margin-top:8px;line-height:1.5;';
+      note.textContent = 'It may take a few minutes for your TikTok content to process and appear on your profile.';
+      linksDiv.appendChild(note);
+    }
   }
 }
 
