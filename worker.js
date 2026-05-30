@@ -154,6 +154,19 @@ export default {
       }
     }
 
+    // ── Streamer Hub password verification ──────────────────────────
+    if (url.pathname === "/verify-password") {
+      const provided = body.password || "";
+      const stored   = env.STREAMER_HUB_PASSWORD || "";
+      const valid =
+        provided.length > 0 &&
+        provided.length === stored.length &&
+        provided.split("").every((c, i) => c === stored[i]);
+      return new Response(JSON.stringify({ ok: valid }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ── Token exchange route ───────────────────────────────────────
     const code = body.code;
     const platform = body.platform;
