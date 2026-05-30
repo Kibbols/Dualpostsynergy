@@ -1,1 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Streamer Hub</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+:root {
+  --bg:       #fff8f0;
+  --surface:  #ffffff;
+  --surface2: #fef3e8;
+  --border:   #fddcb5;
+  --text:     #2d1b00;
+  --muted:    #a07850;
+  --accent:   #ff8c42;
+  --accent2:  #ffc947;
+  --pink:     #ff6b9d;
+  --green:    #22c55e;
+  --green-bg: #f0fff4;
+  --green-border: #86efac;
+  --red:      #ef4444;
+  --red-bg:   #fff1f2;
+  --red-border: #fca5a5;
+  --reddit:   #ff4500;
+  --twitter:  #1d9bf0;
+  --purple:   #8b5cf6;
+  --font-d:   'Fredoka One', cursive;
+  --font-b:   'Nunito', sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-b);
+  min-height: 100vh;
+}
+
+/* ─── Login Gate ─────────────────────────────────── */
+#login-gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--bg);
+}
+.login-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 24px;
+  box-shadow: 0 6px 0 var(--border);
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+.login-logo {
+  font-family: var(--font-d);
+  font-size: 2rem;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.login-logo span { color: var(--accent); }
+.login-sub {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  margin-bottom: 36px;
+}
+.login-label {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  text-align: left;
+  display: block;
+  margin-bottom: 8px;
+}
+.login-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  color: var(--text);
+  font-family: var(--font-b);
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+  text-align: center;
+  letter-spacing: 0.1em;
+}
+.login-input:focus { outline: none; border-color: var(--accent); }
+.login-input.error { border-color: var(--red); background: var(--red-bg); }
+.login-btn {
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent), var(--pink));
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  font-family: var(--font-d);
+  font-size: 1.1rem;
+  padding: 14px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(255,80,100,0.25);
+  transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+}
+.login-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 0 rgba(255,80,100,0.25); }
+.login-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.login-error {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--red);
+  margin-top: 12px;
+  display: none;
+}
+.login-error.visible { display: block; }
+
+/* ─── Main App (hidden until authed) ────────────── */
+#app { display: none; }
+
+/* ─── Nav ─────────────────────────────────────────── */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  background: rgba(255,248,240,0.95);
+  backdrop-filter: blur(16px);
+  border-bottom: 2px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.nav-logo {
+  font-family: var(--font-d);
+  font-size: 1.4rem;
+  color: var(--text);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.nav-logo-badge {
+  background: linear-gradient(135deg, var(--accent), var(--pink));
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border-radius: 50px;
+  text-transform: uppercase;
+}
+.nav-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.nav-link {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-link:hover { color: var(--accent); }
+.logout-btn {
+  background: none;
+  border: 2px solid var(--border);
+  border-radius: 50px;
+  color: var(--muted);
+  font-family: var(--font-b);
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* ─── Layout ─────────────────────────────────────── */
+.page { max-width: 1080px; margin: 0 auto; padding: 32px 24px 64px; }
+
+/* ─── Tabs ─────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.tab-btn {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 50px;
+  color: var(--muted);
+  font-family: var(--font-d);
+  font-size: 0.9rem;
+  padding: 8px 20px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--border);
+  transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+}
+.tab-btn:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+.tab-btn.active {
+  background: linear-gradient(135deg, var(--accent), var(--pink));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 3px 0 rgba(255,80,100,0.25);
+}
+
+/* ─── Section title ──────────────────────────────── */
+.section-title {
+  font-family: var(--font-d);
+  font-size: 1.5rem;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.section-sub {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+/* ─── Cards ──────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 0 var(--border);
+}
+.card + .card { margin-top: 16px; }
+
+/* ─── Upload Zone ─────────────────────────────────── */
+.upload-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.upload-box {
+  background: var(--surface2);
+  border: 2px dashed var(--border);
+  border-radius: 16px;
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.upload-box:hover, .upload-box.drag { border-color: var(--accent); background: #fff4ec; }
+.upload-box.loaded { border-style: solid; border-color: var(--green); background: var(--green-bg); }
+.upload-icon { font-size: 2rem; margin-bottom: 8px; }
+.upload-label { font-size: 0.72rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.upload-status { font-size: 0.78rem; font-weight: 800; color: var(--green); }
+.upload-hint { font-size: 0.7rem; font-weight: 700; color: var(--muted); margin-top: 4px; }
+
+/* ─── Stats ──────────────────────────────────────── */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.stat-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 3px 0 var(--border);
+}
+.stat-label { font-size: 0.65rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.stat-value { font-family: var(--font-d); font-size: 1.8rem; color: var(--text); line-height: 1; }
+.stat-value.accent { color: var(--accent); }
+.stat-value.green  { color: var(--green); }
+.stat-value.pink   { color: var(--pink); }
+.stat-value.tiktok { color: #00c8a0; }
+
+/* ─── Table ──────────────────────────────────────── */
+.table-wrap { border: 2px solid var(--border); border-radius: 16px; overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+th { text-align: left; padding: 10px 16px; font-size: 0.68rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); background: var(--surface2); border-bottom: 2px solid var(--border); }
+td { padding: 10px 16px; border-bottom: 1px solid var(--border); font-weight: 700; color: var(--text); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+.badge { display: inline-block; font-size: 0.62rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 10px; border-radius: 50px; }
+.badge-yt  { background: #fff1f1; color: #ef4444; border: 2px solid #fca5a5; }
+.badge-tt  { background: #f0fffc; color: #00c8a0; border: 2px solid #6ee7d8; }
+
+/* ─── Patterns ───────────────────────────────────── */
+.patterns-box {
+  background: linear-gradient(135deg, #f5f0ff, #fdf4ff);
+  border: 2px solid #ddd6fe;
+  border-left: 4px solid var(--purple);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+.patterns-box ul { list-style: none; }
+.patterns-box li { font-size: 0.82rem; font-weight: 700; color: var(--text); padding: 5px 0; border-bottom: 1px solid #ede9fe; }
+.patterns-box li:last-child { border-bottom: none; }
+.patterns-box li::before { content: "✦ "; color: var(--purple); }
+
+/* ─── Notes ──────────────────────────────────────── */
+.notes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.note-card { background: var(--surface2); border: 2px solid var(--border); border-radius: 16px; padding: 18px; }
+.note-label { font-size: 0.7rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.note-card textarea {
+  width: 100%; background: var(--surface); border: 2px solid var(--border);
+  border-radius: 10px; color: var(--text); font-family: var(--font-b); font-size: 0.82rem;
+  font-weight: 700; padding: 10px 12px; resize: vertical; min-height: 90px;
+}
+.note-card textarea:focus { outline: none; border-color: var(--accent); }
+
+/* ─── Trends ─────────────────────────────────────── */
+.trends-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+.ctrl-select {
+  background: var(--surface); border: 2px solid var(--border); border-radius: 50px;
+  color: var(--text); font-family: var(--font-b); font-size: 0.82rem; font-weight: 800;
+  padding: 8px 16px; cursor: pointer; appearance: none; -webkit-appearance: none;
+}
+.ctrl-select:focus { outline: none; border-color: var(--accent); }
+.refresh-btn {
+  background: var(--surface); border: 2px solid var(--border); border-radius: 50px;
+  color: var(--muted); font-family: var(--font-b); font-size: 0.82rem; font-weight: 800;
+  padding: 8px 18px; cursor: pointer; box-shadow: 0 3px 0 var(--border);
+  transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+}
+.refresh-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+.refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.trend-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  padding: 18px 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 3px 0 var(--border);
+  transition: transform 0.15s;
+}
+.trend-card:hover { transform: translateY(-1px); }
+.trend-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.sub-chip { background: #fff1ec; border: 2px solid #fddcb5; color: var(--reddit); font-size: 0.65rem; font-weight: 900; padding: 2px 10px; border-radius: 50px; }
+.trend-score { font-family: var(--font-d); font-size: 0.9rem; color: var(--accent); }
+.trend-comments { font-size: 0.72rem; font-weight: 700; color: var(--muted); }
+.trend-flair { background: var(--surface2); border: 2px solid var(--border); color: var(--muted); font-size: 0.62rem; font-weight: 900; padding: 2px 10px; border-radius: 50px; }
+.trend-title { font-size: 0.9rem; font-weight: 800; color: var(--text); line-height: 1.4; margin-bottom: 12px; }
+.trend-title a { color: var(--text); text-decoration: none; }
+.trend-title a:hover { color: var(--accent); }
+.trend-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.action-btn {
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  border-radius: 50px;
+  color: var(--muted);
+  font-family: var(--font-b);
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.action-btn:hover { border-color: var(--accent); color: var(--accent); }
+.action-btn.twitter { border-color: #bfdbfe; color: var(--twitter); background: #eff6ff; }
+.action-btn.twitter:hover { background: #dbeafe; }
+.action-btn.copied { border-color: var(--green-border); color: var(--green); background: var(--green-bg); }
+.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.tweet-preview {
+  margin-top: 12px;
+  background: #eff6ff;
+  border: 2px solid #bfdbfe;
+  border-left: 4px solid var(--twitter);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+.tweet-preview-label { font-size: 0.65rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--twitter); margin-bottom: 6px; }
+.tweet-text { font-size: 0.85rem; font-weight: 700; color: var(--text); line-height: 1.5; white-space: pre-wrap; }
+.tweet-char { font-size: 0.68rem; font-weight: 700; color: var(--muted); margin-top: 6px; }
+.tweet-char.over { color: var(--red); }
+.tweet-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+/* ─── Community ──────────────────────────────────── */
+.community-layout { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; }
+.field-group { margin-bottom: 16px; }
+.field-label { font-size: 0.7rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; display: block; }
+.field-select, .field-input, .field-textarea {
+  width: 100%; background: var(--surface2); border: 2px solid var(--border);
+  border-radius: 12px; color: var(--text); font-family: var(--font-b);
+  font-size: 0.85rem; font-weight: 700; padding: 10px 14px;
+}
+.field-select:focus, .field-input:focus, .field-textarea:focus { outline: none; border-color: var(--accent); }
+.field-textarea { resize: vertical; min-height: 80px; }
+
+.topic-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.topic-chip {
+  background: var(--surface2); border: 2px solid var(--border); color: var(--muted);
+  font-family: var(--font-b); font-size: 0.72rem; font-weight: 800;
+  padding: 4px 12px; border-radius: 50px; cursor: pointer; transition: all 0.15s;
+}
+.topic-chip:hover { border-color: var(--accent); color: var(--accent); }
+.topic-chip.selected { background: #fff4ec; border-color: var(--accent); color: var(--accent); }
+
+.generate-btn {
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent), var(--pink));
+  border: none; border-radius: 14px; color: #fff;
+  font-family: var(--font-d); font-size: 1rem;
+  padding: 14px; cursor: pointer;
+  box-shadow: 0 4px 0 rgba(255,80,100,0.25);
+  transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+}
+.generate-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 0 rgba(255,80,100,0.25); }
+.generate-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.ai-panel {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  padding: 22px;
+  min-height: 220px;
+  box-shadow: 0 4px 0 var(--border);
+}
+.ai-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--border); }
+.ai-panel-label { font-size: 0.68rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.ai-thinking { font-size: 0.78rem; font-weight: 700; color: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:1} }
+
+.draft-card {
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.draft-label { font-size: 0.65rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.draft-text { font-size: 0.85rem; font-weight: 700; color: var(--text); line-height: 1.55; white-space: pre-wrap; }
+.draft-actions { display: flex; gap: 6px; margin-top: 10px; }
+
+.tip-box {
+  background: linear-gradient(135deg, #fff4ec, #fef3e8);
+  border: 2px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* ─── Empty state ─────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+/* ─── Responsive ─────────────────────────────────── */
+@media (max-width: 700px) {
+  .upload-row, .stats-row, .notes-grid, .community-layout { grid-template-columns: 1fr; }
+  nav { padding: 14px 18px; }
+  .page { padding: 24px 16px 48px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     LOGIN GATE
+════════════════════════════════════════ -->
+<div id="login-gate">
+  <div class="login-card">
+    <div class="login-logo">Streamer <span>Hub</span></div>
+    <div class="login-sub">PRIVATE ACCESS ONLY</div>
+    <label class="login-label" for="pw-input">PASSWORD</label>
+    <input type="password" id="pw-input" class="login-input" placeholder="••••••••••" autocomplete="current-password" />
+    <button class="login-btn" id="login-btn" onclick="attemptLogin()">Enter →</button>
+    <div class="login-error" id="login-error">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════ -->
+<div id="app">
+  <nav>
+    <a class="nav-logo" href="#">
+      Streamer Hub
+      <span class="nav-logo-badge">Private</span>
+    </a>
+    <div class="nav-right">
+      <a class="nav-link" href="https://dualpost.app" target="_blank">← DualPost</a>
+      <button class="logout-btn" onclick="logout()">Log out</button>
+    </div>
+  </nav>
+
+  <div class="page">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('performance', this)">📊 Performance</button>
+      <button class="tab-btn" onclick="switchTab('trends', this)">🔥 Trends</button>
+      <button class="tab-btn" onclick="switchTab('community', this)">💬 Community</button>
+    </div>
+
+    <!-- ── PERFORMANCE TAB ── -->
+    <div id="tab-performance">
+      <div class="section-title">Performance Tracker</div>
+      <div class="section-sub">Upload your platform CSVs to surface patterns and track what's working.</div>
+
+      <div class="upload-row">
+        <div class="upload-box" id="yt-upload-box" onclick="document.getElementById('yt-file').click()"
+          ondragover="event.preventDefault(); this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="handleDrop(event, 'yt')">
+          <input type="file" id="yt-file" accept=".csv" style="display:none" onchange="handleFile(this.files[0], 'yt')" />
+          <div class="upload-icon">📹</div>
+          <div class="upload-label">YouTube Studio CSV</div>
+          <div id="yt-status" class="upload-hint">Analytics → Content → Export</div>
+        </div>
+        <div class="upload-box" id="tt-upload-box" onclick="document.getElementById('tt-file').click()"
+          ondragover="event.preventDefault(); this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="handleDrop(event, 'tt')">
+          <input type="file" id="tt-file" accept=".csv" style="display:none" onchange="handleFile(this.files[0], 'tt')" />
+          <div class="upload-icon">🎵</div>
+          <div class="upload-label">TikTok Studio CSV</div>
+          <div id="tt-status" class="upload-hint">studio.tiktok.com → Analytics → Content</div>
+        </div>
+      </div>
+
+      <div id="perf-data" style="display:none">
+        <div class="stats-row" id="stats-row"></div>
+        <div class="section-title" style="font-size:1rem; margin-bottom:12px;">✦ Pattern Analysis</div>
+        <div class="patterns-box" id="patterns-box"></div>
+        <div class="section-title" style="font-size:1rem; margin:20px 0 12px;">Top Performers</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Title</th><th>Platform</th><th>Views</th><th>Likes</th></tr></thead>
+            <tbody id="top-table"></tbody>
+          </table>
+        </div>
+        <div class="section-title" style="font-size:1rem; margin:20px 0 12px;">Experiment Log</div>
+        <div class="notes-grid">
+          <div class="note-card">
+            <div class="note-label">What worked / what I tested</div>
+            <textarea id="note-what" placeholder="e.g. Tried adding killer name in title — helped on TikTok..."></textarea>
+          </div>
+          <div class="note-card">
+            <div class="note-label">What to try next</div>
+            <textarea id="note-next" placeholder="e.g. Test red overlay thumbnail vs clean screenshot..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div id="perf-empty" class="empty-state">
+        <div class="empty-icon">📂</div>
+        Upload your YouTube Studio and/or TikTok Studio CSVs above<br/>to unlock performance tracking and pattern analysis.
+      </div>
+    </div>
+
+    <!-- ── TRENDS TAB ── -->
+    <div id="tab-trends" style="display:none">
+      <div class="section-title">Community Trends</div>
+      <div class="section-sub">Live from Reddit — find what DBD players are talking about, then engage or draft a tweet.</div>
+
+      <div class="trends-controls">
+        <select class="ctrl-select" id="trend-sub" onchange="loadTrends()">
+          <option value="deadbydaylight">r/deadbydaylight</option>
+          <option value="PerkByDaylight">r/PerkByDaylight</option>
+        </select>
+        <select class="ctrl-select" id="trend-sort" onchange="loadTrends()">
+          <option value="hot">Hot</option>
+          <option value="new">New</option>
+          <option value="rising">Rising</option>
+          <option value="top">Top Today</option>
+        </select>
+        <button class="refresh-btn" id="refresh-btn" onclick="loadTrends()">↻ Refresh</button>
+        <span id="trend-count" style="font-size:0.75rem; font-weight:700; color:var(--muted);"></span>
+      </div>
+
+      <div id="trends-list"></div>
+    </div>
+
+    <!-- ── COMMUNITY TAB ── -->
+    <div id="tab-community" style="display:none">
+      <div class="section-title">Engagement Drafts</div>
+      <div class="section-sub">Pick a topic or use a Trend to draft authentic replies. Tip: click "Engage on Reddit" from the Trends tab to pre-fill.</div>
+
+      <div class="community-layout">
+        <div>
+          <div class="field-group">
+            <label class="field-label">Platform</label>
+            <select class="field-select" id="comm-platform">
+              <option>Reddit</option>
+              <option>Twitter/X</option>
+              <option>Discord</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Topic or thread to engage with</label>
+            <textarea class="field-textarea" id="comm-topic" rows="3" placeholder="Paste a thread title, or describe what's being discussed..."></textarea>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Quick topic seeds</label>
+            <div class="topic-chips" id="topic-chips"></div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Your take / context (optional)</label>
+            <textarea class="field-textarea" id="comm-context" rows="2" placeholder="e.g. I think tunneling is fine when survivors have BT..."></textarea>
+          </div>
+          <button class="generate-btn" id="generate-btn" onclick="generateDrafts()">Generate Drafts →</button>
+        </div>
+
+        <div class="ai-panel">
+          <div class="ai-panel-header">
+            <span class="ai-panel-label">Reply Drafts</span>
+            <span class="ai-thinking" id="ai-thinking" style="display:none">thinking...</span>
+          </div>
+          <div id="drafts-output">
+            <div class="empty-state">
+              <div class="empty-icon">✍️</div>
+              Pick a topic or paste a thread, then hit Generate Drafts.<br/><br/>
+              <span style="font-size:0.78rem">Use the Trends tab to find hot posts and click "Engage" to pre-fill.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /page -->
+</div><!-- /app -->
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIG — update WORKER_URL to your worker endpoint
+// ══════════════════════════════════════════════
+const WORKER_URL = 'https://withered-mud-dc44.portgamingsttv.workers.dev';
+
+// ══════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════
+const SESSION_KEY = 'sh_authed';
+
+async function attemptLogin() {
+  const pw = document.getElementById('pw-input').value.trim();
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  const input = document.getElementById('pw-input');
+  if (!pw) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Checking...';
+  err.classList.remove('visible');
+  input.classList.remove('error');
+
+  try {
+    const res = await fetch(WORKER_URL + '/verify-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      sessionStorage.setItem(SESSION_KEY, '1');
+      showApp();
+    } else {
+      input.classList.add('error');
+      err.classList.add('visible');
+      btn.disabled = false;
+      btn.textContent = 'Enter →';
+    }
+  } catch (e) {
+    err.textContent = 'Could not reach server — check your connection.';
+    err.classList.add('visible');
+    btn.disabled = false;
+    btn.textContent = 'Enter →';
+  }
+}
+
+document.getElementById('pw-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') attemptLogin();
+});
+
+function showApp() {
+  document.getElementById('login-gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  initApp();
+}
+
+function logout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
+
+// Check session on load
+if (sessionStorage.getItem(SESSION_KEY) === '1') showApp();
+
+// ══════════════════════════════════════════════
+// TAB SWITCHING
+// ══════════════════════════════════════════════
+function switchTab(name, btn) {
+  ['performance','trends','community'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (name === 'trends' && !trendsLoaded) loadTrends();
+}
+
+// ══════════════════════════════════════════════
+// PERFORMANCE — CSV PARSING
+// ══════════════════════════════════════════════
+let ytVideos = [], ttVideos = [];
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  return lines.slice(1).map(line => {
+    const vals = [];
+    let cur = '', inQ = false;
+    for (let ch of line) {
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    vals.push(cur.trim());
+    const row = {};
+    headers.forEach((h, i) => { row[h] = (vals[i] || '').replace(/^"|"$/g, ''); });
+    return row;
+  });
+}
+
+function normalizeYT(rows) {
+  return rows.map(r => ({
+    platform: 'YouTube',
+    title: r['Video title'] || r['Title'] || r['title'] || 'Unknown',
+    views: parseInt(r['Views'] || r['views'] || '0') || 0,
+    likes: parseInt(r['Likes'] || r['likes'] || '0') || 0,
+    date: r['Published date'] || r['Date'] || r['date'] || '',
+  })).filter(r => r.views > 0 || r.title !== 'Unknown');
+}
+
+function normalizeTT(rows) {
+  return rows.map(r => ({
+    platform: 'TikTok',
+    title: r['Video caption'] || r['Caption'] || r['Title'] || r['title'] || 'Unknown',
+    views: parseInt(r['Video views'] || r['Views'] || r['views'] || '0') || 0,
+    likes: parseInt(r['Likes'] || r['likes'] || '0') || 0,
+    date: r['Date'] || r['date'] || r['Time'] || '',
+  })).filter(r => r.views > 0);
+}
+
+function handleDrop(e, type) {
+  e.preventDefault();
+  document.getElementById(type + '-upload-box').classList.remove('drag');
+  handleFile(e.dataTransfer.files[0], type);
+}
+
+function handleFile(file, type) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const rows = parseCSV(e.target.result);
+    if (type === 'yt') {
+      ytVideos = normalizeYT(rows);
+      document.getElementById('yt-upload-box').classList.add('loaded');
+      document.getElementById('yt-status').innerHTML = '<span class="upload-status">✓ ' + ytVideos.length + ' videos loaded</span>';
+    } else {
+      ttVideos = normalizeTT(rows);
+      document.getElementById('tt-upload-box').classList.add('loaded');
+      document.getElementById('tt-status').innerHTML = '<span class="upload-status">✓ ' + ttVideos.length + ' videos loaded</span>';
+    }
+    renderPerformance();
+  };
+  reader.readAsText(file);
+}
+
+function renderPerformance() {
+  const all = [...ytVideos, ...ttVideos];
+  if (!all.length) return;
+
+  document.getElementById('perf-data').style.display = 'block';
+  document.getElementById('perf-empty').style.display = 'none';
+
+  const avg = v => v.length ? Math.round(v.reduce((s,x) => s+x.views,0)/v.length) : 0;
+  const ytAvg = avg(ytVideos), ttAvg = avg(ttVideos), allAvg = avg(all);
+
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Videos</div><div class="stat-value">${all.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Views</div><div class="stat-value accent">${allAvg.toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-label">YT Short Avg</div><div class="stat-value pink">${ytAvg.toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-label">TikTok Avg</div><div class="stat-value tiktok">${ttAvg.toLocaleString()}</div></div>
+  `;
+
+  const insights = deriveInsights(all);
+  document.getElementById('patterns-box').innerHTML = '<ul>' + insights.map(i => `<li>${i}</li>`).join('') + '</ul>';
+
+  const top = [...all].sort((a,b) => b.views-a.views).slice(0,10);
+  document.getElementById('top-table').innerHTML = top.map((v,i) => `
+    <tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td style="max-width:300px">${v.title}</td>
+      <td><span class="badge ${v.platform==='YouTube'?'badge-yt':'badge-tt'}">${v.platform==='YouTube'?'YT':'TT'}</span></td>
+      <td>${v.views.toLocaleString()}</td>
+      <td>${v.likes.toLocaleString()}</td>
+    </tr>
+  `).join('');
+}
+
+function deriveInsights(videos) {
+  if (videos.length < 5) return ['Upload at least 5 videos per platform to unlock pattern analysis.'];
+  const insights = [];
+  const sorted = [...videos].sort((a,b) => b.views-a.views);
+  const top = sorted.slice(0, Math.ceil(sorted.length*0.25));
+  const bot = sorted.slice(Math.floor(sorted.length*0.75));
+  const topLen = top.reduce((s,v)=>s+v.title.length,0)/top.length;
+  const botLen = bot.reduce((s,v)=>s+v.title.length,0)/bot.length;
+  if (topLen < botLen-5) insights.push(`Top performers have shorter titles on average (${Math.round(topLen)} vs ${Math.round(botLen)} chars) — punchy outperforms descriptive`);
+  else if (topLen > botLen+5) insights.push(`Top performers have longer, more descriptive titles (${Math.round(topLen)} vs ${Math.round(botLen)} chars)`);
+  if (ytVideos.length && ttVideos.length) {
+    const ytA = ytVideos.reduce((s,v)=>s+v.views,0)/ytVideos.length;
+    const ttA = ttVideos.reduce((s,v)=>s+v.views,0)/ttVideos.length;
+    insights.push(`${ytA>ttA?'YouTube Shorts':'TikTok'} is averaging higher views right now — push content there first`);
+  }
+  const topAvg = top.reduce((s,v)=>s+v.views,0)/top.length;
+  const botAvg = bot.reduce((s,v)=>s+v.views,0)/bot.length;
+  if (topAvg > botAvg*3) insights.push(`Your top 25% get ${Math.round(topAvg/botAvg)}× more views than the bottom 25% — high variance, keep testing hooks`);
+  const words = top.flatMap(v=>v.title.toLowerCase().split(/\s+/)).filter(w=>w.length>4);
+  const freq = {};
+  words.forEach(w => { freq[w]=(freq[w]||0)+1; });
+  const top1 = Object.entries(freq).sort((a,b)=>b[1]-a[1])[0];
+  if (top1 && top1[1]>=2) insights.push(`"${top1[0]}" appears in ${top1[1]} of your top titles — may be worth leaning into`);
+  return insights.length ? insights : ['No strong patterns yet — keep uploading consistently.'];
+}
+
+// ══════════════════════════════════════════════
+// TRENDS — Reddit public JSON
+// ══════════════════════════════════════════════
+let trendsLoaded = false;
+let tweetDrafts = {};
+
+async function loadTrends() {
+  trendsLoaded = true;
+  const sub = document.getElementById('trend-sub').value;
+  const sort = document.getElementById('trend-sort').value;
+  const btn = document.getElementById('refresh-btn');
+  const list = document.getElementById('trends-list');
+  btn.disabled = true;
+  btn.textContent = 'Loading...';
+  list.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div>Fetching from Reddit...</div>';
+  document.getElementById('trend-count').textContent = '';
+
+  try {
+    const res = await fetch(`https://www.reddit.com/r/${sub}/${sort}.json?limit=20&t=day`, {
+      headers: { 'User-Agent': 'StreamerHub/1.0' }
+    });
+    if (!res.ok) throw new Error('fetch failed');
+    const data = await res.json();
+    const posts = data.data.children.map(c => ({
+      id: c.data.id,
+      title: c.data.title,
+      score: c.data.score,
+      comments: c.data.num_comments,
+      url: 'https://reddit.com' + c.data.permalink,
+      flair: c.data.link_flair_text || null,
+      sub: sub,
+    }));
+    document.getElementById('trend-count').textContent = posts.length + ' posts';
+    list.innerHTML = posts.map(p => renderTrendCard(p)).join('');
+  } catch (e) {
+    list.innerHTML = '<div class="empty-state" style="color:var(--red)">Couldn\'t load Reddit — try refreshing in a moment.</div>';
+  }
+  btn.disabled = false;
+  btn.textContent = '↻ Refresh';
+}
+
+function renderTrendCard(p) {
+  return `<div class="trend-card" id="trend-${p.id}">
+    <div class="trend-meta">
+      <span class="sub-chip">r/${p.sub}</span>
+      <span class="trend-score">↑ ${p.score.toLocaleString()}</span>
+      <span class="trend-comments">💬 ${p.comments}</span>
+      ${p.flair ? `<span class="trend-flair">${p.flair}</span>` : ''}
+    </div>
+    <div class="trend-title"><a href="${p.url}" target="_blank" rel="noopener">${p.title}</a></div>
+    <div class="trend-actions">
+      <button class="action-btn" onclick="sendToEngage(${JSON.stringify(p.title).replace(/'/g,"&#39;")})">✍ Engage on Reddit</button>
+      <button class="action-btn twitter" id="tweet-btn-${p.id}" onclick="draftTweet(${JSON.stringify(p).replace(/'/g,"&#39;")})">🐦 Draft Tweet</button>
+    </div>
+    <div id="tweet-preview-${p.id}" style="display:none"></div>
+  </div>`;
+}
+
+function sendToEngage(title) {
+  document.getElementById('comm-topic').value = title;
+  document.getElementById('comm-platform').value = 'Reddit';
+  switchTab('community', document.querySelectorAll('.tab-btn')[2]);
+}
+
+async function draftTweet(post) {
+  const btn = document.getElementById('tweet-btn-' + post.id);
+  const preview = document.getElementById('tweet-preview-' + post.id);
+
+  if (tweetDrafts[post.id]) {
+    preview.style.display = preview.style.display === 'none' ? 'block' : 'none';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Drafting...';
+
+  try {
+    const prompt = `You are helping a Dead by Daylight content creator (plays both killer and survivor, chill variety vibe) write a genuine tweet about a trending Reddit discussion.
+
+Reddit post: "${post.title}"
+Subreddit: r/${post.sub}
+Score: ${post.score} upvotes, ${post.comments} comments
+
+Write ONE tweet (max 240 chars) that:
+- Shares a genuine hot take or reaction
+- Sounds like a real DBD player, not a marketer
+- Does NOT mention their stream or channel
+- Is punchy enough to spark replies
+- May use 1-2 natural hashtags (#DBD or #DeadByDaylight)
+
+Respond ONLY with valid JSON, no markdown:
+{"tweet": "tweet text here"}`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    const text = data.content.map(c => c.text || '').join('').replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(text);
+    tweetDrafts[post.id] = parsed.tweet;
+
+    const charClass = parsed.tweet.length > 280 ? 'over' : '';
+    preview.innerHTML = `
+      <div class="tweet-preview">
+        <div class="tweet-preview-label">🐦 Twitter/X Draft</div>
+        <div class="tweet-text" id="tweet-text-${post.id}">${parsed.tweet}</div>
+        <div class="tweet-char ${charClass}">${parsed.tweet.length}/280 chars</div>
+        <div class="tweet-actions">
+          <button class="action-btn twitter" id="tweet-copy-${post.id}" onclick="copyTweet('${post.id}')">Copy</button>
+          <button class="action-btn" onclick="redraftTweet(${JSON.stringify(post).replace(/'/g,"&#39;")})">↻ Regenerate</button>
+        </div>
+      </div>`;
+    preview.style.display = 'block';
+  } catch(e) {
+    preview.innerHTML = '<div style="color:var(--red);font-size:0.8rem;font-weight:700;margin-top:10px;">Error generating tweet — try again.</div>';
+    preview.style.display = 'block';
+  }
+  btn.disabled = false;
+  btn.textContent = '🐦 Hide Tweet';
+}
+
+function redraftTweet(post) {
+  delete tweetDrafts[post.id];
+  document.getElementById('tweet-preview-' + post.id).style.display = 'none';
+  document.getElementById('tweet-btn-' + post.id).textContent = '🐦 Draft Tweet';
+  draftTweet(post);
+}
+
+function copyTweet(id) {
+  const text = document.getElementById('tweet-text-' + id).textContent;
+  navigator.clipboard.writeText(text);
+  const btn = document.getElementById('tweet-copy-' + id);
+  btn.textContent = '✓ Copied';
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+}
+
+// ══════════════════════════════════════════════
+// COMMUNITY — AI draft generation
+// ══════════════════════════════════════════════
+const DBD_TOPICS = [
+  'Best killer perks this patch','Survivor meta discussion','Tunneling debate',
+  'Killer tier list','Underrated perks','Beginner tips',
+  'New chapter reaction','Balance changes','Killer vs survivor mains','Chase psychology',
+];
+
+function initTopicChips() {
+  const container = document.getElementById('topic-chips');
+  container.innerHTML = DBD_TOPICS.map(t =>
+    `<button class="topic-chip" onclick="selectTopic(this, '${t.replace(/'/g,"&#39;")}')">${t}</button>`
+  ).join('');
+}
+
+function selectTopic(el, topic) {
+  document.querySelectorAll('.topic-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('comm-topic').value = topic;
+}
+
+async function generateDrafts() {
+  const topic = document.getElementById('comm-topic').value.trim();
+  const platform = document.getElementById('comm-platform').value;
+  const context = document.getElementById('comm-context').value.trim();
+  if (!topic) return;
+
+  const btn = document.getElementById('generate-btn');
+  const thinking = document.getElementById('ai-thinking');
+  const output = document.getElementById('drafts-output');
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+  thinking.style.display = 'inline';
+  output.innerHTML = '<div class="empty-state">Crafting replies in your voice...</div>';
+
+  try {
+    const prompt = `You are helping a Dead by Daylight content creator engage authentically in DBD communities.
+
+Creator profile:
+- Plays both killer and survivor equally
+- Vibe: chill, variety-focused
+- Goal: genuine community presence, not self-promotion
+- Platform: ${platform}
+${context ? '- Their take: ' + context : ''}
+
+Topic: "${topic}"
+
+Write 2 distinct reply drafts for ${platform}:
+- Sound like a real DBD player
+- Be genuinely helpful or spark discussion
+- Do NOT mention their stream unless completely natural
+- Reddit: 2-4 sentences, analytical. Twitter/X: 1-2 sentences, punchy. Discord: casual, 1-3 sentences.
+
+Respond ONLY with valid JSON, no markdown:
+{"drafts":[{"label":"short angle label","text":"reply text"},{"label":"short angle label","text":"reply text"}],"tip":"one sentence on why this topic is worth engaging with"}`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    const text = data.content.map(c => c.text || '').join('').replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(text);
+
+    let html = '';
+    if (parsed.tip) html += `<div class="tip-box">💡 ${parsed.tip}</div>`;
+    parsed.drafts.forEach((d, i) => {
+      html += `<div class="draft-card">
+        <div class="draft-label">${platform} · ${d.label}</div>
+        <div class="draft-text" id="draft-text-${i}">${d.text}</div>
+        <div class="draft-actions">
+          <button class="action-btn" id="draft-copy-${i}" onclick="copyDraft(${i})">Copy</button>
+        </div>
+      </div>`;
+    });
+    output.innerHTML = html;
+  } catch(e) {
+    output.innerHTML = '<div class="empty-state" style="color:var(--red)">Something went wrong — check your connection and try again.</div>';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Generate Drafts →';
+  thinking.style.display = 'none';
+}
+
+function copyDraft(i) {
+  const text = document.getElementById('draft-text-' + i).textContent;
+  navigator.clipboard.writeText(text);
+  const btn = document.getElementById('draft-copy-' + i);
+  btn.textContent = '✓ Copied';
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+function initApp() {
+  initTopicChips();
+}
+</script>
+</body>
+</html>
