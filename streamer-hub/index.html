@@ -471,7 +471,7 @@ function parseRedditJSON() {
     }
     list.innerHTML = all.map(p => {
       const pJson = JSON.stringify(JSON.stringify(p));
-      return '<div class="trend-card" id="tcard-' + p.id + '" onclick='selectPost(' + pJson + ')'>' +
+      return '<div class="trend-card" id="tcard-' + p.id + '" onclick=\'selectPost(' + pJson + ')\'>' +
         '<div class="trend-meta">' +
         '<span class="sub-chip">r/' + p.sub + '</span>' +
         '<span class="trend-score">↑ ' + p.score.toLocaleString() + '</span>' +
@@ -485,7 +485,6 @@ function parseRedditJSON() {
   } catch(e) {
     list.innerHTML = '<div class="empty-state" style="color:var(--red)">Invalid JSON — make sure you copied the full response.</div>';
   }
-}
 }
 
 function selectPost(jsonStr) {
@@ -502,15 +501,10 @@ async function generatePostIdeas(post) {
   const thinking = document.getElementById('ideas-thinking');
   thinking.style.display = 'inline';
 
-  output.innerHTML = `
-    <div class="selected-topic-box">
-      <strong>Topic</strong>${post.title}
-    </div>
-    <div class="context-row">
-      <textarea class="context-input" id="post-context" placeholder="Your angle or take (optional) — leave blank to let AI pick the best one..." rows="2"></textarea>
-    </div>
-    <button class="generate-btn" onclick="regenerateWithContext()">✨ Generate Post Ideas</button>
-    <div id="post-ideas-list"><div class="empty-state" style="padding:20px">Generating ideas...</div></div>`;
+  output.innerHTML = '<div class="selected-topic-box"><strong>Topic</strong>' + post.title + '</div>' +
+    '<div class="context-row"><textarea class="context-input" id="post-context" placeholder="Your angle or take (optional)..." rows="2"></textarea></div>' +
+    '<button class="generate-btn" onclick="regenerateWithContext()">✨ Generate Post Ideas</button>' +
+    '<div id="post-ideas-list"><div class="empty-state" style="padding:20px">Generating ideas...</div></div>';
 
   thinking.style.display = 'none';
   await fetchPostIdeas(post, '');
