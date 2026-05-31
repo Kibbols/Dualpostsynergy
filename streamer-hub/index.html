@@ -388,7 +388,7 @@ tr:hover td { background:var(--surface2); }
         <p style="font-size:0.72rem;font-weight:700;color:var(--muted);margin-bottom:10px;">Tags used to personalize recommendations. Auto-filled from your Twitch history. Add your own — game genres, styles, moods.</p>
         <div class="tag-input-area" id="interest-tag-area" onclick="document.getElementById('interest-tag-input').focus()">
           <div id="interest-tags-container"></div>
-          <input type="text" id="interest-tag-input" class="tag-bare-input" placeholder="Type a tag and press Enter..." onkeydown="handleInterestTagInput(event)" />
+          <input type="text" id="interest-tag-input" class="tag-bare-input" placeholder="Type a tag and press Enter..." />
         </div>
         <div class="note-label" style="margin-bottom:8px;margin-top:16px;">Focus on Twitch Categories (optional)</div>
         <p style="font-size:0.72rem;font-weight:700;color:var(--muted);margin-bottom:10px;">Specific categories for raid targets. Leave blank to use your recent Twitch categories.</p>
@@ -499,6 +499,22 @@ function showApp() {
   document.getElementById('app').style.display = 'block';
   renderInterestTags();
   renderExclusionLog();
+  // Attach tag input listener
+  var tagInput = document.getElementById('interest-tag-input');
+  if (tagInput) {
+    tagInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        e.stopPropagation();
+        var val = this.value.trim().replace(/,$/, '');
+        if (!val) return;
+        var tags = getInterestTags();
+        if (!tags.includes(val)) { tags.push(val); saveInterestTags(tags); }
+        this.value = '';
+        renderInterestTags();
+      }
+    });
+  }
 }
 function logout() { sessionStorage.removeItem(SESSION_KEY); location.reload(); }
 // ── Interest Tags & Exclusions ──────────────────────────────
@@ -919,69 +935,58 @@ async function generatePotential() {
       }
     } catch(e) {}
 
-    // Now use Gemini to analyze and rank everything
-    const statsContext = twitchStats
-      ? `My stats: ${twitchStats.avgViewers} avg viewers, ${twitchStats.maxViewers} peak, ${twitchStats.avgChatters} avg chatters, ${twitchStats.streamDays} stream days analyzed.`
-      : `My estimated avg viewers: ${myAvgViewers}`;
+    // ── Render raid targets directly from API data (no AI) ──────────
+    const renderRaid = (s) =>
+      '<div class="raid-card">' +
+        '<div class="raid-info">' +
+          '<div class="raid-name">' + s.user_name + '</div>' +
+          '<div class="raid-meta">' + s.viewer_count + ' viewers · ' + s.category + '</div>' +
+        '</div>' +
+        '<a href="https://twitch.tv/' + s.user_login + '" target="_blank" class="raid-link">Visit →</a>' +
+      '</div>';
 
-    const peerSample = peerStreams.slice(0, 20).map(s => s.user_name + ' (' + s.viewer_count + ' viewers, playing ' + s.category + ')').join(', ');
-    const stretchSample = stretchStreams.slice(0, 15).map(s => s.user_name + ' (' + s.viewer_count + ' viewers, playing ' + s.category + ')').join(', ');
-    const catSummary = categoryData.map(c => c.name + ': ' + c.liveStreamers + ' live streamers, ' + c.totalViewers + ' total viewers, avg ' + c.avgViewersPerStreamer + ' viewers/streamer' + (c.isAdjacent ? ' (adjacent category)' : '')).join('\n');
+    // Sort peer by closest to our avg (most natural raid), stretch by lowest first
+    const sortedPeer = peerStreams.slice().sort((a, b) =>
+      Math.abs(a.viewer_count - myAvgViewers) - Math.abs(b.viewer_count - myAvgViewers)
+    ).slice(0, 8);
+    const sortedStretch = stretchStreams.slice().sort((a, b) => a.viewer_count - b.viewer_count).slice(0, 5);
+
+    document.getElementById('raid-peer-list').innerHTML = sortedPeer.length
+      ? sortedPeer.map(renderRaid).join('')
+      : '<div class="empty-state" style="padding:16px">No peer tier streamers live right now in these categories. Try refreshing later or add more categories.</div>';
+
+    document.getElementById('raid-stretch-list').innerHTML = sortedStretch.length
+      ? sortedStretch.map(renderRaid).join('')
+      : '<div class="empty-state" style="padding:16px">No stretch tier streamers found right now.</div>';
+
+    // ── Use Gemini only for category recommendations ──────────────
+    const statsContext = twitchStats
+      ? 'My stats: ' + twitchStats.avgViewers + ' avg viewers, ' + twitchStats.maxViewers + ' peak, ' + twitchStats.streamDays + ' stream days.'
+      : 'My estimated avg viewers: ' + myAvgViewers;
+
+    const catSummary = categoryData.map(c =>
+      c.name + ': ' + c.liveStreamers + ' live streamers, ' + c.totalViewers + ' total viewers, avg ' + c.avgViewersPerStreamer + ' per streamer' + (c.isAdjacent ? ' (adjacent)' : '')
+    ).join('\n');
 
     const interestTags = getInterestTags();
     const excludedCats = getExcludedCats();
 
-    const prompt = `You are a Twitch growth strategist analyzing data for a small streamer. They play Dead by Daylight and similar games. Their vibe is chill and variety-focused.
-Their interest/playstyle tags: ${interestTags.length ? interestTags.join(', ') : 'horror, multiplayer, variety'}
-NEVER recommend these excluded categories: ${excludedCats.length ? excludedCats.join(', ') : 'none'}
-
-${statsContext}
-Peer tier range: ${peerMin}-${peerMax} viewers
-Stretch tier range: ${stretchMin}-${stretchMax} viewers
-
-LIVE PEER TIER STREAMERS (similar size):
-${peerSample || 'None found'}
-
-LIVE STRETCH TIER STREAMERS (slightly bigger):
-${stretchSample || 'None found'}
-
-CATEGORY DATA:
-${catSummary || 'No data'}
-
-Tasks:
-1. Pick the top 5 PEER tier raid targets and top 3 STRETCH tier raid targets. For each give: streamer name, viewer count, and 1 sentence on why they're a good raid target (community fit, mutual growth potential, etc). Do NOT just pick the highest viewer counts.
-
-2. Recommend 4-5 categories with genuine growth potential for this streamer. Focus on: good viewer-to-streamer ratio (not too saturated), categories where a small streamer can get discovered, ideally adjacent to DBD or horror/co-op games. For each give: category name, why it's a good opportunity, and what type of content would work.
-
-Respond ONLY with valid JSON, no markdown:
-{
-  "peer_raids": [{"name":"","viewers":0,"why":""}],
-  "stretch_raids": [{"name":"","viewers":0,"why":""}],
-  "categories": [{"name":"","why":"","content_tip":""}]
-}`;
+    const catPrompt = 'You are a Twitch growth strategist. Recommend 5 Twitch categories with genuine growth potential for a small streamer.' +
+      ' Their interest tags: ' + (interestTags.length ? interestTags.join(', ') : 'horror, multiplayer, variety') + '.' +
+      ' NEVER recommend: ' + (excludedCats.length ? excludedCats.join(', ') : 'none') + '.' +
+      ' ' + statsContext +
+      '\n\nCATEGORY SATURATION DATA:\n' + (catSummary || 'No data') +
+      '\n\nFocus on: good viewer-to-streamer ratio, discoverability for small streamers, adjacent to their interests.' +
+      ' Respond ONLY with valid JSON, no markdown: {"categories":[{"name":"","why":"","content_tip":""}]}';
 
     const geminiRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + geminiKey, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      body: JSON.stringify({ contents: [{ parts: [{ text: catPrompt }] }] })
     });
     const geminiData = await geminiRes.json();
     if (geminiData.error) throw new Error(geminiData.error.message);
     const text = geminiData.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
     const result = JSON.parse(text);
-
-    // Render raid targets
-    const renderRaid = (r) => `
-      <div class="raid-card">
-        <div class="raid-info">
-          <div class="raid-name">${r.name}</div>
-          <div class="raid-meta">${r.viewers} viewers live now</div>
-        </div>
-        <a href="https://twitch.tv/${r.name.toLowerCase()}" target="_blank" class="raid-link">Visit →</a>
-        <div class="raid-why">${r.why}</div>
-      </div>`;
-
-    document.getElementById('raid-peer-list').innerHTML = (result.peer_raids || []).map(renderRaid).join('') || '<div class="empty-state" style="padding:16px">No peer tier streamers live right now in these categories.</div>';
-    document.getElementById('raid-stretch-list').innerHTML = (result.stretch_raids || []).map(renderRaid).join('') || '<div class="empty-state" style="padding:16px">No stretch tier streamers found.</div>';
 
     // Render category recommendations
     renderCategoryCards(result.categories || []);
