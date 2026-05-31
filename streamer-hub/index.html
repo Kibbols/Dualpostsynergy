@@ -190,9 +190,11 @@ tr:hover td { background:var(--surface2); }
   <div class="login-card">
     <div class="login-logo">Streamer <span>Hub</span></div>
     <div class="login-sub">PRIVATE ACCESS ONLY</div>
-    <label class="login-label" for="pw-input">PASSWORD</label>
-    <input type="password" id="pw-input" class="login-input" placeholder="••••••••••" autocomplete="current-password" />
-    <button class="login-btn" id="login-btn" onclick="attemptLogin()">Enter →</button>
+    <form id="login-form" action="#" onsubmit="attemptLogin(); return false;" autocomplete="on">
+      <label class="login-label" for="pw-input">PASSWORD</label>
+      <input type="password" id="pw-input" name="password" class="login-input" placeholder="••••••••••" autocomplete="current-password" />
+      <button type="submit" class="login-btn" id="login-btn">Enter →</button>
+    </form>
     <div class="login-error" id="login-error">Incorrect password. Try again.</div>
   </div>
 </div>
@@ -324,10 +326,11 @@ async function attemptLogin() {
     err.classList.add('visible'); btn.disabled = false; btn.textContent = 'Enter →';
   }
 }
-document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') attemptLogin(); });
 function showApp() { document.getElementById('login-gate').style.display = 'none'; document.getElementById('app').style.display = 'block'; }
 function logout() { sessionStorage.removeItem(SESSION_KEY); location.reload(); }
-if (sessionStorage.getItem(SESSION_KEY) === '1') showApp();
+document.addEventListener('DOMContentLoaded', () => {
+  if (sessionStorage.getItem(SESSION_KEY) === '1') showApp();
+});
 
 // ── Tabs ──────────────────────────────────────────
 let trendsLoaded = false;
