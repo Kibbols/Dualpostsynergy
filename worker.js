@@ -10,6 +10,13 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
     if (request.method !== "POST") return new Response("Method not allowed", { status: 405, headers: corsHeaders });
 
+    // Allow requests from dualpost.app (covers all subpaths including streamer-hub)
+    const reqOrigin = request.headers.get("origin") || "";
+    const allowedOrigin = env.ALLOWED_ORIGIN || "https://dualpost.app";
+    if (reqOrigin && reqOrigin !== allowedOrigin) {
+      return new Response("Host not in allowlist", { status: 403, headers: corsHeaders });
+    }
+
     let body;
     try { body = await request.json(); } catch (e) { return new Response("Invalid JSON", { status: 400, headers: corsHeaders }); }
 
