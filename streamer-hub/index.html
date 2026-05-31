@@ -211,6 +211,7 @@ tr:hover td { background:var(--surface2); }
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('performance',this)">📊 Performance</button>
       <button class="tab-btn" onclick="switchTab('trends',this)">🔥 Trends & Posts</button>
+      <button class="tab-btn" onclick="switchTab('settings',this)">⚙️ Settings</button>
     </div>
 
     <!-- PERFORMANCE TAB -->
@@ -347,12 +348,20 @@ document.getElementById('pw-input').addEventListener('keydown', function(e) {
 // ── Tabs ──────────────────────────────────────────
 let trendsLoaded = false;
 function switchTab(name, btn) {
-  ['performance','trends'].forEach(t => {
+  ['performance','trends','settings'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
   });
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   trendsLoaded = true;
+  if (name === 'settings') {
+    const existing = getGeminiKey();
+    if (existing) {
+      document.getElementById('key-status').style.display = 'block';
+      document.getElementById('key-status').style.color = 'var(--green)';
+      document.getElementById('key-status').textContent = '✓ API key is saved.';
+    }
+  }
 }
 
 // ── Performance ───────────────────────────────────
@@ -361,17 +370,31 @@ let ytVideos = [], ttVideos = [];
 function parseCSV(text) {
   const lines = text.trim().split('\n');
   if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,''));
-  return lines.slice(1).map(line => {
-    const vals = []; let cur = '', inQ = false;
-    for (let ch of line) {
-      if (ch === '"') { inQ = !inQ; }
-      else if (ch === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
-      else cur += ch;
+
+  function parseLine(line) {
+    const vals = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (ch === ',' && !inQ) {
+        vals.push(cur.trim());
+        cur = '';
+      } else {
+        cur += ch;
+      }
     }
     vals.push(cur.trim());
+    return vals;
+  }
+
+  const headers = parseLine(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = parseLine(line);
     const row = {};
-    headers.forEach((h,i) => { row[h] = (vals[i]||'').replace(/^"|"$/g,''); });
+    headers.forEach((h,i) => { row[h] = (vals[i]||'').replace(/^"|"$/g,'').trim(); });
     return row;
   });
 }
@@ -380,14 +403,15 @@ function normalizeYT(rows) {
     platform:'YouTube', title:r['Video title']||r['Title']||r['title']||'Unknown',
     views:parseInt(r['Views']||r['views']||'0')||0,
     likes:parseInt(r['Likes']||r['likes']||'0')||0,
-  })).filter(r => r.views > 0);
+  })).filter(r => r.views > 0 && r.title !== 'Unknown');
 }
 function normalizeTT(rows) {
   return rows.map(r => ({
-    platform:'TikTok', title:r['Video caption']||r['Caption']||r['Title']||r['title']||'Unknown',
-    views:parseInt(r['Video views']||r['Views']||r['views']||'0')||0,
-    likes:parseInt(r['Likes']||r['likes']||'0')||0,
-  })).filter(r => r.views > 0);
+    platform:'TikTok',
+    title:r['Video title']||r['Video caption']||r['Caption']||r['Title']||r['title']||'Unknown',
+    views:parseInt(r['Total views']||r['Video views']||r['Views']||r['views']||'0')||0,
+    likes:parseInt(r['Total likes']||r['Likes']||r['likes']||'0')||0,
+  })).filter(r => r.views > 0 && r.title !== 'Unknown');
 }
 function handleDrop(e, type) { e.preventDefault(); document.getElementById(type+'-upload-box').classList.remove('drag'); handleFile(e.dataTransfer.files[0], type); }
 function handleFile(file, type) {
@@ -412,38 +436,85 @@ function renderPerformance() {
     <div class="stat-card"><div class="stat-label">Avg Views</div><div class="stat-value accent">${avg(all).toLocaleString()}</div></div>
     <div class="stat-card"><div class="stat-label">YT Short Avg</div><div class="stat-value pink">${avg(ytVideos).toLocaleString()}</div></div>
     <div class="stat-card"><div class="stat-label">TikTok Avg</div><div class="stat-value tiktok">${avg(ttVideos).toLocaleString()}</div></div>`;
-  const insights = deriveInsights(all);
-  document.getElementById('patterns-box').innerHTML = '<ul>' + insights.map(i=>`<li>${i}</li>`).join('') + '</ul>';
+  analyzeWithGemini(all);
   const top = [...all].sort((a,b)=>b.views-a.views).slice(0,10);
   document.getElementById('top-table').innerHTML = top.map((v,i)=>`
     <tr><td style="color:var(--muted)">${i+1}</td><td style="max-width:280px">${v.title}</td>
     <td><span class="badge ${v.platform==='YouTube'?'badge-yt':'badge-tt'}">${v.platform==='YouTube'?'YT':'TT'}</span></td>
     <td>${v.views.toLocaleString()}</td><td>${v.likes.toLocaleString()}</td></tr>`).join('');
 }
-function deriveInsights(videos) {
-  if (videos.length < 5) return ['Upload at least 5 videos per platform to unlock pattern analysis.'];
-  const insights = [];
-  const sorted = [...videos].sort((a,b)=>b.views-a.views);
-  const top = sorted.slice(0,Math.ceil(sorted.length*0.25));
-  const bot = sorted.slice(Math.floor(sorted.length*0.75));
-  const topLen = top.reduce((s,v)=>s+v.title.length,0)/top.length;
-  const botLen = bot.reduce((s,v)=>s+v.title.length,0)/bot.length;
-  if (topLen < botLen-5) insights.push(`Top performers have shorter titles (${Math.round(topLen)} vs ${Math.round(botLen)} chars) — punchy outperforms descriptive`);
-  else if (topLen > botLen+5) insights.push(`Top performers have longer, descriptive titles (${Math.round(topLen)} vs ${Math.round(botLen)} chars)`);
-  if (ytVideos.length && ttVideos.length) {
-    const ytA = ytVideos.reduce((s,v)=>s+v.views,0)/ytVideos.length;
-    const ttA = ttVideos.reduce((s,v)=>s+v.views,0)/ttVideos.length;
-    insights.push(`${ytA>ttA?'YouTube Shorts':'TikTok'} is averaging higher views right now — push content there first`);
+// ── Gemini API key management ──────────────────────
+function getGeminiKey() { return localStorage.getItem('sh_gemini_key') || ''; }
+function saveGeminiKey(key) { localStorage.setItem('sh_gemini_key', key); }
+
+function saveGeminiKeyFromInput() {
+  const val = document.getElementById('gemini-key-input').value.trim();
+  if (!val) return;
+  saveGeminiKey(val);
+  document.getElementById('gemini-key-input').value = '';
+  const status = document.getElementById('key-status');
+  status.style.display = 'block';
+  status.style.color = 'var(--green)';
+  status.textContent = '✓ Key saved. Upload your CSVs in Performance to run analysis.';
+}
+function clearGeminiKey() {
+  localStorage.removeItem('sh_gemini_key');
+  document.getElementById('gemini-key-input').value = '';
+  const status = document.getElementById('key-status');
+  status.style.display = 'block';
+  status.style.color = 'var(--muted)';
+  status.textContent = 'Key cleared.';
+}
+
+async function analyzeWithGemini(videos) {
+  const key = getGeminiKey();
+  const patternsBox = document.getElementById('patterns-box');
+
+  if (!key) {
+    patternsBox.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;font-weight:700;">Add your Gemini API key in Settings to unlock AI analysis.</div>';
+    return;
   }
-  const topAvg = top.reduce((s,v)=>s+v.views,0)/top.length;
-  const botAvg = bot.reduce((s,v)=>s+v.views,0)/bot.length;
-  if (topAvg > botAvg*3) insights.push(`Your top 25% get ${Math.round(topAvg/botAvg)}× more views than the bottom 25% — high variance, keep testing hooks`);
-  const words = top.flatMap(v=>v.title.toLowerCase().split(/\s+/)).filter(w=>w.length>4);
-  const freq = {};
-  words.forEach(w => { freq[w]=(freq[w]||0)+1; });
-  const top1 = Object.entries(freq).sort((a,b)=>b[1]-a[1])[0];
-  if (top1 && top1[1]>=2) insights.push(`"${top1[0]}" appears in ${top1[1]} of your top titles — may be worth leaning into`);
-  return insights.length ? insights : ['No strong patterns yet — keep uploading consistently.'];
+
+  patternsBox.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;font-weight:700;font-style:italic;animation:pulse 1.2s ease-in-out infinite;">Analyzing your content...</div>';
+
+  const sorted = [...videos].sort((a,b) => b.views - a.views);
+  const top10 = sorted.slice(0, 10).map(v => v.title + ' (' + v.views.toLocaleString() + ' views)').join('\n');
+  const bot10 = sorted.slice(-10).map(v => v.title + ' (' + v.views.toLocaleString() + ' views)').join('\n');
+  const avg = Math.round(videos.reduce((s,v) => s+v.views, 0) / videos.length);
+
+  const prompt = `You are analyzing a Dead by Daylight short-form content creator's video performance data. They post YouTube Shorts and TikToks. Their channel average is ${avg} views per video.
+
+TOP 10 PERFORMING VIDEOS:
+${top10}
+
+BOTTOM 10 PERFORMING VIDEOS:
+${bot10}
+
+Analyze this data and give 4-6 specific, actionable insights. Focus on:
+1. What patterns do the top performers share (specific words, topics, formats)?
+2. What are the bottom performers doing that isn't working?
+3. What specific content topics or title formulas should they try MORE of?
+4. What should they stop doing?
+5. Any hashtag or title structure patterns worth noting?
+
+Be specific and direct. Reference actual titles from their data. No generic advice.
+Respond as a JSON array of strings, each string being one insight. No markdown, no preamble.
+Example: ["insight one", "insight two"]`;
+
+  try {
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
+    const insights = JSON.parse(text);
+    patternsBox.innerHTML = '<ul>' + insights.map(i => '<li>' + i + '</li>').join('') + '</ul>';
+  } catch(e) {
+    patternsBox.innerHTML = '<div style="color:var(--red);font-size:0.82rem;font-weight:700;">Analysis failed: ' + e.message + '</div>';
+  }
 }
 
 // ── Trends ────────────────────────────────────────
@@ -469,26 +540,34 @@ function parseRedditJSON() {
       list.innerHTML = '<div class="empty-state" style="color:var(--red)">No posts found in that JSON.</div>';
       return;
     }
-    list.innerHTML = all.map(p => {
-      const pJson = JSON.stringify(JSON.stringify(p));
-      return '<div class="trend-card" id="tcard-' + p.id + '" onclick=\'selectPost(' + pJson + ')\'>' +
+    list.innerHTML = all.map(p =>
+      '<div class="trend-card" id="tcard-' + p.id + '" data-pid="' + p.id + '">' +
         '<div class="trend-meta">' +
         '<span class="sub-chip">r/' + p.sub + '</span>' +
         '<span class="trend-score">↑ ' + p.score.toLocaleString() + '</span>' +
         '<span class="trend-comments">💬 ' + p.comments + '</span>' +
         (p.flair ? '<span class="trend-flair">' + p.flair + '</span>' : '') +
         '</div>' +
-        '<div class="trend-title"><a href="' + p.url + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + p.title + '</a></div>' +
-        '</div>';
-    }).join('');
+        '<div class="trend-title">' + p.title + ' <a href="' + p.url + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:0.72rem;color:var(--muted);font-weight:700;text-decoration:none;">↗</a></div>' +
+        '</div>'
+    ).join('');
+
+    // Store post data and attach click handlers
+    window._redditPosts = {};
+    all.forEach(p => {
+      window._redditPosts[p.id] = p;
+      var card = document.getElementById('tcard-' + p.id);
+      if (card) card.addEventListener('click', function() { selectPost(p.id); });
+    });
     document.getElementById('reddit-json-input').value = '';
   } catch(e) {
     list.innerHTML = '<div class="empty-state" style="color:var(--red)">Invalid JSON — make sure you copied the full response.</div>';
   }
 }
 
-function selectPost(jsonStr) {
-  const post = JSON.parse(jsonStr);
+function selectPost(id) {
+  const post = window._redditPosts[id];
+  if (!post) return;
   selectedPost = post;
   document.querySelectorAll('.trend-card').forEach(c => c.classList.remove('selected'));
   const card = document.getElementById('tcard-' + post.id);
