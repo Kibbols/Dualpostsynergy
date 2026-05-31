@@ -190,7 +190,7 @@ tr:hover td { background:var(--surface2); }
   <div class="login-card">
     <div class="login-logo">Streamer <span>Hub</span></div>
     <div class="login-sub">PRIVATE ACCESS ONLY</div>
-    <form id="login-form" action="#" onsubmit="attemptLogin(); return false;" autocomplete="on">
+    <form id="login-form" onsubmit="attemptLogin(); return false;" autocomplete="on">
       <label class="login-label" for="pw-input">PASSWORD</label>
       <input type="password" id="pw-input" name="password" class="login-input" placeholder="••••••••••" autocomplete="current-password" />
       <button type="submit" class="login-btn" id="login-btn">Enter →</button>
@@ -301,7 +301,13 @@ tr:hover td { background:var(--surface2); }
           </div>
         </div>
       </div>
-    </div>KER_URL = 'https://withered-mud-dc44.portgamingsttv.workers.dev';
+    </div>
+
+</div>
+</div>
+
+<script>
+const WORKER_URL = 'https://withered-mud-dc44.portgamingsttv.workers.dev';
 const SESSION_KEY = 'sh_authed';
 
 // ── Auth ──────────────────────────────────────────
