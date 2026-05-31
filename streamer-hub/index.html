@@ -72,6 +72,9 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:1
 .section-title { font-family:var(--font-d); font-size:1.5rem; color:var(--text); margin-bottom:6px; }
 .section-sub { font-size:0.82rem; font-weight:700; color:var(--muted); margin-bottom:24px; }
 
+/* ── Card ── */
+.card { background:var(--surface); border:2px solid var(--border); border-radius:20px; padding:24px; box-shadow:0 4px 0 var(--border); }
+
 /* ── Upload ── */
 .upload-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
 .upload-box { background:var(--surface2); border:2px dashed var(--border); border-radius:16px; padding:28px 20px; text-align:center; cursor:pointer; transition:all .2s; }
@@ -302,7 +305,23 @@ tr:hover td { background:var(--surface2); }
       </div>
     </div>
 
-</div>
+    <!-- SETTINGS TAB -->
+    <div id="tab-settings" style="display:none">
+      <div class="section-title">Settings</div>
+      <div class="section-sub">API keys stored locally in your browser — never sent anywhere except the respective API.</div>
+      <div class="card" style="max-width:500px;">
+        <div class="note-label" style="margin-bottom:12px;">Gemini API Key</div>
+        <p style="font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:14px;line-height:1.5;">Used for AI-powered performance analysis. Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent);">aistudio.google.com</a>.</p>
+        <input type="password" id="gemini-key-input" class="login-input" style="text-align:left;letter-spacing:0.02em;margin-bottom:12px;" placeholder="Paste your Gemini API key..." autocomplete="off" />
+        <div style="display:flex;gap:10px;">
+          <button class="generate-btn" style="margin-bottom:0;" onclick="saveGeminiKeyFromInput()">Save Key</button>
+          <button class="action-btn" onclick="clearGeminiKey()">Clear</button>
+        </div>
+        <div id="key-status" style="font-size:0.78rem;font-weight:800;margin-top:10px;display:none;"></div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <script>
