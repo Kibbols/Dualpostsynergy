@@ -190,11 +190,9 @@ tr:hover td { background:var(--surface2); }
   <div class="login-card">
     <div class="login-logo">Streamer <span>Hub</span></div>
     <div class="login-sub">PRIVATE ACCESS ONLY</div>
-      <form id="login-form" autocomplete="on">
       <label class="login-label" for="pw-input">PASSWORD</label>
-      <input type="password" id="pw-input" name="password" class="login-input" placeholder="••••••••••" autocomplete="current-password" />
-      <button type="submit" class="login-btn" id="login-btn">Enter →</button>
-      </form>
+      <input type="password" id="pw-input" autocomplete="current-password" class="login-input" placeholder="••••••••••" />
+      <button type="button" class="login-btn" id="login-btn" onclick="attemptLogin()">Enter →</button>
     <div class="login-error" id="login-error">Incorrect password. Try again.</div>
   </div>
 </div>
@@ -334,19 +332,13 @@ async function attemptLogin() {
 }
 function showApp() { document.getElementById('login-gate').style.display = 'none'; document.getElementById('app').style.display = 'block'; }
 function logout() { sessionStorage.removeItem(SESSION_KEY); location.reload(); }
-// Attach form handler and check session
-(function init() {
-  var form = document.getElementById('login-form');
-  if (form) {
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      attemptLogin();
-      return false;
-    });
-  }
-  if (sessionStorage.getItem(SESSION_KEY) === '1') showApp();
-})();
+// Check session on load
+if (sessionStorage.getItem(SESSION_KEY) === '1') showApp();
+
+// Enter key support
+document.getElementById('pw-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') attemptLogin();
+});
 
 // ── Tabs ──────────────────────────────────────────
 let trendsLoaded = false;
