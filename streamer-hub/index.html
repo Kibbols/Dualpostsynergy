@@ -305,6 +305,10 @@ tr:hover td { background:var(--surface2); }
 </div>
 
 <script>
+window.onerror = function(msg, src, line) {
+  document.getElementById('login-error').textContent = 'JS Error: ' + msg + ' (line ' + line + ')';
+  document.getElementById('login-error').classList.add('visible');
+};
 const WORKER_URL = 'https://withered-mud-dc44.portgamingsttv.workers.dev';
 const SESSION_KEY = 'sh_authed';
 
