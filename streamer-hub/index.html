@@ -178,6 +178,40 @@ tr:hover td { background:var(--surface2); }
 .empty-state { text-align:center; padding:36px 20px; font-size:0.85rem; font-weight:700; color:var(--muted); line-height:1.6; }
 .empty-icon { font-size:2rem; margin-bottom:10px; }
 
+/* ── Twitch / Potential ── */
+:root { --twitch: #9146ff; }
+.twitch-btn { background:var(--twitch); border:none; border-radius:14px; color:#fff; font-family:var(--font-d); font-size:1rem; padding:12px 24px; cursor:pointer; box-shadow:0 4px 0 rgba(100,50,200,.3); transition:all .2s cubic-bezier(.34,1.56,.64,1); display:inline-flex; align-items:center; gap:8px; }
+.twitch-btn:hover { transform:translateY(-2px); }
+.twitch-btn.connected { background:var(--green); box-shadow:0 4px 0 rgba(30,180,80,.3); }
+.twitch-btn.disconnected { background:var(--surface2); border:2px solid var(--border); color:var(--muted); box-shadow:0 3px 0 var(--border); }
+.twitch-btn.disconnected:hover { border-color:var(--twitch); color:var(--twitch); }
+.potential-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
+.potential-full { grid-column:1/-1; }
+.stat-mini-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
+.tier-section { margin-bottom:24px; }
+.tier-label { font-family:var(--font-d); font-size:0.9rem; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.tier-badge { font-size:0.65rem; font-weight:900; padding:3px 10px; border-radius:50px; }
+.tier-peer { background:#fef3e8; color:var(--accent); border:2px solid var(--border); }
+.tier-stretch { background:#f0f9ff; color:#0284c7; border:2px solid #bae6fd; }
+.raid-card { background:var(--surface); border:2px solid var(--border); border-radius:16px; padding:14px 16px; margin-bottom:8px; box-shadow:0 3px 0 var(--border); display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.raid-card:hover { border-color:var(--twitch); }
+.raid-info { flex:1; min-width:0; }
+.raid-name { font-family:var(--font-d); font-size:1rem; color:var(--text); margin-bottom:2px; }
+.raid-meta { font-size:0.72rem; font-weight:700; color:var(--muted); }
+.raid-viewers { font-family:var(--font-d); font-size:1.2rem; color:var(--twitch); white-space:nowrap; }
+.raid-why { font-size:0.72rem; font-weight:700; color:var(--muted); font-style:italic; width:100%; margin-top:6px; }
+.raid-link { background:var(--twitch); border:none; border-radius:50px; color:#fff; font-family:var(--font-b); font-size:0.72rem; font-weight:900; padding:5px 14px; cursor:pointer; text-decoration:none; white-space:nowrap; }
+.cat-card { background:var(--surface); border:2px solid var(--border); border-radius:16px; padding:14px 16px; margin-bottom:8px; box-shadow:0 3px 0 var(--border); }
+.cat-card:hover { border-color:var(--accent); }
+.cat-name { font-family:var(--font-d); font-size:1rem; color:var(--text); margin-bottom:4px; }
+.cat-stats { font-size:0.72rem; font-weight:700; color:var(--muted); margin-bottom:6px; display:flex; gap:12px; flex-wrap:wrap; }
+.cat-why { font-size:0.78rem; font-weight:700; color:var(--text); line-height:1.5; }
+.connect-box { background:linear-gradient(135deg,#f5f0ff,#fdf4ff); border:2px solid #ddd6fe; border-radius:20px; padding:28px; text-align:center; margin-bottom:20px; }
+.connect-box h3 { font-family:var(--font-d); font-size:1.2rem; color:var(--text); margin-bottom:8px; }
+.connect-box p { font-size:0.82rem; font-weight:700; color:var(--muted); margin-bottom:20px; line-height:1.5; }
+.potential-section-title { font-family:var(--font-d); font-size:1.1rem; color:var(--text); margin-bottom:4px; }
+.potential-section-sub { font-size:0.78rem; font-weight:700; color:var(--muted); margin-bottom:16px; }
+
 @media (max-width:760px) {
   .upload-row,.stats-row,.notes-grid,.trends-layout { grid-template-columns:1fr; }
   nav { padding:14px 18px; }
@@ -215,6 +249,7 @@ tr:hover td { background:var(--surface2); }
       <button class="tab-btn active" onclick="switchTab('performance',this)">📊 Performance</button>
       <button class="tab-btn" onclick="switchTab('trends',this)">🔥 Trends & Posts</button>
       <button class="tab-btn" onclick="switchTab('settings',this)">⚙️ Settings</button>
+      <button class="tab-btn" onclick="switchTab('potential',this)">🚀 Potential</button>
     </div>
 
     <!-- PERFORMANCE TAB -->
@@ -305,6 +340,88 @@ tr:hover td { background:var(--surface2); }
       </div>
     </div>
 
+    <!-- POTENTIAL TAB -->
+    <div id="tab-potential" style="display:none">
+      <div class="section-title">Growth Potential</div>
+      <div class="section-sub">Raid targets and category recommendations powered by your Twitch data + Gemini analysis.</div>
+
+      <!-- Twitch Connect Box -->
+      <div id="twitch-connect-box" class="connect-box">
+        <h3>🟣 Connect Twitch</h3>
+        <p>Connect your Twitch account to pull live stream data, recent categories, and channel stats for personalized recommendations.</p>
+        <button class="twitch-btn" id="twitch-connect-btn" onclick="connectTwitch()">Connect with Twitch</button>
+      </div>
+
+      <!-- Connected state -->
+      <div id="twitch-connected-bar" style="display:none;background:var(--green-bg);border:2px solid var(--green-border);border-radius:14px;padding:12px 16px;margin-bottom:20px;display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:0.82rem;font-weight:800;color:var(--green);">✓ Twitch connected as <span id="twitch-username-display"></span></span>
+        <button class="action-btn" onclick="disconnectTwitch()">Disconnect</button>
+      </div>
+
+      <!-- CSV Upload -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="note-label" style="margin-bottom:8px;">Twitch Analytics CSV (optional — adds historical depth)</div>
+        <p style="font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:12px;">Twitch Dashboard → Analytics → Export. Adds historical viewer averages and engagement trends to the analysis.</p>
+        <div class="upload-box" id="twitch-csv-box" style="padding:16px;" onclick="document.getElementById('twitch-csv-file').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="handleTwitchCSVDrop(event)">
+          <input type="file" id="twitch-csv-file" accept=".csv" style="display:none" onchange="handleTwitchCSV(this.files[0])" />
+          <div class="upload-label">Twitch Analytics CSV</div>
+          <div id="twitch-csv-status" class="upload-hint">Click or drag to upload</div>
+        </div>
+      </div>
+
+      <!-- Category selector + Generate -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="note-label" style="margin-bottom:8px;">Focus Categories</div>
+        <p style="font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:12px;">Categories to find raid targets and growth opportunities in. Leave blank to use your recent Twitch categories.</p>
+        <input type="text" id="potential-categories" class="login-input" style="text-align:left;letter-spacing:0.02em;margin-bottom:12px;" placeholder="e.g. Dead by Daylight, Phasmophobia, Just Chatting" />
+        <button class="generate-btn" style="margin-bottom:0;" id="potential-generate-btn" onclick="generatePotential()">Analyze Growth Potential →</button>
+      </div>
+
+      <!-- Stats summary -->
+      <div id="potential-stats" style="display:none;margin-bottom:20px;">
+        <div class="potential-section-title">Your Stats</div>
+        <div class="potential-section-sub">Based on your uploaded CSV and Twitch account data.</div>
+        <div class="stat-mini-row" id="potential-stat-cards"></div>
+      </div>
+
+      <!-- Results -->
+      <div id="potential-results" style="display:none;">
+        <!-- Raid targets -->
+        <div style="margin-bottom:28px;">
+          <div class="potential-section-title">🎯 Raid Targets</div>
+          <div class="potential-section-sub">Live right now — sized appropriately for your channel. No clout chasing.</div>
+          <div id="raid-peer-section" class="tier-section">
+            <div class="tier-label"><span class="tier-badge tier-peer">Peer Tier</span> Similar size — mutual benefit</div>
+            <div id="raid-peer-list"></div>
+          </div>
+          <div id="raid-stretch-section" class="tier-section">
+            <div class="tier-label"><span class="tier-badge tier-stretch">Stretch Tier</span> Slightly bigger — aspirational but respectful</div>
+            <div id="raid-stretch-list"></div>
+          </div>
+        </div>
+
+        <!-- Category recommendations -->
+        <div>
+          <div class="potential-section-title">📈 Category Opportunities</div>
+          <div class="potential-section-sub">Categories with genuine growth potential — not too saturated, not dead.</div>
+          <div id="category-list"></div>
+        </div>
+      </div>
+
+      <div id="potential-loading" style="display:none;" class="empty-state">
+        <div class="empty-icon" style="animation:pulse 1.2s ease-in-out infinite;">⚡</div>
+        Pulling live data and analyzing growth opportunities...
+      </div>
+
+      <div id="potential-empty" class="empty-state">
+        <div class="empty-icon">🚀</div>
+        Connect Twitch and/or upload your analytics CSV, then hit Analyze to get raid targets and category recommendations.
+      </div>
+    </div>
+
     <!-- SETTINGS TAB -->
     <div id="tab-settings" style="display:none">
       <div class="section-title">Settings</div>
@@ -356,8 +473,359 @@ async function attemptLogin() {
 }
 function showApp() { document.getElementById('login-gate').style.display = 'none'; document.getElementById('app').style.display = 'block'; }
 function logout() { sessionStorage.removeItem(SESSION_KEY); location.reload(); }
+// ── Twitch Auth ──────────────────────────────────────────
+const TWITCH_CLIENT_ID_PUBLIC = 'c61m4k6iu31kfm6kihel1vswcx9hka';
+const TWITCH_REDIRECT = 'https://dualpost.app/streamer-hub/twitch-callback.html';
+const TWITCH_SCOPES = 'user:read:email channel:read:stream_key';
+
+function getTwitchTokens() {
+  return {
+    access: sessionStorage.getItem('twitch_access_token'),
+    refresh: localStorage.getItem('sh_twitch_refresh'),
+    expires: parseInt(sessionStorage.getItem('twitch_expires_at') || '0'),
+  };
+}
+
+function setTwitchTokens(access, refresh, expiresIn) {
+  sessionStorage.setItem('twitch_access_token', access);
+  sessionStorage.setItem('twitch_expires_at', Date.now() + (expiresIn * 1000));
+  if (refresh) localStorage.setItem('sh_twitch_refresh', refresh);
+}
+
+function clearTwitchTokens() {
+  sessionStorage.removeItem('twitch_access_token');
+  sessionStorage.removeItem('twitch_expires_at');
+  localStorage.removeItem('sh_twitch_refresh');
+}
+
+async function getTwitchAccessToken() {
+  const tokens = getTwitchTokens();
+  // If access token exists and not expired (with 5 min buffer)
+  if (tokens.access && tokens.expires > Date.now() + 300000) {
+    return tokens.access;
+  }
+  // Try to refresh
+  if (tokens.refresh) {
+    try {
+      const res = await fetch(WORKER_URL + '/twitch-refresh', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: tokens.refresh })
+      });
+      const data = await res.json();
+      if (data.access_token) {
+        setTwitchTokens(data.access_token, data.refresh_token, data.expires_in);
+        return data.access_token;
+      }
+    } catch(e) {}
+  }
+  return null;
+}
+
+function connectTwitch() {
+  const state = Math.random().toString(36).substring(2);
+  sessionStorage.setItem('twitch_oauth_state', state);
+  const params = new URLSearchParams({
+    client_id: TWITCH_CLIENT_ID_PUBLIC,
+    redirect_uri: TWITCH_REDIRECT,
+    response_type: 'code',
+    scope: TWITCH_SCOPES,
+    state: state,
+    force_verify: 'false',
+  });
+  window.location.href = 'https://id.twitch.tv/oauth2/authorize?' + params.toString();
+}
+
+function disconnectTwitch() {
+  clearTwitchTokens();
+  document.getElementById('twitch-connect-box').style.display = 'block';
+  document.getElementById('twitch-connected-bar').style.display = 'none';
+  twitchUser = null;
+}
+
+async function twitchAPI(endpoint) {
+  const token = await getTwitchAccessToken();
+  if (!token) return null;
+  const res = await fetch(WORKER_URL + '/twitch-api', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ endpoint, access_token: token })
+  });
+  return res.json();
+}
+
+async function twitchPublic(endpoint) {
+  const res = await fetch(WORKER_URL + '/twitch-public', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ endpoint })
+  });
+  return res.json();
+}
+
+let twitchUser = null;
+let twitchStats = null; // from CSV
+
+async function initTwitchConnection() {
+  const token = await getTwitchAccessToken();
+  if (!token) return;
+  try {
+    const data = await twitchAPI('users');
+    if (data && data.data && data.data[0]) {
+      twitchUser = data.data[0];
+      document.getElementById('twitch-connect-box').style.display = 'none';
+      const bar = document.getElementById('twitch-connected-bar');
+      bar.style.display = 'flex';
+      document.getElementById('twitch-username-display').textContent = twitchUser.display_name;
+    }
+  } catch(e) {}
+}
+
+// ── Twitch CSV ────────────────────────────────────────
+function handleTwitchCSVDrop(e) {
+  e.preventDefault();
+  document.getElementById('twitch-csv-box').classList.remove('drag');
+  handleTwitchCSV(e.dataTransfer.files[0]);
+}
+
+function handleTwitchCSV(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const rows = parseCSV(e.target.result);
+    // Filter to days where streaming happened
+    const streamDays = rows.filter(r => parseFloat(r['Minutes Streamed'] || 0) > 0);
+    if (!streamDays.length) {
+      document.getElementById('twitch-csv-status').innerHTML = '<span style="color:var(--red);font-weight:800;">No stream data found in CSV.</span>';
+      return;
+    }
+    const avgViewers = streamDays.reduce((s,r) => s + parseFloat(r['Average Viewers']||0), 0) / streamDays.length;
+    const maxViewers = Math.max(...streamDays.map(r => parseFloat(r['Max Viewers']||0)));
+    const totalMins = streamDays.reduce((s,r) => s + parseFloat(r['Minutes Streamed']||0), 0);
+    const avgChatters = streamDays.reduce((s,r) => s + parseFloat(r['Chatters']||0), 0) / streamDays.length;
+    twitchStats = { avgViewers: Math.round(avgViewers * 10) / 10, maxViewers, totalMins, avgChatters: Math.round(avgChatters), streamDays: streamDays.length };
+    document.getElementById('twitch-csv-box').classList.add('loaded');
+    document.getElementById('twitch-csv-status').innerHTML = '<span class="upload-status">✓ ' + streamDays.length + ' stream days loaded</span>';
+  };
+  reader.readAsText(file);
+}
+
+// ── Generate Potential ────────────────────────────────
+async function generatePotential() {
+  const geminiKey = getGeminiKey();
+  if (!geminiKey) {
+    alert('Add your Gemini API key in Settings first.');
+    return;
+  }
+
+  const hasToken = await getTwitchAccessToken();
+  if (!hasToken && !twitchStats) {
+    alert('Connect Twitch or upload your analytics CSV first.');
+    return;
+  }
+
+  document.getElementById('potential-empty').style.display = 'none';
+  document.getElementById('potential-results').style.display = 'none';
+  document.getElementById('potential-stats').style.display = 'none';
+  document.getElementById('potential-loading').style.display = 'block';
+
+  try {
+    // Get categories to search
+    let categories = document.getElementById('potential-categories').value.trim();
+    let categoryList = categories ? categories.split(',').map(c => c.trim()).filter(Boolean) : [];
+
+    // If connected to Twitch and no manual categories, get recent ones
+    if (!categoryList.length && hasToken) {
+      try {
+        const channelData = await twitchAPI('channels?broadcaster_id=' + (twitchUser ? twitchUser.id : ''));
+        if (channelData && channelData.data && channelData.data[0]) {
+          categoryList = [channelData.data[0].game_name].filter(Boolean);
+        }
+      } catch(e) {}
+    }
+
+    if (!categoryList.length) categoryList = ['Dead by Daylight'];
+
+    // Get avg viewers for tier calculation
+    let myAvgViewers = twitchStats ? twitchStats.avgViewers : 7;
+    if (hasToken && twitchUser) {
+      try {
+        const streamData = await twitchAPI('streams?user_id=' + twitchUser.id);
+        if (streamData && streamData.data && streamData.data[0]) {
+          myAvgViewers = Math.max(myAvgViewers, streamData.data[0].viewer_count);
+        }
+      } catch(e) {}
+    }
+
+    const peerMin = Math.max(1, Math.floor(myAvgViewers * 0.5));
+    const peerMax = Math.ceil(myAvgViewers * 2.5);
+    const stretchMin = peerMax + 1;
+    const stretchMax = Math.ceil(myAvgViewers * 5);
+
+    // Show stats
+    if (twitchStats) {
+      document.getElementById('potential-stats').style.display = 'block';
+      document.getElementById('potential-stat-cards').innerHTML = `
+        <div class="stat-card"><div class="stat-label">Avg Viewers</div><div class="stat-value accent">${twitchStats.avgViewers}</div></div>
+        <div class="stat-card"><div class="stat-label">Peak Viewers</div><div class="stat-value pink">${twitchStats.maxViewers}</div></div>
+        <div class="stat-card"><div class="stat-label">Stream Days</div><div class="stat-value">${twitchStats.streamDays}</div></div>
+        <div class="stat-card"><div class="stat-label">Avg Chatters</div><div class="stat-value green">${twitchStats.avgChatters}</div></div>`;
+    }
+
+    // Pull live streams for each category
+    let allStreams = [];
+    for (const cat of categoryList.slice(0, 3)) {
+      try {
+        // Get game ID first
+        const gameData = await twitchPublic('games?name=' + encodeURIComponent(cat));
+        if (!gameData || !gameData.data || !gameData.data[0]) continue;
+        const gameId = gameData.data[0].id;
+
+        // Get live streams
+        const streamData = await twitchPublic('streams?game_id=' + gameId + '&first=100');
+        if (streamData && streamData.data) {
+          allStreams = allStreams.concat(streamData.data.map(s => ({...s, category: cat})));
+        }
+      } catch(e) {}
+    }
+
+    // Filter to tiers
+    const peerStreams = allStreams.filter(s => s.viewer_count >= peerMin && s.viewer_count <= peerMax);
+    const stretchStreams = allStreams.filter(s => s.viewer_count > stretchMax ? false : s.viewer_count > peerMax);
+
+    // Get category saturation data for recommendations
+    let categoryData = [];
+    for (const cat of categoryList.slice(0, 5)) {
+      try {
+        const gameData = await twitchPublic('games?name=' + encodeURIComponent(cat));
+        if (!gameData || !gameData.data || !gameData.data[0]) continue;
+        const gameId = gameData.data[0].id;
+        const streamData = await twitchPublic('streams?game_id=' + gameId + '&first=100');
+        if (streamData && streamData.data) {
+          const streams = streamData.data;
+          const totalViewers = streams.reduce((s,x) => s + x.viewer_count, 0);
+          categoryData.push({
+            name: cat,
+            liveStreamers: streams.length,
+            totalViewers,
+            avgViewersPerStreamer: streams.length ? Math.round(totalViewers / streams.length) : 0,
+            topStreamerViewers: streams[0] ? streams[0].viewer_count : 0,
+          });
+        }
+      } catch(e) {}
+    }
+
+    // Also explore related/adjacent categories via Twitch top games
+    try {
+      const topGames = await twitchPublic('games/top?first=50');
+      if (topGames && topGames.data) {
+        // Find goldilocks games — not too big, not too small
+        for (const game of topGames.data) {
+          if (categoryData.find(c => c.name === game.name)) continue;
+          const streamData = await twitchPublic('streams?game_id=' + game.id + '&first=100');
+          if (streamData && streamData.data) {
+            const streams = streamData.data;
+            const totalViewers = streams.reduce((s,x) => s + x.viewer_count, 0);
+            categoryData.push({
+              name: game.name,
+              liveStreamers: streams.length,
+              totalViewers,
+              avgViewersPerStreamer: streams.length ? Math.round(totalViewers / streams.length) : 0,
+              topStreamerViewers: streams[0] ? streams[0].viewer_count : 0,
+              isAdjacent: true,
+            });
+          }
+        }
+      }
+    } catch(e) {}
+
+    // Now use Gemini to analyze and rank everything
+    const statsContext = twitchStats
+      ? `My stats: ${twitchStats.avgViewers} avg viewers, ${twitchStats.maxViewers} peak, ${twitchStats.avgChatters} avg chatters, ${twitchStats.streamDays} stream days analyzed.`
+      : `My estimated avg viewers: ${myAvgViewers}`;
+
+    const peerSample = peerStreams.slice(0, 20).map(s => s.user_name + ' (' + s.viewer_count + ' viewers, playing ' + s.category + ')').join(', ');
+    const stretchSample = stretchStreams.slice(0, 15).map(s => s.user_name + ' (' + s.viewer_count + ' viewers, playing ' + s.category + ')').join(', ');
+    const catSummary = categoryData.map(c => c.name + ': ' + c.liveStreamers + ' live streamers, ' + c.totalViewers + ' total viewers, avg ' + c.avgViewersPerStreamer + ' viewers/streamer' + (c.isAdjacent ? ' (adjacent category)' : '')).join('\n');
+
+    const prompt = `You are a Twitch growth strategist analyzing data for a small streamer. They play Dead by Daylight and similar games. Their vibe is chill and variety-focused.
+
+${statsContext}
+Peer tier range: ${peerMin}-${peerMax} viewers
+Stretch tier range: ${stretchMin}-${stretchMax} viewers
+
+LIVE PEER TIER STREAMERS (similar size):
+${peerSample || 'None found'}
+
+LIVE STRETCH TIER STREAMERS (slightly bigger):
+${stretchSample || 'None found'}
+
+CATEGORY DATA:
+${catSummary || 'No data'}
+
+Tasks:
+1. Pick the top 5 PEER tier raid targets and top 3 STRETCH tier raid targets. For each give: streamer name, viewer count, and 1 sentence on why they're a good raid target (community fit, mutual growth potential, etc). Do NOT just pick the highest viewer counts.
+
+2. Recommend 4-5 categories with genuine growth potential for this streamer. Focus on: good viewer-to-streamer ratio (not too saturated), categories where a small streamer can get discovered, ideally adjacent to DBD or horror/co-op games. For each give: category name, why it's a good opportunity, and what type of content would work.
+
+Respond ONLY with valid JSON, no markdown:
+{
+  "peer_raids": [{"name":"","viewers":0,"why":""}],
+  "stretch_raids": [{"name":"","viewers":0,"why":""}],
+  "categories": [{"name":"","why":"","content_tip":""}]
+}`;
+
+    const geminiRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + geminiKey, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const geminiData = await geminiRes.json();
+    if (geminiData.error) throw new Error(geminiData.error.message);
+    const text = geminiData.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
+    const result = JSON.parse(text);
+
+    // Render raid targets
+    const renderRaid = (r) => `
+      <div class="raid-card">
+        <div class="raid-info">
+          <div class="raid-name">${r.name}</div>
+          <div class="raid-meta">${r.viewers} viewers live now</div>
+        </div>
+        <a href="https://twitch.tv/${r.name.toLowerCase()}" target="_blank" class="raid-link">Visit →</a>
+        <div class="raid-why">${r.why}</div>
+      </div>`;
+
+    document.getElementById('raid-peer-list').innerHTML = (result.peer_raids || []).map(renderRaid).join('') || '<div class="empty-state" style="padding:16px">No peer tier streamers live right now in these categories.</div>';
+    document.getElementById('raid-stretch-list').innerHTML = (result.stretch_raids || []).map(renderRaid).join('') || '<div class="empty-state" style="padding:16px">No stretch tier streamers found.</div>';
+
+    // Render category recommendations
+    document.getElementById('category-list').innerHTML = (result.categories || []).map(c => `
+      <div class="cat-card">
+        <div class="cat-name">${c.name}</div>
+        <div class="cat-why">${c.why}</div>
+        <div class="cat-stats" style="margin-top:6px;font-style:italic;">${c.content_tip}</div>
+      </div>`).join('');
+
+    document.getElementById('potential-loading').style.display = 'none';
+    document.getElementById('potential-results').style.display = 'block';
+
+  } catch(e) {
+    document.getElementById('potential-loading').style.display = 'none';
+    document.getElementById('potential-empty').style.display = 'block';
+    document.getElementById('potential-empty').innerHTML = '<div class="empty-icon">⚠️</div>Error: ' + e.message;
+  }
+}
+
+// Check for Twitch token on load (from callback redirect)
+async function checkTwitchOnLoad() {
+  const tokens = getTwitchTokens();
+  if (tokens.access || tokens.refresh) {
+    await initTwitchConnection();
+  }
+}
+
 // Check session on load
-if (sessionStorage.getItem(SESSION_KEY) === '1') showApp();
+if (sessionStorage.getItem(SESSION_KEY) === '1') {
+  showApp();
+  checkTwitchOnLoad();
+}
 
 // Enter key support
 document.getElementById('pw-input').addEventListener('keydown', function(e) {
@@ -367,7 +835,7 @@ document.getElementById('pw-input').addEventListener('keydown', function(e) {
 // ── Tabs ──────────────────────────────────────────
 let trendsLoaded = false;
 function switchTab(name, btn) {
-  ['performance','trends','settings'].forEach(t => {
+  ['performance','trends','settings','potential'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
   });
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -649,34 +1117,36 @@ async function fetchPostIdeas(post, context) {
   list.innerHTML = '<div class="empty-state" style="padding:20px">Generating ideas...</div>';
 
   try {
-    const prompt = `You are a social media strategist for a Dead by Daylight content creator who plays both killer and survivor with a chill, variety-focused vibe. They want to grow on Twitter/X and Bluesky through genuine engagement — no rage bait, no manufactured outrage.
+    const prompt = `You are helping a Dead by Daylight content creator write social media posts for Twitter/X and Bluesky. Their vibe is chill, friendly, and genuine — they love the game and want to connect with other players who feel the same way.
 
 A trending Reddit post in the DBD community:
 Title: "${post.title}"
 Score: ${post.score} upvotes, ${post.comments} comments
 Reddit URL: ${post.url}
 
-Please read the Reddit post at the URL above for full context including the post body and top comments before generating ideas.
-${context ? 'Creator context / angle: ' + context : ''}
+Please read the Reddit post at the URL above for full context before generating ideas.
+${context ? 'Their personal angle: ' + context : ''}
 
-Generate 3 distinct post ideas that would work on BOTH Twitter/X and Bluesky (max 280 chars each). Each should use one of these proven engagement strategies:
-- Hot take: A specific, defensible opinion that invites thoughtful replies
-- Relatable observation: Something the community feels but hasn't articulated well
-- Curious question: A genuine question that makes people want to share their experience
+Write 3 social media posts (max 280 chars each) that feel like something a friendly, enthusiastic DBD player would genuinely post. The goal is to start fun conversations and connect with the community.
 
-Rules:
-- No rage bait or negativity farming
-- Sound like a real player talking to other players
-- Specific enough to feel genuine, not generic
-- Leave room for replies — say something conversation-starting, not conversation-ending
-- May use 1-2 hashtags only if they feel completely natural (#DBD or #DeadByDaylight)
-- Do NOT mention streaming or content creation
+Tone guide:
+- Warm and positive, like texting a friend about something cool in the game
+- Curious or excited, not cynical or angry
+- Specific to what's actually happening in the community right now
+- Conversational — leave space for people to share their own experiences
+- Hashtags only if completely natural (1-2 max: #DBD or #DeadByDaylight)
+- Never mention streaming, content creation, or self-promotion
+
+The 3 posts should each take a different angle:
+1. A genuine personal reaction or feeling about the topic
+2. A question that makes other players want to share their experience
+3. A fun or lighthearted observation about the topic
 
 Respond ONLY with valid JSON, no markdown:
 {"ideas":[
-  {"angle":"Hot Take","text":"post text here","why":"one sentence on why this sparks engagement"},
-  {"angle":"Relatable Observation","text":"post text here","why":"one sentence on why this sparks engagement"},
-  {"angle":"Curious Question","text":"post text here","why":"one sentence on why this sparks engagement"}
+  {"angle":"Personal Reaction","text":"post text here","why":"one sentence on why this feels authentic and gets replies"},
+  {"angle":"Community Question","text":"post text here","why":"one sentence on why this gets replies"},
+  {"angle":"Fun Observation","text":"post text here","why":"one sentence on why this resonates"}
 ]}`;
 
     const geminiKey = getGeminiKey();
