@@ -167,7 +167,7 @@ export default {
         const sub    = body.sub || "deadbydaylight";
         const sort   = body.sort || "hot";
         const redditRes = await fetch(
-          `https://www.reddit.com/r/${sub}/${sort}.json?limit=25&t=day&raw_json=1`,
+          `https://old.reddit.com/r/${sub}/${sort}.json?limit=25&t=day&raw_json=1`,
           { headers: {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             "Accept": "application/json, text/plain, */*",
