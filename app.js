@@ -113,11 +113,10 @@ window.addEventListener('load', () => {
   localStorage.removeItem('dp_debug_log');
   // Set initial platform column states
   initPlatformStates();
-  // Proactively refresh tokens on load if expired or expiring soon
-  if (state.ytToken) ensureYouTubeToken();
-  if (state.ttToken) ensureTikTokToken();
-  // Delay to ensure DOM is fully painted before fetching account info
-  setTimeout(() => {
+  // Delay to ensure DOM is fully painted, then refresh tokens and fetch creator info
+  setTimeout(async () => {
+    if (state.ytToken) ensureYouTubeToken();
+    if (state.ttToken) await ensureTikTokToken();
     dbg('Fetching creator info. ytToken=' + (state.ytToken?'YES':'NO') + ' ttToken=' + (state.ttToken?'YES':'NO') + ' testMode=' + state.testMode);
     if (state.ytToken || state.testMode) fetchYouTubeChannelInfo();
     if (state.ttToken) fetchTikTokCreatorInfo();
@@ -442,8 +441,14 @@ async function exchangeTikTokCode(code, verifierOverride) {
 
   if (!data.access_token) throw new Error('No access_token in response: ' + rawText);
 
-  state.ttToken = { access_token: data.access_token };
+  state.ttToken = {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token || null,
+    open_id: data.open_id || null,
+    expires_at: Date.now() + (data.expires_in ? data.expires_in * 1000 : 86400000),
+  };
   saveTokens();
+  dbg('TikTok token saved OK. has_refresh=' + !!data.refresh_token + ' open_id=' + !!data.open_id);
   toast('TikTok connected! 🎉', 'success');
 }
 
@@ -769,6 +774,12 @@ async function fetchTikTokCreatorInfo() {
     });
     return;
   }
+
+  // Ensure token is fresh before fetching
+  await ensureTikTokToken();
+
+  // Ensure token is fresh before fetching
+  await ensureTikTokToken();
 
   const ttAccessToken = state.ttToken?.access_token || (typeof state.ttToken === 'string' ? state.ttToken : null);
   dbg('TT access token: ' + (ttAccessToken ? ttAccessToken.slice(0,12)+'...' : 'NONE'));
