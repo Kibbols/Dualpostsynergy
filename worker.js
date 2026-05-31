@@ -154,6 +154,24 @@ export default {
       }
     }
 
+    // ── Reddit proxy (for Streamer Hub) ─────────────────────────────
+    if (url.pathname === "/reddit") {
+      try {
+        const sub    = body.sub || "deadbydaylight";
+        const sort   = body.sort || "hot";
+        const redditRes = await fetch(
+          `https://www.reddit.com/r/${sub}/${sort}.json?limit=25&t=day`,
+          { headers: { "User-Agent": "StreamerHub/1.0 by DualPostSynergy" } }
+        );
+        const data = await redditRes.json();
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     // ── Streamer Hub password verification ──────────────────────────
     if (url.pathname === "/verify-password") {
       const provided = body.password || "";
