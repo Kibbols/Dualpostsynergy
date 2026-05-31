@@ -269,29 +269,23 @@ tr:hover td { background:var(--surface2); }
     <!-- TRENDS & POSTS TAB -->
     <div id="tab-trends" style="display:none">
       <div class="section-title">Trends & Post Ideas</div>
-      <div class="section-sub">Pick a hot Reddit topic → get ready-to-post ideas for Twitter/X and Bluesky that spark genuine engagement.</div>
+      <div class="section-sub">Paste your Reddit JSON below, pick a post, get Twitter/X + Bluesky ideas that spark genuine engagement.</div>
+
+      <div class="note-card" style="margin-bottom:20px;">
+        <div class="note-label">Paste Reddit JSON</div>
+        <textarea id="reddit-json-input" style="width:100%;background:var(--surface);border:2px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font-b);font-size:0.75rem;font-weight:600;padding:10px 12px;resize:vertical;min-height:80px;margin-top:8px;" placeholder="Paste the JSON from your Reddit feed URL here, then click Parse..."></textarea>
+        <button class="generate-btn" style="margin-top:10px;margin-bottom:0;" onclick="parseRedditJSON()">Parse Posts →</button>
+      </div>
 
       <div class="trends-layout">
-        <!-- Left: Reddit feed -->
         <div>
-          <div class="trends-controls">
-            <select class="ctrl-select" id="trend-sub" onchange="loadTrends()">
-              <option value="deadbydaylight">r/deadbydaylight</option>
-              <option value="PerkByDaylight">r/PerkByDaylight</option>
-            </select>
-            <select class="ctrl-select" id="trend-sort" onchange="loadTrends()">
-              <option value="hot">Hot</option>
-              <option value="new">New</option>
-              <option value="rising">Rising</option>
-              <option value="top">Top Today</option>
-            </select>
-            <button class="refresh-btn" id="refresh-btn" onclick="loadTrends()">↻ Refresh</button>
-            <span id="trend-count" style="font-size:0.75rem;font-weight:700;color:var(--muted);"></span>
+          <div id="trends-list">
+            <div class="empty-state">
+              <div class="empty-icon">📋</div>
+              Paste your Reddit JSON above and click Parse to load posts.
+            </div>
           </div>
-          <div id="trends-list"></div>
         </div>
-
-        <!-- Right: Post ideas panel -->
         <div class="ideas-panel">
           <div class="ideas-header">
             <span class="ideas-label">Post Ideas</span>
@@ -300,18 +294,12 @@ tr:hover td { background:var(--surface2); }
           <div id="ideas-output">
             <div class="empty-state">
               <div class="empty-icon">👈</div>
-              Click any Reddit post on the left to generate Twitter/X + Bluesky post ideas based on what the community is talking about.
+              Click any post on the left to generate Twitter/X + Bluesky post ideas.
             </div>
           </div>
         </div>
       </div>
-    </div>
-
-  </div>
-</div>
-
-<script>
-const WORKER_URL = 'https://withered-mud-dc44.portgamingsttv.workers.dev';
+    </div>KER_URL = 'https://withered-mud-dc44.portgamingsttv.workers.dev';
 const SESSION_KEY = 'sh_authed';
 
 // ── Auth ──────────────────────────────────────────
@@ -349,7 +337,7 @@ function switchTab(name, btn) {
   });
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  if (name === 'trends' && !trendsLoaded) loadTrends();
+  trendsLoaded = true;
 }
 
 // ── Performance ───────────────────────────────────
@@ -445,49 +433,44 @@ function deriveInsights(videos) {
 
 // ── Trends ────────────────────────────────────────
 let selectedPost = null;
-let postContext = '';
 
-async function loadTrends() {
-  trendsLoaded = true;
-  const sub = document.getElementById('trend-sub').value;
-  const sort = document.getElementById('trend-sort').value;
-  const btn = document.getElementById('refresh-btn');
+function parseRedditJSON() {
+  const input = document.getElementById('reddit-json-input').value.trim();
   const list = document.getElementById('trends-list');
-  btn.disabled = true; btn.textContent = 'Loading...';
-  list.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div>Fetching from Reddit...</div>';
-  document.getElementById('trend-count').textContent = '';
+  if (!input) return;
   try {
-    const res = await fetch(WORKER_URL + '/reddit', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sub, sort })
-    });
-    if (!res.ok) throw new Error('failed');
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    const posts = data.data.children.map(c => ({
+    const data = JSON.parse(input);
+    const children = data.data ? data.data.children : [];
+    const all = children.map(c => ({
       id: c.data.id,
       title: c.data.title,
       score: c.data.score,
       comments: c.data.num_comments,
       url: 'https://reddit.com' + c.data.permalink,
       flair: c.data.link_flair_text || null,
-      sub: sub,
+      sub: c.data.subreddit,
     }));
-    document.getElementById('trend-count').textContent = posts.length + ' posts';
-    list.innerHTML = posts.map(p => `
-      <div class="trend-card" id="tcard-${p.id}" onclick="selectPost(${JSON.stringify(JSON.stringify(p))})">
-        <div class="trend-meta">
-          <span class="sub-chip">r/${p.sub}</span>
-          <span class="trend-score">↑ ${p.score.toLocaleString()}</span>
-          <span class="trend-comments">💬 ${p.comments}</span>
-          ${p.flair ? `<span class="trend-flair">${p.flair}</span>` : ''}
-        </div>
-        <div class="trend-title"><a href="${p.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${p.title}</a></div>
-      </div>`).join('');
+    if (!all.length) {
+      list.innerHTML = '<div class="empty-state" style="color:var(--red)">No posts found in that JSON.</div>';
+      return;
+    }
+    list.innerHTML = all.map(p => {
+      const pJson = JSON.stringify(JSON.stringify(p));
+      return '<div class="trend-card" id="tcard-' + p.id + '" onclick='selectPost(' + pJson + ')'>' +
+        '<div class="trend-meta">' +
+        '<span class="sub-chip">r/' + p.sub + '</span>' +
+        '<span class="trend-score">↑ ' + p.score.toLocaleString() + '</span>' +
+        '<span class="trend-comments">💬 ' + p.comments + '</span>' +
+        (p.flair ? '<span class="trend-flair">' + p.flair + '</span>' : '') +
+        '</div>' +
+        '<div class="trend-title"><a href="' + p.url + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">' + p.title + '</a></div>' +
+        '</div>';
+    }).join('');
+    document.getElementById('reddit-json-input').value = '';
   } catch(e) {
-    list.innerHTML = '<div class="empty-state" style="color:var(--red)">Couldn\'t load Reddit — try refreshing.</div>';
+    list.innerHTML = '<div class="empty-state" style="color:var(--red)">Invalid JSON — make sure you copied the full response.</div>';
   }
-  btn.disabled = false; btn.textContent = '↻ Refresh';
+}
 }
 
 function selectPost(jsonStr) {
