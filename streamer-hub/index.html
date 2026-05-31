@@ -499,22 +499,7 @@ function showApp() {
   document.getElementById('app').style.display = 'block';
   renderInterestTags();
   renderExclusionLog();
-  // Attach tag input listener
-  var tagInput = document.getElementById('interest-tag-input');
-  if (tagInput) {
-    tagInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' || e.key === ',') {
-        e.preventDefault();
-        e.stopPropagation();
-        var val = this.value.trim().replace(/,$/, '');
-        if (!val) return;
-        var tags = getInterestTags();
-        if (!tags.includes(val)) { tags.push(val); saveInterestTags(tags); }
-        this.value = '';
-        renderInterestTags();
-      }
-    });
-  }
+  // Tag listener attached in switchTab
 }
 function logout() { sessionStorage.removeItem(SESSION_KEY); location.reload(); }
 // ── Interest Tags & Exclusions ──────────────────────────────
@@ -830,12 +815,28 @@ async function generatePotential() {
     let categories = document.getElementById('potential-categories').value.trim();
     let categoryList = categories ? categories.split(',').map(c => c.trim()).filter(Boolean) : [];
 
-    // If connected to Twitch and no manual categories, get recent ones
-    if (!categoryList.length && hasToken) {
+    // If connected to Twitch and no manual categories, pull recent stream categories
+    if (!categoryList.length && hasToken && twitchUser) {
       try {
-        const channelData = await twitchAPI('channels?broadcaster_id=' + (twitchUser ? twitchUser.id : ''));
-        if (channelData && channelData.data && channelData.data[0]) {
-          categoryList = [channelData.data[0].game_name].filter(Boolean);
+        // Get recent VODs to extract which categories were streamed
+        const videosData = await twitchAPI('videos?user_id=' + twitchUser.id + '&type=archive&first=20');
+        if (videosData && videosData.data && videosData.data.length) {
+          // Extract unique game names from recent streams
+          const seen = new Set();
+          for (const v of videosData.data) {
+            if (v.game_name && !seen.has(v.game_name)) {
+              seen.add(v.game_name);
+              categoryList.push(v.game_name);
+            }
+            if (categoryList.length >= 5) break;
+          }
+        }
+        // Fall back to current channel game if no VODs
+        if (!categoryList.length) {
+          const channelData = await twitchAPI('channels?broadcaster_id=' + twitchUser.id);
+          if (channelData && channelData.data && channelData.data[0] && channelData.data[0].game_name) {
+            categoryList = [channelData.data[0].game_name];
+          }
         }
       } catch(e) {}
     }
@@ -872,15 +873,31 @@ async function generatePotential() {
     let allStreams = [];
     for (const cat of categoryList.slice(0, 3)) {
       try {
-        // Get game ID first
         const gameData = await twitchPublic('games?name=' + encodeURIComponent(cat));
-        if (!gameData || !gameData.data || !gameData.data[0]) continue;
-        const gameId = gameData.data[0].id;
-
-        // Get live streams
+        if (!gameData || !gameData.data || !gameData.data[0]) {
+          // Try searching instead
+          const searchData = await twitchPublic('search/categories?query=' + encodeURIComponent(cat) + '&first=1');
+          if (!searchData || !searchData.data || !searchData.data[0]) continue;
+          var gameId = searchData.data[0].id;
+        } else {
+          var gameId = gameData.data[0].id;
+        }
         const streamData = await twitchPublic('streams?game_id=' + gameId + '&first=100');
         if (streamData && streamData.data) {
           allStreams = allStreams.concat(streamData.data.map(s => ({...s, category: cat})));
+        }
+      } catch(e) {}
+    }
+
+    // If still empty, try pulling all live DBD streams as fallback
+    if (!allStreams.length) {
+      try {
+        const dbdData = await twitchPublic('games?name=Dead+by+Daylight');
+        if (dbdData && dbdData.data && dbdData.data[0]) {
+          const streamData = await twitchPublic('streams?game_id=' + dbdData.data[0].id + '&first=100');
+          if (streamData && streamData.data) {
+            allStreams = streamData.data.map(s => ({...s, category: 'Dead by Daylight'}));
+          }
         }
       } catch(e) {}
     }
@@ -971,9 +988,14 @@ async function generatePotential() {
     const interestTags = getInterestTags();
     const excludedCats = getExcludedCats();
 
+    // Auto-exclude the categories they already heavily stream
+    const alreadyStreamingCats = categoryList;
+    const allExcluded = excludedCats.concat(alreadyStreamingCats);
+
     const catPrompt = 'You are a Twitch growth strategist. Recommend 5 Twitch categories with genuine growth potential for a small streamer.' +
       ' Their interest tags: ' + (interestTags.length ? interestTags.join(', ') : 'horror, multiplayer, variety') + '.' +
-      ' NEVER recommend: ' + (excludedCats.length ? excludedCats.join(', ') : 'none') + '.' +
+      ' NEVER recommend these (already streaming or excluded): ' + (allExcluded.length ? allExcluded.join(', ') : 'none') + '.' +
+      ' These are NEW opportunities they have not tried yet.' +
       ' ' + statsContext +
       '\n\nCATEGORY SATURATION DATA:\n' + (catSummary || 'No data') +
       '\n\nFocus on: good viewer-to-streamer ratio, discoverability for small streamers, adjacent to their interests.' +
@@ -1035,6 +1057,25 @@ function switchTab(name, btn) {
       document.getElementById('key-status').style.display = 'block';
       document.getElementById('key-status').style.color = 'var(--green)';
       document.getElementById('key-status').textContent = '✓ API key is saved.';
+    }
+  }
+  if (name === 'potential') {
+    // Attach tag input listener fresh each time tab opens
+    var tagInput = document.getElementById('interest-tag-input');
+    if (tagInput && !tagInput._listenerAttached) {
+      tagInput._listenerAttached = true;
+      tagInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ',') {
+          e.preventDefault();
+          e.stopPropagation();
+          var val = this.value.trim().replace(/,$/, '');
+          if (!val) return;
+          var tags = getInterestTags();
+          if (!tags.includes(val)) { tags.push(val); saveInterestTags(tags); }
+          this.value = '';
+          renderInterestTags();
+        }
+      });
     }
   }
 }
