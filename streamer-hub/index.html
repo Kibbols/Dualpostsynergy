@@ -614,12 +614,39 @@ async function regenerateWithContext() {
   await fetchPostIdeas(selectedPost, ctx);
 }
 
+async function fetchRedditPostDetails(post) {
+  try {
+    // Convert reddit.com URL to JSON endpoint
+    const jsonUrl = post.url.replace('https://reddit.com', 'https://www.reddit.com') + '.json?limit=10';
+    const res = await fetch(WORKER_URL + '/reddit-post', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: jsonUrl })
+    });
+    const data = await res.json();
+    if (data.error) return null;
+    const postData = data[0].data.children[0].data;
+    const comments = data[1].data.children
+      .filter(c => c.kind === 't1' && c.data.body && c.data.body !== '[deleted]')
+      .slice(0, 8)
+      .map(c => c.data.body.substring(0, 200))
+      .join('\n---\n');
+    return {
+      body: postData.selftext ? postData.selftext.substring(0, 500) : '',
+      comments: comments
+    };
+  } catch(e) {
+    return null;
+  }
+}
+
 async function fetchPostIdeas(post, context) {
   const list = document.getElementById('post-ideas-list');
   const thinking = document.getElementById('ideas-thinking');
   if (!list) return;
   thinking.style.display = 'inline';
-  list.innerHTML = '<div class="empty-state" style="padding:20px">Thinking...</div>';
+  list.innerHTML = '<div class="empty-state" style="padding:20px">Fetching post details...</div>';
+
+  list.innerHTML = '<div class="empty-state" style="padding:20px">Generating ideas...</div>';
 
   try {
     const prompt = `You are a social media strategist for a Dead by Daylight content creator who plays both killer and survivor with a chill, variety-focused vibe. They want to grow on Twitter/X and Bluesky through genuine engagement — no rage bait, no manufactured outrage.
@@ -627,6 +654,9 @@ async function fetchPostIdeas(post, context) {
 A trending Reddit post in the DBD community:
 Title: "${post.title}"
 Score: ${post.score} upvotes, ${post.comments} comments
+Reddit URL: ${post.url}
+
+Please read the Reddit post at the URL above for full context including the post body and top comments before generating ideas.
 ${context ? 'Creator context / angle: ' + context : ''}
 
 Generate 3 distinct post ideas that would work on BOTH Twitter/X and Bluesky (max 280 chars each). Each should use one of these proven engagement strategies:
