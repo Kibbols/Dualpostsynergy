@@ -209,6 +209,16 @@ tr:hover td { background:var(--surface2); }
 .connect-box { background:linear-gradient(135deg,#f5f0ff,#fdf4ff); border:2px solid #ddd6fe; border-radius:20px; padding:28px; text-align:center; margin-bottom:20px; }
 .connect-box h3 { font-family:var(--font-d); font-size:1.2rem; color:var(--text); margin-bottom:8px; }
 .connect-box p { font-size:0.82rem; font-weight:700; color:var(--muted); margin-bottom:20px; line-height:1.5; }
+.tag-input-area { background:var(--surface2); border:2px solid var(--border); border-radius:14px; padding:10px 12px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; cursor:text; transition:border-color .2s; margin-bottom:8px; }
+.tag-input-area:focus-within { border-color:var(--accent); }
+.tag-chip { background:var(--surface); border:2px solid var(--border); border-radius:50px; font-size:0.72rem; font-weight:800; color:var(--text); padding:3px 10px 3px 12px; display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
+.tag-chip.interest { border-color:var(--accent); background:#fff4ec; color:var(--accent); }
+.tag-chip.exclude { border-color:#fca5a5; background:#fff1f2; color:var(--red); }
+.tag-chip-x { background:none; border:none; cursor:pointer; color:inherit; font-size:0.9rem; line-height:1; padding:0; opacity:.7; }
+.tag-chip-x:hover { opacity:1; }
+.tag-bare-input { background:none; border:none; outline:none; font-family:var(--font-b); font-size:0.78rem; font-weight:700; color:var(--text); min-width:120px; flex:1; padding:2px 4px; }
+.not-interested-btn { background:none; border:1px solid var(--border); border-radius:50px; color:var(--muted); font-family:var(--font-b); font-size:0.68rem; font-weight:800; padding:3px 10px; cursor:pointer; transition:all .15s; margin-top:8px; }
+.not-interested-btn:hover { border-color:var(--red); color:var(--red); }
 .potential-section-title { font-family:var(--font-d); font-size:1.1rem; color:var(--text); margin-bottom:4px; }
 .potential-section-sub { font-size:0.78rem; font-weight:700; color:var(--muted); margin-bottom:16px; }
 
@@ -372,11 +382,17 @@ tr:hover td { background:var(--surface2); }
         </div>
       </div>
 
-      <!-- Category selector + Generate -->
+      <!-- Interest Tags -->
       <div class="card" style="margin-bottom:20px;">
-        <div class="note-label" style="margin-bottom:8px;">Focus Categories</div>
-        <p style="font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:12px;">Categories to find raid targets and growth opportunities in. Leave blank to use your recent Twitch categories.</p>
-        <input type="text" id="potential-categories" class="login-input" style="text-align:left;letter-spacing:0.02em;margin-bottom:12px;" placeholder="e.g. Dead by Daylight, Phasmophobia, Just Chatting" />
+        <div class="note-label" style="margin-bottom:4px;">Your Interests & Playstyles</div>
+        <p style="font-size:0.72rem;font-weight:700;color:var(--muted);margin-bottom:10px;">Tags used to personalize recommendations. Auto-filled from your Twitch history. Add your own — game genres, styles, moods.</p>
+        <div class="tag-input-area" id="interest-tag-area" onclick="document.getElementById('interest-tag-input').focus()">
+          <div id="interest-tags-container"></div>
+          <input type="text" id="interest-tag-input" class="tag-bare-input" placeholder="Type a tag and press Enter..." onkeydown="handleInterestTagInput(event)" />
+        </div>
+        <div class="note-label" style="margin-bottom:8px;margin-top:16px;">Focus on Twitch Categories (optional)</div>
+        <p style="font-size:0.72rem;font-weight:700;color:var(--muted);margin-bottom:10px;">Specific categories for raid targets. Leave blank to use your recent Twitch categories.</p>
+        <input type="text" id="potential-categories" class="login-input" style="text-align:left;letter-spacing:0.02em;margin-bottom:12px;" placeholder="e.g. Dead by Daylight, Phasmophobia" />
         <button class="generate-btn" style="margin-bottom:0;" id="potential-generate-btn" onclick="generatePotential()">Analyze Growth Potential →</button>
       </div>
 
@@ -406,9 +422,16 @@ tr:hover td { background:var(--surface2); }
         <!-- Category recommendations -->
         <div>
           <div class="potential-section-title">📈 Category Opportunities</div>
-          <div class="potential-section-sub">Categories with genuine growth potential — not too saturated, not dead.</div>
+          <div class="potential-section-sub">Categories with genuine growth potential — not too saturated, not dead. Hit "Not Interested" to exclude and swap.</div>
           <div id="category-list"></div>
         </div>
+      </div>
+
+      <!-- Exclusion log -->
+      <div id="exclusion-log-section" style="margin-top:24px;display:none;">
+        <div class="potential-section-title" style="font-size:0.9rem;">🚫 Excluded Categories</div>
+        <p style="font-size:0.72rem;font-weight:700;color:var(--muted);margin:4px 0 10px;">These won't appear in future recommendations. Click × to restore.</p>
+        <div id="exclusion-tags-container" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
       </div>
 
       <div id="potential-loading" style="display:none;" class="empty-state">
@@ -471,8 +494,166 @@ async function attemptLogin() {
     err.classList.add('visible'); btn.disabled = false; btn.textContent = 'Enter →';
   }
 }
-function showApp() { document.getElementById('login-gate').style.display = 'none'; document.getElementById('app').style.display = 'block'; }
+function showApp() {
+  document.getElementById('login-gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  renderInterestTags();
+  renderExclusionLog();
+}
 function logout() { sessionStorage.removeItem(SESSION_KEY); location.reload(); }
+// ── Interest Tags & Exclusions ──────────────────────────────
+function getInterestTags() { try { return JSON.parse(localStorage.getItem('sh_interest_tags') || '[]'); } catch(e) { return []; } }
+function saveInterestTags(tags) { localStorage.setItem('sh_interest_tags', JSON.stringify(tags)); }
+function getExcludedCats() { try { return JSON.parse(localStorage.getItem('sh_excluded_cats') || '[]'); } catch(e) { return []; } }
+function saveExcludedCats(cats) { localStorage.setItem('sh_excluded_cats', JSON.stringify(cats)); }
+
+function renderInterestTags() {
+  const tags = getInterestTags();
+  const container = document.getElementById('interest-tags-container');
+  if (!container) return;
+  container.innerHTML = tags.map(function(t, i) {
+    return '<span class="tag-chip interest">' + t.replace(/</g,'&lt;') + '<button class="tag-chip-x" onclick="removeInterestTagByIndex(' + i + ')" title="Remove">×</button></span>';
+  }).join('');
+}
+
+function removeInterestTag(tag) {
+  saveInterestTags(getInterestTags().filter(t => t !== tag));
+  renderInterestTags();
+}
+function removeInterestTagByIndex(i) {
+  var tags = getInterestTags();
+  tags.splice(i, 1);
+  saveInterestTags(tags);
+  renderInterestTags();
+}
+
+function handleInterestTagInput(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim().replace(/,$/, '');
+    if (!val) return;
+    const tags = getInterestTags();
+    if (!tags.includes(val)) { tags.push(val); saveInterestTags(tags); }
+    e.target.value = '';
+    renderInterestTags();
+  }
+}
+
+function renderExclusionLog() {
+  const cats = getExcludedCats();
+  const section = document.getElementById('exclusion-log-section');
+  const container = document.getElementById('exclusion-tags-container');
+  if (!section || !container) return;
+  if (!cats.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  container.innerHTML = cats.map(function(c, i) {
+    return '<span class="tag-chip exclude">' + c.replace(/</g,'&lt;') + '<button class="tag-chip-x" onclick="restoreExcludedCatByIndex(' + i + ')" title="Restore">×</button></span>';
+  }).join('');
+}
+
+function restoreExcludedCat(cat) {
+  saveExcludedCats(getExcludedCats().filter(c => c !== cat));
+  renderExclusionLog();
+}
+function restoreExcludedCatByIndex(i) {
+  var cats = getExcludedCats();
+  cats.splice(i, 1);
+  saveExcludedCats(cats);
+  renderExclusionLog();
+}
+
+let currentCategoryResults = [];
+
+function renderCategoryCards(categories) {
+  currentCategoryResults = categories;
+  const list = document.getElementById('category-list');
+  if (!list) return;
+  list.innerHTML = categories.map((c, i) =>
+    '<div class="cat-card" id="cat-card-' + i + '">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
+    '<div class="cat-name">' + c.name + '</div>' +
+    '<button class="not-interested-btn" onclick="notInterestedCat(' + i + ')" >Not Interested</button>' +
+    '</div>' +
+    '<div class="cat-why" style="margin-top:6px;">' + c.why + '</div>' +
+    '<div class="cat-stats" style="margin-top:6px;font-style:italic;">' + c.content_tip + '</div>' +
+    '</div>'
+  ).join('');
+  renderExclusionLog();
+}
+
+async function notInterestedCat(index) {
+  var catName = currentCategoryResults[index] ? currentCategoryResults[index].name : '';
+  // Add to exclusion log
+  const excluded = getExcludedCats();
+  if (catName && !excluded.includes(catName)) { excluded.push(catName); saveExcludedCats(excluded); }
+
+  // Show loading state on that card
+  const card = document.getElementById('cat-card-' + index);
+  if (card) card.innerHTML = '<div style="color:var(--muted);font-size:0.78rem;font-weight:700;padding:8px;">Finding replacement...</div>';
+
+  // Ask Gemini for one replacement
+  const geminiKey = getGeminiKey();
+  if (!geminiKey) { renderExclusionLog(); return; }
+
+  const excluded2 = getExcludedCats();
+  const interestTags = getInterestTags();
+  const existing = currentCategoryResults.filter((_, i) => i !== index).map(c => c.name).join(', ');
+
+  try {
+    const prompt = 'You are a Twitch growth strategist. Recommend ONE new Twitch category for a small Dead by Daylight streamer to explore. ' +
+      'Their interest tags: ' + interestTags.join(', ') + '. ' +
+      'Already showing: ' + existing + '. ' +
+      'EXCLUDE these categories entirely (user not interested): ' + excluded2.join(', ') + '. ' +
+      'Pick a category with good growth potential — enough viewers to matter, not so many streamers that discovery is impossible. ' +
+      'Respond ONLY with valid JSON: {"name":"","why":"","content_tip":""}';
+
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + geminiKey, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
+    const newCat = JSON.parse(text);
+    currentCategoryResults[index] = newCat;
+    renderCategoryCards(currentCategoryResults);
+  } catch(e) {
+    if (card) card.innerHTML = '<div style="color:var(--red);font-size:0.78rem;font-weight:700;padding:8px;">Could not load replacement — try again.</div>';
+    renderExclusionLog();
+  }
+}
+
+async function autoPopulateInterestTags() {
+  // Only auto-populate if no tags yet
+  if (getInterestTags().length > 0) return;
+  const token = await getTwitchAccessToken();
+  if (!token || !twitchUser) return;
+  try {
+    // Get recent channel info
+    const data = await twitchAPI('channels?broadcaster_id=' + twitchUser.id);
+    if (!data || !data.data || !data.data[0]) return;
+    const gameName = data.data[0].game_name;
+    if (!gameName) return;
+
+    // Use Gemini to convert game names to style tags
+    const geminiKey = getGeminiKey();
+    if (!geminiKey) return;
+    const prompt = 'Convert this Twitch game/category into 3-5 short gameplay style tags (e.g. "horror", "asymmetrical", "multiplayer", "survival", "cozy", "competitive"). Game: "' + gameName + '". Respond ONLY with a JSON array of strings: ["tag1","tag2"]';
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + geminiKey, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const gemData = await res.json();
+    if (gemData.error) return;
+    const text = gemData.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
+    const tags = JSON.parse(text);
+    if (Array.isArray(tags) && tags.length) {
+      saveInterestTags(tags);
+      renderInterestTags();
+    }
+  } catch(e) {}
+}
+
 // ── Twitch Auth ──────────────────────────────────────────
 const TWITCH_CLIENT_ID_PUBLIC = 'c61m4k6iu31kfm6kihel1vswcx9hka';
 const TWITCH_REDIRECT = 'https://dualpost.app/streamer-hub/twitch-callback.html';
@@ -574,6 +755,8 @@ async function initTwitchConnection() {
       const bar = document.getElementById('twitch-connected-bar');
       bar.style.display = 'flex';
       document.getElementById('twitch-username-display').textContent = twitchUser.display_name;
+      // Auto-populate interest tags from recent category
+      await autoPopulateInterestTags();
     }
   } catch(e) {}
 }
@@ -745,7 +928,12 @@ async function generatePotential() {
     const stretchSample = stretchStreams.slice(0, 15).map(s => s.user_name + ' (' + s.viewer_count + ' viewers, playing ' + s.category + ')').join(', ');
     const catSummary = categoryData.map(c => c.name + ': ' + c.liveStreamers + ' live streamers, ' + c.totalViewers + ' total viewers, avg ' + c.avgViewersPerStreamer + ' viewers/streamer' + (c.isAdjacent ? ' (adjacent category)' : '')).join('\n');
 
+    const interestTags = getInterestTags();
+    const excludedCats = getExcludedCats();
+
     const prompt = `You are a Twitch growth strategist analyzing data for a small streamer. They play Dead by Daylight and similar games. Their vibe is chill and variety-focused.
+Their interest/playstyle tags: ${interestTags.length ? interestTags.join(', ') : 'horror, multiplayer, variety'}
+NEVER recommend these excluded categories: ${excludedCats.length ? excludedCats.join(', ') : 'none'}
 
 ${statsContext}
 Peer tier range: ${peerMin}-${peerMax} viewers
@@ -796,12 +984,7 @@ Respond ONLY with valid JSON, no markdown:
     document.getElementById('raid-stretch-list').innerHTML = (result.stretch_raids || []).map(renderRaid).join('') || '<div class="empty-state" style="padding:16px">No stretch tier streamers found.</div>';
 
     // Render category recommendations
-    document.getElementById('category-list').innerHTML = (result.categories || []).map(c => `
-      <div class="cat-card">
-        <div class="cat-name">${c.name}</div>
-        <div class="cat-why">${c.why}</div>
-        <div class="cat-stats" style="margin-top:6px;font-style:italic;">${c.content_tip}</div>
-      </div>`).join('');
+    renderCategoryCards(result.categories || []);
 
     document.getElementById('potential-loading').style.display = 'none';
     document.getElementById('potential-results').style.display = 'block';
