@@ -649,14 +649,20 @@ Respond ONLY with valid JSON, no markdown:
   {"angle":"Curious Question","text":"post text here","why":"one sentence on why this sparks engagement"}
 ]}`;
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const geminiKey = getGeminiKey();
+    if (!geminiKey) {
+      list.innerHTML = '<div class="empty-state" style="color:var(--red)">Add your Gemini API key in Settings first.</div>';
+      thinking.style.display = 'none';
+      return;
+    }
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + geminiKey, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
     const data = await res.json();
-    const text = data.content.map(c => c.text||'').join('').replace(/```json|```/g,'').trim();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
     const parsed = JSON.parse(text);
-
     list.innerHTML = parsed.ideas.map((idea, i) => {
       const over = idea.text.length > 280;
       return `<div class="post-card">
