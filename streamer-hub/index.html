@@ -334,17 +334,19 @@ async function attemptLogin() {
 }
 function showApp() { document.getElementById('login-gate').style.display = 'none'; document.getElementById('app').style.display = 'block'; }
 function logout() { sessionStorage.removeItem(SESSION_KEY); location.reload(); }
-document.addEventListener('DOMContentLoaded', () => {
-  if (sessionStorage.getItem(SESSION_KEY) === '1') {
-    showApp();
-  } else {
-    document.getElementById('login-form').addEventListener('submit', function(e) {
+// Attach form handler and check session
+(function init() {
+  var form = document.getElementById('login-form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
       e.preventDefault();
       e.stopPropagation();
       attemptLogin();
+      return false;
     });
   }
-});
+  if (sessionStorage.getItem(SESSION_KEY) === '1') showApp();
+})();
 
 // ── Tabs ──────────────────────────────────────────
 let trendsLoaded = false;
