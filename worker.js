@@ -187,6 +187,132 @@ export default {
       }
     }
 
+    // ── Reddit individual post proxy ────────────────────────────────
+    if (url.pathname === "/reddit-post") {
+      try {
+        const postUrl = body.url || "";
+        if (!postUrl.includes("reddit.com")) throw new Error("Invalid URL");
+        const redditRes = await fetch(postUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+          }
+        });
+        const rawText = await redditRes.text();
+        if (rawText.trim().startsWith('<')) {
+          return new Response(JSON.stringify({ error: "Reddit blocked the request" }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        return new Response(rawText, { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch(e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+
+    // ── Twitch OAuth token exchange ──────────────────────────────────
+    if (url.pathname === "/twitch-auth") {
+      try {
+        const tokenRes = await fetch("https://id.twitch.tv/oauth2/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            client_id: env.TWITCH_CLIENT_ID,
+            client_secret: env.TWITCH_CLIENT_SECRET,
+            code: body.code,
+            grant_type: "authorization_code",
+            redirect_uri: body.redirect_uri,
+          }),
+        });
+        const data = await tokenRes.json();
+        if (!data.access_token) throw new Error(data.message || "Token exchange failed");
+        return new Response(JSON.stringify({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          expires_in: data.expires_in,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch(e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // ── Twitch refresh token ─────────────────────────────────────────
+    if (url.pathname === "/twitch-refresh") {
+      try {
+        const tokenRes = await fetch("https://id.twitch.tv/oauth2/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            client_id: env.TWITCH_CLIENT_ID,
+            client_secret: env.TWITCH_CLIENT_SECRET,
+            grant_type: "refresh_token",
+            refresh_token: body.refresh_token,
+          }),
+        });
+        const data = await tokenRes.json();
+        if (!data.access_token) throw new Error(data.message || "Refresh failed");
+        return new Response(JSON.stringify({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          expires_in: data.expires_in,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch(e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // ── Twitch API proxy (user data, streams, categories) ────────────
+    if (url.pathname === "/twitch-api") {
+      try {
+        const endpoint = body.endpoint;
+        const accessToken = body.access_token;
+        const twitchRes = await fetch("https://api.twitch.tv/helix/" + endpoint, {
+          headers: {
+            "Authorization": "Bearer " + accessToken,
+            "Client-Id": env.TWITCH_CLIENT_ID,
+          },
+        });
+        const data = await twitchRes.json();
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch(e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // ── Twitch app token (for public data like categories/streams) ───
+    if (url.pathname === "/twitch-public") {
+      try {
+        // Get app access token
+        const tokenRes = await fetch("https://id.twitch.tv/oauth2/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            client_id: env.TWITCH_CLIENT_ID,
+            client_secret: env.TWITCH_CLIENT_SECRET,
+            grant_type: "client_credentials",
+          }),
+        });
+        const tokenData = await tokenRes.json();
+        const appToken = tokenData.access_token;
+
+        // Make the actual API call
+        const twitchRes = await fetch("https://api.twitch.tv/helix/" + body.endpoint, {
+          headers: {
+            "Authorization": "Bearer " + appToken,
+            "Client-Id": env.TWITCH_CLIENT_ID,
+          },
+        });
+        const data = await twitchRes.json();
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch(e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     // ── Streamer Hub password verification ──────────────────────────
     if (url.pathname === "/verify-password") {
       const provided = body.password || "";
