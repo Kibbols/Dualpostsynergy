@@ -167,10 +167,18 @@ export default {
         const sub    = body.sub || "deadbydaylight";
         const sort   = body.sort || "hot";
         const redditRes = await fetch(
-          `https://www.reddit.com/r/${sub}/${sort}.json?limit=25&t=day`,
-          { headers: { "User-Agent": "StreamerHub/1.0 by DualPostSynergy" } }
+          `https://www.reddit.com/r/${sub}/${sort}.json?limit=25&t=day&raw_json=1`,
+          { headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+          }}
         );
-        const data = await redditRes.json();
+        const rawText = await redditRes.text();
+        if (rawText.trim().startsWith('<')) {
+          return new Response(JSON.stringify({ error: "Reddit returned an HTML block page — try again in a moment." }), { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        const data = JSON.parse(rawText);
         return new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
