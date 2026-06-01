@@ -572,12 +572,14 @@ function renderCategoryCards(categories) {
   if (!list) return;
   list.innerHTML = categories.map((c, i) =>
     '<div class="cat-card" id="cat-card-' + i + '">' +
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;">' +
     '<div class="cat-name">' + c.name + '</div>' +
-    '<button class="not-interested-btn" onclick="notInterestedCat(' + i + ')" >Not Interested</button>' +
+    '<button class="not-interested-btn" onclick="notInterestedCat(' + i + ')">Not Interested</button>' +
     '</div>' +
-    '<div class="cat-why" style="margin-top:6px;">' + c.why + '</div>' +
-    '<div class="cat-stats" style="margin-top:6px;font-style:italic;">' + c.content_tip + '</div>' +
+    '<div style="font-size:0.65rem;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Why this fits you</div>' +
+    '<div class="cat-why">' + c.why + '</div>' +
+    '<div style="font-size:0.65rem;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-top:10px;margin-bottom:4px;">Content tip</div>' +
+    '<div style="font-size:0.78rem;font-weight:700;color:var(--muted);line-height:1.5;">' + c.content_tip + '</div>' +
     '</div>'
   ).join('');
   renderExclusionLog();
@@ -929,7 +931,7 @@ async function generatePotential() {
       } catch(e) {}
     }
 
-    const peerMin = Math.max(1, Math.floor(myAvgViewers * 0.5));
+    const peerMin = 1;
     const peerMax = Math.ceil(myAvgViewers * 2.5);
     const stretchMin = peerMax + 1;
     const stretchMax = Math.ceil(myAvgViewers * 5);
@@ -955,32 +957,34 @@ async function generatePotential() {
       return data.data.map(s => ({...s, category: cat}));
     }
 
-    let allStreams = [];
-    for (const cat of categoryList.slice(0, 3)) {
+    // Resolve game IDs for all categories
+    const catsToSearch = categoryList.slice(0, 5);
+    const gameIdPromises = catsToSearch.map(async (cat) => {
       try {
-        var gameId = null;
         const gameData = await twitchPublic('games?name=' + encodeURIComponent(cat));
-        if (gameData && gameData.data && gameData.data[0]) {
-          gameId = gameData.data[0].id;
-        } else {
-          const searchData = await twitchPublic('search/categories?query=' + encodeURIComponent(cat) + '&first=1');
-          if (searchData && searchData.data && searchData.data[0]) gameId = searchData.data[0].id;
-        }
-        if (!gameId) continue;
-        var streams = await fetchStreamsInRange(gameId, cat);
-        allStreams = allStreams.concat(streams);
+        if (gameData && gameData.data && gameData.data[0]) return { cat, id: gameData.data[0].id };
+        const searchData = await twitchPublic('search/categories?query=' + encodeURIComponent(cat) + '&first=1');
+        if (searchData && searchData.data && searchData.data[0]) return { cat, id: searchData.data[0].id };
+      } catch(e) {}
+      return null;
+    });
+    const resolvedGames = (await Promise.all(gameIdPromises)).filter(Boolean);
+
+    // Fallback to DBD if nothing resolved
+    if (!resolvedGames.length) {
+      try {
+        const dbdData = await twitchPublic('games?name=Dead+by+Daylight');
+        if (dbdData && dbdData.data && dbdData.data[0]) resolvedGames.push({ cat: 'Dead by Daylight', id: dbdData.data[0].id });
       } catch(e) {}
     }
 
-    // Fallback to DBD if still empty
-    if (!allStreams.length) {
-      try {
-        const dbdData = await twitchPublic('games?name=Dead+by+Daylight');
-        if (dbdData && dbdData.data && dbdData.data[0]) {
-          allStreams = await fetchStreamsInRange(dbdData.data[0].id, 'Dead by Daylight');
-        }
-      } catch(e) {}
-    }
+    // Fetch streams for all categories in parallel
+    const streamResults = await Promise.all(resolvedGames.map(g => fetchStreamsInRange(g.id, g.cat).catch(() => [])));
+    let allStreams = streamResults.flat();
+
+    // Deduplicate by user_id in case same streamer appears in multiple categories
+    const seen = new Set();
+    allStreams = allStreams.filter(s => { if (seen.has(s.user_id)) return false; seen.add(s.user_id); return true; });
 
     // Filter to tiers
     const peerStreams = allStreams.filter(s => s.viewer_count >= peerMin && s.viewer_count <= peerMax);
@@ -1072,14 +1076,21 @@ async function generatePotential() {
     const alreadyStreamingCats = categoryList;
     const allExcluded = excludedCats.concat(alreadyStreamingCats);
 
-    const catPrompt = 'You are a Twitch growth strategist. Recommend 5 Twitch categories with genuine growth potential for a small streamer.' +
-      ' Their interest tags: ' + (interestTags.length ? interestTags.join(', ') : 'horror, multiplayer, variety') + '.' +
-      ' NEVER recommend these (already streaming or excluded): ' + (allExcluded.length ? allExcluded.join(', ') : 'none') + '.' +
-      ' These are NEW opportunities they have not tried yet.' +
-      ' ' + statsContext +
-      '\n\nCATEGORY SATURATION DATA:\n' + (catSummary || 'No data') +
-      '\n\nFocus on: good viewer-to-streamer ratio, discoverability for small streamers, adjacent to their interests.' +
-      ' Respond ONLY with valid JSON, no markdown: {"categories":[{"name":"","why":"","content_tip":""}]}';
+    const catPrompt = 'You are a Twitch growth strategist recommending categories for a small streamer to explore.' +
+      '\n\nSTREAMER PROFILE:' +
+      '\n- ' + statsContext +
+      '\n- Interest/playstyle tags: ' + (interestTags.length ? interestTags.join(', ') : 'horror, multiplayer, variety') +
+      '\n- NEVER recommend: ' + (allExcluded.length ? allExcluded.join(', ') : 'none') +
+      '\n\nCATEGORY SATURATION DATA (live streamers & viewers right now):\n' + (catSummary || 'No data') +
+      '\n\nINSTRUCTIONS:' +
+      '\nRecommend exactly 5 Twitch categories. Each MUST:' +
+      '\n1. Be genuinely related to their interest tags (horror, asymmetrical, co-op, survival, chill etc). NO random genres.' +
+      '\n2. Have a reasonable viewer-to-streamer ratio so small streamers can be discovered.' +
+      '\n3. Be a real, currently active Twitch category name.' +
+      '\n4. Include a specific "why" explaining: (a) how it connects to their existing content/audience, (b) why the market conditions are good for a small streamer right now.' +
+      '\n5. Include a "content_tip" with one concrete suggestion for what kind of content to make in that category.' +
+      '\n\nBe specific. If you recommend a category, explain exactly why IT specifically fits THIS streamer, not generic advice.' +
+      '\nRespond ONLY with valid JSON, no markdown: {"categories":[{"name":"","why":"","content_tip":""}]}';
 
     const geminiRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + geminiKey, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
