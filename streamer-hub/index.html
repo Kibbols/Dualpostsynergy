@@ -624,32 +624,81 @@ async function notInterestedCat(index) {
   }
 }
 
+// Static tag map for common DBD-adjacent games
+const GAME_TAG_MAP = {
+  'dead by daylight': ['horror','asymmetrical','multiplayer','survival','chill'],
+  'phasmophobia': ['horror','co-op','investigation','chill'],
+  'friday the 13th': ['horror','asymmetrical','multiplayer'],
+  'the texas chain saw massacre': ['horror','asymmetrical','multiplayer'],
+  'evil dead': ['horror','asymmetrical','multiplayer'],
+  'hunt: showdown': ['horror','fps','extraction','competitive'],
+  'back 4 blood': ['horror','co-op','fps'],
+  'left 4 dead 2': ['horror','co-op','fps'],
+  'alien: isolation': ['horror','survival','single-player'],
+  'resident evil': ['horror','survival','action'],
+  'lethal company': ['horror','co-op','chill','funny moments'],
+  'content warning': ['horror','co-op','chill','funny moments'],
+  'backrooms': ['horror','co-op','indie'],
+  'devour': ['horror','co-op'],
+  'dredge': ['horror','indie','chill'],
+  'subnautica': ['survival','exploration','chill'],
+  'the forest': ['survival','horror','co-op'],
+  'green hell': ['survival','co-op'],
+  'valheim': ['survival','co-op','chill'],
+  'minecraft': ['survival','co-op','variety','chill'],
+  'just chatting': ['variety','irl','chill'],
+};
+
 async function autoPopulateInterestTags() {
-  // Only auto-populate if no tags yet
   if (getInterestTags().length > 0) return;
   const token = await getTwitchAccessToken();
   if (!token || !twitchUser) return;
   try {
-    // Get recent channel info
-    const data = await twitchAPI('channels?broadcaster_id=' + twitchUser.id);
-    if (!data || !data.data || !data.data[0]) return;
-    const gameName = data.data[0].game_name;
-    if (!gameName) return;
+    // Get recent VODs to find streamed categories
+    const videosData = await twitchAPI('videos?user_id=' + twitchUser.id + '&type=archive&first=10');
+    const gameNames = [];
+    if (videosData && videosData.data) {
+      for (const v of videosData.data) {
+        if (v.game_name && !gameNames.includes(v.game_name)) gameNames.push(v.game_name);
+      }
+    }
+    // Also get current channel game
+    const channelData = await twitchAPI('channels?broadcaster_id=' + twitchUser.id);
+    if (channelData && channelData.data && channelData.data[0] && channelData.data[0].game_name) {
+      if (!gameNames.includes(channelData.data[0].game_name)) gameNames.unshift(channelData.data[0].game_name);
+    }
 
-    // Use Gemini to convert game names to style tags
+    // Build tags from static map + game names themselves
+    const tags = new Set();
+    for (const name of gameNames.slice(0, 3)) {
+      const key = name.toLowerCase();
+      const mapped = Object.keys(GAME_TAG_MAP).find(k => key.includes(k));
+      if (mapped) {
+        GAME_TAG_MAP[mapped].forEach(t => tags.add(t));
+      }
+    }
+
+    // If Gemini key available, enhance with AI tags
     const geminiKey = getGeminiKey();
-    if (!geminiKey) return;
-    const prompt = 'Convert this Twitch game/category into 3-5 short gameplay style tags (e.g. "horror", "asymmetrical", "multiplayer", "survival", "cozy", "competitive"). Game: "' + gameName + '". Respond ONLY with a JSON array of strings: ["tag1","tag2"]';
-    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + geminiKey, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    });
-    const gemData = await res.json();
-    if (gemData.error) return;
-    const text = gemData.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
-    const tags = JSON.parse(text);
-    if (Array.isArray(tags) && tags.length) {
-      saveInterestTags(tags);
+    if (geminiKey && gameNames.length) {
+      try {
+        const prompt = 'Convert these Twitch game names into 4-6 short gameplay style tags (e.g. "horror", "asymmetrical", "multiplayer", "survival", "cozy", "competitive", "funny moments"). Games: "' + gameNames.slice(0,3).join('", "') + '". Respond ONLY with a JSON array: ["tag1","tag2"]';
+        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + geminiKey, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const gemData = await res.json();
+        if (!gemData.error) {
+          const text = gemData.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
+          const aiTags = JSON.parse(text);
+          if (Array.isArray(aiTags)) aiTags.forEach(t => tags.add(t));
+        }
+      } catch(e) {}
+    }
+
+    const finalTags = [...tags].slice(0, 8);
+    if (finalTags.length) {
+      saveInterestTags(finalTags);
       renderInterestTags();
     }
   } catch(e) {}
@@ -787,6 +836,22 @@ function handleTwitchCSV(file) {
     twitchStats = { avgViewers: Math.round(avgViewers * 10) / 10, maxViewers, totalMins, avgChatters: Math.round(avgChatters), streamDays: streamDays.length };
     document.getElementById('twitch-csv-box').classList.add('loaded');
     document.getElementById('twitch-csv-status').innerHTML = '<span class="upload-status">✓ ' + streamDays.length + ' stream days loaded</span>';
+
+    // Show parsed stats immediately so you can verify before hitting Analyze
+    document.getElementById('potential-stats').style.display = 'block';
+    document.getElementById('potential-stat-cards').innerHTML =
+      '<div class="stat-card"><div class="stat-label">Avg Viewers</div><div class="stat-value accent">' + twitchStats.avgViewers + '</div></div>' +
+      '<div class="stat-card"><div class="stat-label">Peak Viewers</div><div class="stat-value pink">' + twitchStats.maxViewers + '</div></div>' +
+      '<div class="stat-card"><div class="stat-label">Stream Days</div><div class="stat-value">' + twitchStats.streamDays + '</div></div>' +
+      '<div class="stat-card"><div class="stat-label">Avg Chatters</div><div class="stat-value green">' + twitchStats.avgChatters + '</div></div>';
+
+    // Also show a detailed breakdown to verify parsing
+    var breakdown = streamDays.slice(0, 5).map(function(r) {
+      return r['Date'] + ': ' + r['Average Viewers'] + ' avg, ' + r['Max Viewers'] + ' peak, ' + r['Minutes Streamed'] + ' mins';
+    }).join('<br>');
+    document.getElementById('twitch-csv-status').innerHTML =
+      '<span class="upload-status">✓ ' + streamDays.length + ' stream days parsed</span>' +
+      '<div style="font-size:0.68rem;font-weight:700;color:var(--muted);margin-top:6px;line-height:1.6;">' + breakdown + (streamDays.length > 5 ? '<br>...and ' + (streamDays.length - 5) + ' more' : '') + '</div>';
   };
   reader.readAsText(file);
 }
@@ -869,42 +934,56 @@ async function generatePotential() {
         <div class="stat-card"><div class="stat-label">Avg Chatters</div><div class="stat-value green">${twitchStats.avgChatters}</div></div>`;
     }
 
-    // Pull live streams for each category
+    // Pull live streams - paginate deep enough to find small streamers
+    async function fetchStreamsInRange(gameId, cat, maxViewers) {
+      var found = [];
+      var cursor = null;
+      var pages = 0;
+      while (pages < 8) { // max 8 pages of 100 = 800 streamers
+        var endpoint = 'streams?game_id=' + gameId + '&first=100' + (cursor ? '&after=' + cursor : '');
+        var data = await twitchPublic(endpoint);
+        if (!data || !data.data || !data.data.length) break;
+        var streams = data.data;
+        // If the smallest viewer count on this page is still above our max, paginate
+        var pageMin = streams[streams.length - 1].viewer_count;
+        found = found.concat(streams.filter(s => s.viewer_count <= maxViewers).map(s => ({...s, category: cat})));
+        if (pageMin <= maxViewers || !data.pagination || !data.pagination.cursor) break;
+        cursor = data.pagination.cursor;
+        pages++;
+      }
+      return found;
+    }
+
     let allStreams = [];
     for (const cat of categoryList.slice(0, 3)) {
       try {
+        var gameId = null;
         const gameData = await twitchPublic('games?name=' + encodeURIComponent(cat));
-        if (!gameData || !gameData.data || !gameData.data[0]) {
-          // Try searching instead
-          const searchData = await twitchPublic('search/categories?query=' + encodeURIComponent(cat) + '&first=1');
-          if (!searchData || !searchData.data || !searchData.data[0]) continue;
-          var gameId = searchData.data[0].id;
+        if (gameData && gameData.data && gameData.data[0]) {
+          gameId = gameData.data[0].id;
         } else {
-          var gameId = gameData.data[0].id;
+          const searchData = await twitchPublic('search/categories?query=' + encodeURIComponent(cat) + '&first=1');
+          if (searchData && searchData.data && searchData.data[0]) gameId = searchData.data[0].id;
         }
-        const streamData = await twitchPublic('streams?game_id=' + gameId + '&first=100');
-        if (streamData && streamData.data) {
-          allStreams = allStreams.concat(streamData.data.map(s => ({...s, category: cat})));
-        }
+        if (!gameId) continue;
+        var streams = await fetchStreamsInRange(gameId, cat, stretchMax);
+        allStreams = allStreams.concat(streams);
       } catch(e) {}
     }
 
-    // If still empty, try pulling all live DBD streams as fallback
+    // Fallback to DBD if still empty
     if (!allStreams.length) {
       try {
         const dbdData = await twitchPublic('games?name=Dead+by+Daylight');
         if (dbdData && dbdData.data && dbdData.data[0]) {
-          const streamData = await twitchPublic('streams?game_id=' + dbdData.data[0].id + '&first=100');
-          if (streamData && streamData.data) {
-            allStreams = streamData.data.map(s => ({...s, category: 'Dead by Daylight'}));
-          }
+          allStreams = await fetchStreamsInRange(dbdData.data[0].id, 'Dead by Daylight', stretchMax);
         }
       } catch(e) {}
     }
 
     // Filter to tiers
     const peerStreams = allStreams.filter(s => s.viewer_count >= peerMin && s.viewer_count <= peerMax);
-    const stretchStreams = allStreams.filter(s => s.viewer_count > stretchMax ? false : s.viewer_count > peerMax);
+    const stretchStreams = allStreams.filter(s => s.viewer_count > peerMax && s.viewer_count <= stretchMax);
 
     // Get category saturation data for recommendations
     let categoryData = [];
@@ -1060,11 +1139,12 @@ function switchTab(name, btn) {
     }
   }
   if (name === 'potential') {
-    // Attach tag input listener fresh each time tab opens
+    // Always reattach tag input listener fresh
     var tagInput = document.getElementById('interest-tag-input');
-    if (tagInput && !tagInput._listenerAttached) {
-      tagInput._listenerAttached = true;
-      tagInput.addEventListener('keydown', function(e) {
+    if (tagInput) {
+      var newInput = tagInput.cloneNode(true);
+      tagInput.parentNode.replaceChild(newInput, tagInput);
+      newInput.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' || e.key === ',') {
           e.preventDefault();
           e.stopPropagation();
@@ -1076,6 +1156,7 @@ function switchTab(name, btn) {
           renderInterestTags();
         }
       });
+      newInput.focus && newInput.blur(); // don't auto-focus
     }
   }
 }
