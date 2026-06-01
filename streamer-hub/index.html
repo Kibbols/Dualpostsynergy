@@ -830,9 +830,12 @@ function handleTwitchCSV(file) {
       document.getElementById('twitch-csv-status').innerHTML = '<span style="color:var(--red);font-weight:800;">No stream data found in CSV.</span>';
       return;
     }
-    const avgViewers = streamDays.reduce((s,r) => s + parseFloat(r['Average Viewers']||0), 0) / streamDays.length;
+    const totalMinsW = streamDays.reduce((s,r) => s + parseFloat(r['Minutes Streamed']||0), 0);
+    const avgViewers = totalMinsW > 0
+      ? streamDays.reduce((s,r) => s + parseFloat(r['Average Viewers']||0) * parseFloat(r['Minutes Streamed']||0), 0) / totalMinsW
+      : streamDays.reduce((s,r) => s + parseFloat(r['Average Viewers']||0), 0) / streamDays.length;
     const maxViewers = Math.max(...streamDays.map(r => parseFloat(r['Max Viewers']||0)));
-    const totalMins = streamDays.reduce((s,r) => s + parseFloat(r['Minutes Streamed']||0), 0);
+    const totalMins = totalMinsW;
     const avgChatters = streamDays.reduce((s,r) => s + parseFloat(r['Chatters']||0), 0) / streamDays.length;
     twitchStats = { avgViewers: Math.round(avgViewers * 10) / 10, maxViewers, totalMins, avgChatters: Math.round(avgChatters), streamDays: streamDays.length };
     document.getElementById('twitch-csv-box').classList.add('loaded');
