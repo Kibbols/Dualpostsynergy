@@ -615,8 +615,10 @@ async function notInterestedCat(index) {
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
-    const text = data.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
-    const newCat = JSON.parse(text);
+    let rawText2 = data.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
+    const js2 = rawText2.indexOf('{'); const je2 = rawText2.lastIndexOf('}');
+    if (js2 !== -1 && je2 !== -1) rawText2 = rawText2.slice(js2, je2+1);
+    const newCat = JSON.parse(rawText2);
     currentCategoryResults[index] = newCat;
     renderCategoryCards(currentCategoryResults);
   } catch(e) {
@@ -1128,8 +1130,14 @@ async function generatePotential() {
     });
     const geminiData = await geminiRes.json();
     if (geminiData.error) throw new Error(geminiData.error.message);
-    const text = geminiData.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
-    const result = JSON.parse(text);
+    let rawText = geminiData.candidates[0].content.parts[0].text;
+    // Strip markdown fences and any text before/after the JSON object
+    rawText = rawText.replace(/```json|```/g,'').trim();
+    const jsonStart = rawText.indexOf('{');
+    const jsonEnd = rawText.lastIndexOf('}');
+    if (jsonStart === -1 || jsonEnd === -1) throw new Error('No JSON found in response');
+    rawText = rawText.slice(jsonStart, jsonEnd + 1);
+    const result = JSON.parse(rawText);
 
     // Render category recommendations
     renderCategoryCards(result.categories || []);
