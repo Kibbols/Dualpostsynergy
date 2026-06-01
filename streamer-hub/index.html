@@ -1090,7 +1090,7 @@ async function generatePotential() {
     );
 
     const catSummary = viableCats.map(c =>
-      c.name + ': ' + c.liveStreamers + ' live EN streamers, median ' + c.medianViewers + ' viewers, top streamer has ' + c.topStreamer + ' viewers, ' +
+      c.name + ': ' + c.liveStreamers + ' live EN streamers, avg ' + c.trimmedAvg + ' viewers (excl. top 2), top streamer has ' + c.topStreamer + ' viewers, ' +
       c.streamersUnder10 + ' streamers with ≤10 viewers (' + c.discoveryScore + '% discovery score)' +
       (c.isAdjacent ? ' [adjacent category]' : ' [your category]')
     ).join('\n');
