@@ -187,6 +187,34 @@ export default {
       }
     }
 
+    // ── YouTube trending gaming data ─────────────────────────────────
+    if (url.pathname === "/youtube-trending") {
+      try {
+        const regionCode = body.regionCode || "US";
+        // Get trending gaming videos
+        const ytRes = await fetch(
+          "https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&videoCategoryId=20&regionCode=" + regionCode + "&maxResults=50&key=" + env.YOUTUBE_API_KEY,
+          { headers: { "Accept": "application/json" } }
+        );
+        const ytData = await ytRes.json();
+        if (ytData.error) throw new Error(ytData.error.message);
+
+        // Extract game names from titles and tags
+        const videos = (ytData.items || []).map(v => ({
+          title: v.snippet.title,
+          tags: v.snippet.tags || [],
+          views: parseInt(v.statistics.viewCount || 0),
+          isShort: (v.snippet.title.toLowerCase().includes('#short') || (v.snippet.tags || []).some(t => t.toLowerCase().includes('short'))),
+        }));
+
+        return new Response(JSON.stringify({ videos }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch(e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     // ── Reddit individual post proxy ────────────────────────────────
     if (url.pathname === "/reddit-post") {
       try {
