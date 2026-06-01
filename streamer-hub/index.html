@@ -990,49 +990,64 @@ async function generatePotential() {
     const peerStreams = allStreams.filter(s => s.viewer_count >= peerMin && s.viewer_count <= peerMax);
     const stretchStreams = allStreams.filter(s => s.viewer_count > peerMax && s.viewer_count <= stretchMax);
 
-    // Get category saturation data for recommendations
+    // Get category saturation data — use meaningful stats not skewed averages
+    function calcCategoryStats(streams, name, isAdjacent) {
+      if (!streams.length) return null;
+      const counts = streams.map(s => s.viewer_count).sort((a,b) => a-b);
+      const median = counts[Math.floor(counts.length / 2)];
+      const top = counts[counts.length - 1];
+      // Count streamers in viewer ranges
+      const under10 = counts.filter(v => v <= 10).length;
+      const under25 = counts.filter(v => v <= 25).length;
+      const discoveryScore = Math.round((under10 / counts.length) * 100); // % of streamers with ≤10 viewers
+      return {
+        name,
+        liveStreamers: streams.length,
+        medianViewers: median,
+        topStreamer: top,
+        streamersUnder10: under10,
+        streamersUnder25: under25,
+        discoveryScore, // higher = more small streamers = easier to get noticed
+        isAdjacent: !!isAdjacent,
+      };
+    }
+
     let categoryData = [];
+    // Current categories
     for (const cat of categoryList.slice(0, 5)) {
       try {
         const gameData = await twitchPublic('games?name=' + encodeURIComponent(cat));
         if (!gameData || !gameData.data || !gameData.data[0]) continue;
-        const gameId = gameData.data[0].id;
-        const streamData = await twitchPublic('streams?game_id=' + gameId + '&first=100');
-        if (streamData && streamData.data) {
-          const streams = streamData.data;
-          const totalViewers = streams.reduce((s,x) => s + x.viewer_count, 0);
-          categoryData.push({
-            name: cat,
-            liveStreamers: streams.length,
-            totalViewers,
-            avgViewersPerStreamer: streams.length ? Math.round(totalViewers / streams.length) : 0,
-            topStreamerViewers: streams[0] ? streams[0].viewer_count : 0,
-          });
-        }
+        const streamData = await twitchPublic('streams?game_id=' + gameData.data[0].id + '&first=100&language=en');
+        if (streamData && streamData.data) categoryData.push(calcCategoryStats(streamData.data, cat, false));
       } catch(e) {}
     }
 
-    // Also explore related/adjacent categories via Twitch top games
+    // Adjacent categories from Twitch top games — filter to interest-adjacent ones
     try {
-      const topGames = await twitchPublic('games/top?first=50');
+      const topGames = await twitchPublic('games/top?first=100');
       if (topGames && topGames.data) {
-        // Find goldilocks games — not too big, not too small
-        for (const game of topGames.data) {
-          if (categoryData.find(c => c.name === game.name)) continue;
-          const streamData = await twitchPublic('streams?game_id=' + game.id + '&first=100');
-          if (streamData && streamData.data) {
-            const streams = streamData.data;
-            const totalViewers = streams.reduce((s,x) => s + x.viewer_count, 0);
-            categoryData.push({
-              name: game.name,
-              liveStreamers: streams.length,
-              totalViewers,
-              avgViewersPerStreamer: streams.length ? Math.round(totalViewers / streams.length) : 0,
-              topStreamerViewers: streams[0] ? streams[0].viewer_count : 0,
-              isAdjacent: true,
-            });
-          }
-        }
+        const interestKeywords = (interestTags.length ? interestTags : ['horror','survival','co-op','asymmetrical'])
+          .map(t => t.toLowerCase());
+        const adjacentGames = topGames.data.filter(g => {
+          if (categoryData.find(c => c && c.name === g.name)) return false;
+          if (allExcluded.includes(g.name)) return false;
+          // Only include games with names that suggest relevance to interests
+          const nameLower = g.name.toLowerCase();
+          return interestKeywords.some(k => nameLower.includes(k)) ||
+            ['horror','survival','dead','evil','dark','ghost','monster','escape','hunt','prey','fear','night','shadow','blood','crypt','haunt'].some(w => nameLower.includes(w));
+        }).slice(0, 15);
+
+        const adjacentResults = await Promise.all(adjacentGames.map(async (game) => {
+          try {
+            const streamData = await twitchPublic('streams?game_id=' + game.id + '&first=100&language=en');
+            if (streamData && streamData.data && streamData.data.length >= 3) {
+              return calcCategoryStats(streamData.data, game.name, true);
+            }
+          } catch(e) {}
+          return null;
+        }));
+        categoryData = categoryData.concat(adjacentResults.filter(Boolean));
       }
     } catch(e) {}
 
@@ -1065,8 +1080,10 @@ async function generatePotential() {
       ? 'My stats: ' + twitchStats.avgViewers + ' avg viewers, ' + twitchStats.maxViewers + ' peak, ' + twitchStats.streamDays + ' stream days.'
       : 'My estimated avg viewers: ' + myAvgViewers;
 
-    const catSummary = categoryData.map(c =>
-      c.name + ': ' + c.liveStreamers + ' live streamers, ' + c.totalViewers + ' total viewers, avg ' + c.avgViewersPerStreamer + ' per streamer' + (c.isAdjacent ? ' (adjacent)' : '')
+    const catSummary = categoryData.filter(Boolean).map(c =>
+      c.name + ': ' + c.liveStreamers + ' live EN streamers, median ' + c.medianViewers + ' viewers, top streamer has ' + c.topStreamer + ' viewers, ' +
+      c.streamersUnder10 + ' streamers with ≤10 viewers (' + c.discoveryScore + '% discovery score)' +
+      (c.isAdjacent ? ' [adjacent category]' : ' [your category]')
     ).join('\n');
 
     const interestTags = getInterestTags();
@@ -1081,15 +1098,16 @@ async function generatePotential() {
       '\n- ' + statsContext +
       '\n- Interest/playstyle tags: ' + (interestTags.length ? interestTags.join(', ') : 'horror, multiplayer, variety') +
       '\n- NEVER recommend: ' + (allExcluded.length ? allExcluded.join(', ') : 'none') +
-      '\n\nCATEGORY SATURATION DATA (live streamers & viewers right now):\n' + (catSummary || 'No data') +
+      '\n\nCATEGORY DATA (English streamers live right now):\n' + (catSummary || 'No data') +
+      '\n\nThe "discovery score" = % of streamers with ≤10 viewers. Higher score = easier to get noticed.' +
       '\n\nINSTRUCTIONS:' +
       '\nRecommend exactly 5 Twitch categories. Each MUST:' +
-      '\n1. Be genuinely related to their interest tags (horror, asymmetrical, co-op, survival, chill etc). NO random genres.' +
-      '\n2. Have a reasonable viewer-to-streamer ratio so small streamers can be discovered.' +
-      '\n3. Be a real, currently active Twitch category name.' +
-      '\n4. Include a specific "why" explaining: (a) how it connects to their existing content/audience, (b) why the market conditions are good for a small streamer right now.' +
-      '\n5. Include a "content_tip" with one concrete suggestion for what kind of content to make in that category.' +
-      '\n\nBe specific. If you recommend a category, explain exactly why IT specifically fits THIS streamer, not generic advice.' +
+      '\n1. Match their interest tags. NO random genres unrelated to horror/survival/asymmetrical/co-op.' +
+      '\n2. Have a HIGH discovery score (lots of small streamers) so they can actually be found.' +
+      '\n3. NOT be dominated by one massive streamer inflating the numbers — check median vs top streamer gap.' +
+      '\n4. In the "why" field: mention the actual numbers (median viewers, discovery score) to justify the pick.' +
+      '\n5. In "content_tip": give one specific, actionable content idea for that category.' +
+      '\n\nIf a category has a huge gap between median and top streamer, flag that in the why field.' +
       '\nRespond ONLY with valid JSON, no markdown: {"categories":[{"name":"","why":"","content_tip":""}]}';
 
     const geminiRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + geminiKey, {
