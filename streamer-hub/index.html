@@ -990,6 +990,30 @@ async function generatePotential() {
     const peerStreams = allStreams.filter(s => s.viewer_count >= peerMin && s.viewer_count <= peerMax);
     const stretchStreams = allStreams.filter(s => s.viewer_count > peerMax && s.viewer_count <= stretchMax);
 
+    // ── Render raid targets directly from API data ───────────────────
+    const renderRaid = (s) => {
+      const langTags = (s.tags || []).filter(t =>
+        ['english','spanish','portuguese','french','german','japanese','korean','chinese','italian','russian','arabic','turkish','dutch','polish','swedish','norwegian','danish','finnish'].some(l => t.toLowerCase().includes(l))
+      );
+      const langDisplay = s.language ? s.language.toUpperCase() : '';
+      const tagDisplay = langTags.length ? langTags.join(', ') : '';
+      const langInfo = [langDisplay, tagDisplay].filter(Boolean).join(' · ');
+      return '<div class="raid-card">' +
+        '<div class="raid-info">' +
+          '<div class="raid-name">' + s.user_name + '</div>' +
+          '<div class="raid-meta">' + s.viewer_count + ' viewers · ' + s.category + '</div>' +
+          (langInfo ? '<div class="raid-meta" style="margin-top:3px;color:var(--muted);">🌐 ' + langInfo + '</div>' : '') +
+        '</div>' +
+        '<a href="https://twitch.tv/' + s.user_login + '" target="_blank" class="raid-link">Visit →</a>' +
+      '</div>';
+    };
+
+    const sortedStretch = stretchStreams.slice().sort((a, b) => a.viewer_count - b.viewer_count).slice(0, 8);
+
+    document.getElementById('raid-stretch-list').innerHTML = sortedStretch.length
+      ? sortedStretch.map(renderRaid).join('')
+      : '<div class="empty-state" style="padding:16px">No raid targets found right now. Try again later or add more categories.</div>';
+
     // Fetch YouTube trending gaming Shorts for category recommendations
     let ytTrending = [];
     try {
