@@ -990,112 +990,21 @@ async function generatePotential() {
     const peerStreams = allStreams.filter(s => s.viewer_count >= peerMin && s.viewer_count <= peerMax);
     const stretchStreams = allStreams.filter(s => s.viewer_count > peerMax && s.viewer_count <= stretchMax);
 
-    // Get category saturation data — use meaningful stats not skewed averages
-    function calcCategoryStats(streams, name, isAdjacent) {
-      if (!streams.length) return null;
-      const counts = streams.map(s => s.viewer_count).sort((a,b) => a-b);
-      const median = counts[Math.floor(counts.length / 2)];
-      const top = counts[counts.length - 1];
-      // Count streamers in viewer ranges
-      const under10 = counts.filter(v => v <= 10).length;
-      const under25 = counts.filter(v => v <= 25).length;
-      const discoveryScore = Math.round((under10 / counts.length) * 100); // % of streamers with ≤10 viewers
-      return {
-        name,
-        liveStreamers: streams.length,
-        medianViewers: median,
-        topStreamer: top,
-        streamersUnder10: under10,
-        streamersUnder25: under25,
-        discoveryScore, // higher = more small streamers = easier to get noticed
-        isAdjacent: !!isAdjacent,
-      };
-    }
-
-    let categoryData = [];
-    // Current categories
-    for (const cat of categoryList.slice(0, 5)) {
-      try {
-        const gameData = await twitchPublic('games?name=' + encodeURIComponent(cat));
-        if (!gameData || !gameData.data || !gameData.data[0]) continue;
-        const streamData = await twitchPublic('streams?game_id=' + gameData.data[0].id + '&first=100&language=en');
-        if (streamData && streamData.data) categoryData.push(calcCategoryStats(streamData.data, cat, false));
-      } catch(e) {}
-    }
-
-    // Adjacent categories from Twitch top games — filter to interest-adjacent ones
+    // Fetch YouTube trending gaming Shorts for category recommendations
+    let ytTrending = [];
     try {
-      const topGames = await twitchPublic('games/top?first=100');
-      if (topGames && topGames.data) {
-        const interestKeywords = (interestTags.length ? interestTags : ['horror','survival','co-op','asymmetrical'])
-          .map(t => t.toLowerCase());
-        const adjacentGames = topGames.data.filter(g => {
-          if (categoryData.find(c => c && c.name === g.name)) return false;
-          if (allExcluded.includes(g.name)) return false;
-          return true; // Let Gemini filter by relevance — just exclude known exclusions
-        }).slice(0, 20);
-
-        const adjacentResults = await Promise.all(adjacentGames.map(async (game) => {
-          try {
-            const streamData = await twitchPublic('streams?game_id=' + game.id + '&first=100&language=en');
-            if (streamData && streamData.data && streamData.data.length >= 3) {
-              return calcCategoryStats(streamData.data, game.name, true);
-            }
-          } catch(e) {}
-          return null;
-        }));
-        categoryData = categoryData.concat(adjacentResults.filter(Boolean));
-      }
+      const ytRes = await fetch(WORKER_URL + '/youtube-trending', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ regionCode: 'US' })
+      });
+      const ytData = await ytRes.json();
+      if (ytData.videos) ytTrending = ytData.videos;
     } catch(e) {}
 
-    // ── Render raid targets directly from API data (no AI) ──────────
-    const renderRaid = (s) => {
-      // Extract language tags from stream tags
-      const langTags = (s.tags || []).filter(t =>
-        ['english','spanish','portuguese','french','german','japanese','korean','chinese','italian','russian','arabic','turkish','dutch','polish','swedish','norwegian','danish','finnish'].some(l => t.toLowerCase().includes(l))
-      );
-      const langDisplay = s.language ? s.language.toUpperCase() : '';
-      const tagDisplay = langTags.length ? langTags.join(', ') : '';
-      const langInfo = [langDisplay, tagDisplay].filter(Boolean).join(' · ');
-      return '<div class="raid-card">' +
-        '<div class="raid-info">' +
-          '<div class="raid-name">' + s.user_name + '</div>' +
-          '<div class="raid-meta">' + s.viewer_count + ' viewers · ' + s.category + '</div>' +
-          (langInfo ? '<div class="raid-meta" style="margin-top:3px;color:var(--muted);">🌐 ' + langInfo + '</div>' : '') +
-        '</div>' +
-        '<a href="https://twitch.tv/' + s.user_login + '" target="_blank" class="raid-link">Visit →</a>' +
-      '</div>';
-    };
-
-    // Sort peer by closest to our avg (most natural raid), stretch by lowest first
-    const sortedPeer = peerStreams.slice().sort((a, b) =>
-      Math.abs(a.viewer_count - myAvgViewers) - Math.abs(b.viewer_count - myAvgViewers)
-    ).slice(0, 8);
-    const sortedStretch = stretchStreams.slice().sort((a, b) => a.viewer_count - b.viewer_count).slice(0, 8);
-
-    document.getElementById('raid-stretch-list').innerHTML = sortedStretch.length
-      ? sortedStretch.map(renderRaid).join('')
-      : '<div class="empty-state" style="padding:16px">No stretch tier streamers found right now.</div>';
-
-    // ── Use Gemini only for category recommendations ──────────────
-    const statsContext = twitchStats
-      ? 'My stats: ' + twitchStats.avgViewers + ' avg viewers, ' + twitchStats.maxViewers + ' peak, ' + twitchStats.streamDays + ' stream days.'
-      : 'My estimated avg viewers: ' + myAvgViewers;
-
-    // Filter out categories with too few streamers or too low median (dead categories)
-    const viableCats = categoryData.filter(c =>
-      c &&
-      c.liveStreamers >= 15 &&        // at least 15 active streamers
-      c.medianViewers >= 15 &&        // median ≥15 ensures a real audience exists
-      c.topStreamer >= 100 &&          // top streamer ≥100 confirms established community
-      c.topStreamer <= 50000           // cap to avoid massively saturated categories
-    );
-
-    const catSummary = viableCats.map(c =>
-      c.name + ': ' + c.liveStreamers + ' live EN streamers, avg ' + c.trimmedAvg + ' viewers (excl. top 2), top streamer has ' + c.topStreamer + ' viewers, ' +
-      c.streamersUnder10 + ' streamers with ≤10 viewers (' + c.discoveryScore + '% discovery score)' +
-      (c.isAdjacent ? ' [adjacent category]' : ' [your category]')
-    ).join('\n');
+    // Build a summary of what's trending in gaming Shorts right now
+    const ytSummary = ytTrending.length
+      ? ytTrending.slice(0, 30).map(v => v.title + (v.tags.length ? ' [tags: ' + v.tags.slice(0,5).join(', ') + ']' : '') + ' (' + Math.round(v.views/1000) + 'k views)').join('\n')
+      : 'No YouTube trending data available';
 
     const interestTags = getInterestTags();
     const excludedCats = getExcludedCats();
@@ -1106,24 +1015,23 @@ async function generatePotential() {
 
     const skewTag = document.getElementById('skew-tag-input') ? document.getElementById('skew-tag-input').value.trim() : '';
 
-    const catPrompt = 'You are a Twitch growth strategist recommending categories for a small streamer to explore.' +
+    const catPrompt = 'You are a growth strategist for a Twitch streamer who also creates YouTube Shorts and TikToks.' +
       '\n\nSTREAMER PROFILE:' +
       '\n- ' + statsContext +
       '\n- Interest/playstyle tags: ' + (interestTags.length ? interestTags.join(', ') : 'horror, multiplayer, variety') +
-      (skewTag ? '\n- SKEW HEAVILY toward: "' + skewTag + '" — prioritize categories that strongly match this trait above all others.' : '') +
+      (skewTag ? '\n- SKEW HEAVILY toward: "' + skewTag + '" — prioritize categories that strongly match this trait.' : '') +
       '\n- NEVER recommend: ' + (allExcluded.length ? allExcluded.join(', ') : 'none') +
-      '\n\nCATEGORY DATA (English streamers live right now):\n' + (catSummary || 'No data') +
-      '\n\nThe "discovery score" = % of streamers with ≤10 viewers. Higher score = easier to get noticed.' +
+      '\n\nYOUTUBE TRENDING GAMING SHORTS RIGHT NOW:\n' + (ytSummary || 'No data') +
       '\n\nINSTRUCTIONS:' +
-      '\nRecommend exactly 5 Twitch categories. Each MUST:' +
-      '\n1. Match AT LEAST 2 of their interest tags. Does not need to match all of them — partial overlap is fine and encouraged.' +
-      '\n2. Have a HIGH discovery score (lots of small streamers) so they can actually be found.' +
-      '\n3. NOT be dominated by one massive streamer inflating the numbers — check median vs top streamer gap.' +
-      '\n4. In the "why" field: mention the actual numbers (median viewers, discovery score) to justify the pick.' +
-      '\n5. In "content_tip": give one specific, actionable content idea for that category.' +
-      '\n\nIf a category has a huge gap between median and top streamer, flag that in the why field.' +
+      '\nRecommend exactly 5 Twitch game categories based PURELY on what is trending in short-form gaming content right now.' +
+      '\nThe logic: if a game is generating massive views on YouTube Shorts, that audience already exists and is engaged. Streaming that game on Twitch puts you in front of people already watching that content — the fastest path to real follower growth.' +
+      '\n\nEach recommendation MUST:' +
+      '\n1. Be directly supported by the trending YouTube data above — reference specific titles or view counts.' +
+      '\n2. Match at least 2 of their interest tags or playstyle. Partial overlap is fine.' +
+      '\n3. NOT be on the never recommend list.' +
+      '\n4. In "why": explain which trending videos support this pick and why the short-form audience would convert to Twitch viewers.' +
+      '\n5. In "content_tip": give one specific Shorts/TikTok clip idea from that game that is currently performing well.' +
       '\nRespond ONLY with valid JSON, no markdown: {"categories":[{"name":"","why":"","content_tip":""}]}';
-
     const geminiRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + geminiKey, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: catPrompt }] }] })
