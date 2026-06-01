@@ -410,12 +410,7 @@ tr:hover td { background:var(--surface2); }
         <div style="margin-bottom:28px;">
           <div class="potential-section-title">🎯 Raid Targets</div>
           <div class="potential-section-sub">Live right now — sized appropriately for your channel. No clout chasing.</div>
-          <div id="raid-peer-section" class="tier-section">
-            <div class="tier-label"><span class="tier-badge tier-peer">Peer Tier</span> Similar size — mutual benefit</div>
-            <div id="raid-peer-list"></div>
-          </div>
           <div id="raid-stretch-section" class="tier-section">
-            <div class="tier-label"><span class="tier-badge tier-stretch">Stretch Tier</span> Slightly bigger — aspirational but respectful</div>
             <div id="raid-stretch-list"></div>
           </div>
         </div>
@@ -1052,24 +1047,29 @@ async function generatePotential() {
     } catch(e) {}
 
     // ── Render raid targets directly from API data (no AI) ──────────
-    const renderRaid = (s) =>
-      '<div class="raid-card">' +
+    const renderRaid = (s) => {
+      // Extract language tags from stream tags
+      const langTags = (s.tags || []).filter(t =>
+        ['english','spanish','portuguese','french','german','japanese','korean','chinese','italian','russian','arabic','turkish','dutch','polish','swedish','norwegian','danish','finnish'].some(l => t.toLowerCase().includes(l))
+      );
+      const langDisplay = s.language ? s.language.toUpperCase() : '';
+      const tagDisplay = langTags.length ? langTags.join(', ') : '';
+      const langInfo = [langDisplay, tagDisplay].filter(Boolean).join(' · ');
+      return '<div class="raid-card">' +
         '<div class="raid-info">' +
           '<div class="raid-name">' + s.user_name + '</div>' +
           '<div class="raid-meta">' + s.viewer_count + ' viewers · ' + s.category + '</div>' +
+          (langInfo ? '<div class="raid-meta" style="margin-top:3px;color:var(--muted);">🌐 ' + langInfo + '</div>' : '') +
         '</div>' +
         '<a href="https://twitch.tv/' + s.user_login + '" target="_blank" class="raid-link">Visit →</a>' +
       '</div>';
+    };
 
     // Sort peer by closest to our avg (most natural raid), stretch by lowest first
     const sortedPeer = peerStreams.slice().sort((a, b) =>
       Math.abs(a.viewer_count - myAvgViewers) - Math.abs(b.viewer_count - myAvgViewers)
     ).slice(0, 8);
-    const sortedStretch = stretchStreams.slice().sort((a, b) => a.viewer_count - b.viewer_count).slice(0, 5);
-
-    document.getElementById('raid-peer-list').innerHTML = sortedPeer.length
-      ? sortedPeer.map(renderRaid).join('')
-      : '<div class="empty-state" style="padding:16px">No peer tier streamers live right now in these categories. Try refreshing later or add more categories.</div>';
+    const sortedStretch = stretchStreams.slice().sort((a, b) => a.viewer_count - b.viewer_count).slice(0, 8);
 
     document.getElementById('raid-stretch-list').innerHTML = sortedStretch.length
       ? sortedStretch.map(renderRaid).join('')
