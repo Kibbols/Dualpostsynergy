@@ -380,6 +380,7 @@ tr:hover td { background:var(--surface2); }
           <div class="upload-label">Twitch Analytics CSV</div>
           <div id="twitch-csv-status" class="upload-hint">Click or drag to upload</div>
         </div>
+        <div id="twitch-csv-preview" style="display:none;margin-top:14px;"></div>
       </div>
 
       <!-- Interest Tags -->
@@ -837,21 +838,24 @@ function handleTwitchCSV(file) {
     document.getElementById('twitch-csv-box').classList.add('loaded');
     document.getElementById('twitch-csv-status').innerHTML = '<span class="upload-status">✓ ' + streamDays.length + ' stream days loaded</span>';
 
-    // Show parsed stats immediately so you can verify before hitting Analyze
-    document.getElementById('potential-stats').style.display = 'block';
-    document.getElementById('potential-stat-cards').innerHTML =
-      '<div class="stat-card"><div class="stat-label">Avg Viewers</div><div class="stat-value accent">' + twitchStats.avgViewers + '</div></div>' +
-      '<div class="stat-card"><div class="stat-label">Peak Viewers</div><div class="stat-value pink">' + twitchStats.maxViewers + '</div></div>' +
-      '<div class="stat-card"><div class="stat-label">Stream Days</div><div class="stat-value">' + twitchStats.streamDays + '</div></div>' +
-      '<div class="stat-card"><div class="stat-label">Avg Chatters</div><div class="stat-value green">' + twitchStats.avgChatters + '</div></div>';
-
-    // Also show a detailed breakdown to verify parsing
-    var breakdown = streamDays.slice(0, 5).map(function(r) {
-      return r['Date'] + ': ' + r['Average Viewers'] + ' avg, ' + r['Max Viewers'] + ' peak, ' + r['Minutes Streamed'] + ' mins';
-    }).join('<br>');
-    document.getElementById('twitch-csv-status').innerHTML =
-      '<span class="upload-status">✓ ' + streamDays.length + ' stream days parsed</span>' +
-      '<div style="font-size:0.68rem;font-weight:700;color:var(--muted);margin-top:6px;line-height:1.6;">' + breakdown + (streamDays.length > 5 ? '<br>...and ' + (streamDays.length - 5) + ' more' : '') + '</div>';
+    // Show parsed stats immediately in the upload card — visible before hitting Analyze
+    var preview = document.getElementById('twitch-csv-preview');
+    if (preview) {
+      preview.style.display = 'block';
+      preview.innerHTML =
+        '<div class="stat-mini-row" style="margin-bottom:8px;">' +
+        '<div class="stat-card"><div class="stat-label">Avg Viewers</div><div class="stat-value accent">' + twitchStats.avgViewers + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">Peak Viewers</div><div class="stat-value pink">' + twitchStats.maxViewers + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">Stream Days</div><div class="stat-value">' + twitchStats.streamDays + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">Avg Chatters</div><div class="stat-value green">' + twitchStats.avgChatters + '</div></div>' +
+        '</div>' +
+        '<div style="font-size:0.7rem;font-weight:700;color:var(--muted);line-height:1.8;">' +
+        streamDays.slice(0,5).map(function(r) {
+          return '<b>' + r['Date'] + '</b>: ' + r['Average Viewers'] + ' avg viewers, ' + r['Max Viewers'] + ' peak, ' + r['Minutes Streamed'] + ' mins streamed';
+        }).join('<br>') +
+        (streamDays.length > 5 ? '<br>...and ' + (streamDays.length-5) + ' more stream days' : '') +
+        '</div>';
+    }
   };
   reader.readAsText(file);
 }
