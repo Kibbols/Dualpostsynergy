@@ -1,24 +1,1535 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DualPost Synergy</title>
-  <script>
-    const search = window.location.search;
-    const hasCode = search.includes('code=');
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Streamer Hub</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:       #fff8f0;
+  --surface:  #ffffff;
+  --surface2: #fef3e8;
+  --border:   #fddcb5;
+  --text:     #2d1b00;
+  --muted:    #a07850;
+  --accent:   #ff8c42;
+  --accent2:  #ffc947;
+  --pink:     #ff6b9d;
+  --green:    #22c55e;
+  --green-bg: #f0fff4;
+  --green-border: #86efac;
+  --red:      #ef4444;
+  --red-bg:   #fff1f2;
+  --reddit:   #ff4500;
+  --bsky:     #0085ff;
+  --twitter:  #1d9bf0;
+  --purple:   #8b5cf6;
+  --font-d:   'Fredoka One', cursive;
+  --font-b:   'Nunito', sans-serif;
+}
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-b); min-height: 100vh; }
 
-    if (hasCode) {
-      // OAuth callback — send to app with full query string preserved
-      window.location.replace('/app.html' + search);
-    } else if (window.location.hostname !== 'kibbols.github.io') {
-      // On dualpost.app with no code — show landing page
-      window.location.replace('/landing.html');
-    } else {
-      // Direct GitHub visit with no code — send to app
-      window.location.replace('/app.html');
-    }
-  </script>
+/* ── Login ── */
+#login-gate { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+.login-card { background:var(--surface); border:2px solid var(--border); border-radius:24px; box-shadow:0 6px 0 var(--border); padding:48px 40px; width:100%; max-width:400px; text-align:center; }
+.login-logo { font-family:var(--font-d); font-size:2rem; color:var(--text); margin-bottom:6px; }
+.login-logo span { color:var(--accent); }
+.login-sub { font-size:0.8rem; font-weight:700; color:var(--muted); letter-spacing:0.06em; margin-bottom:36px; }
+.login-label { font-size:0.82rem; font-weight:800; color:var(--muted); letter-spacing:0.05em; text-align:left; display:block; margin-bottom:8px; }
+.login-input { width:100%; background:var(--surface2); border:2px solid var(--border); border-radius:14px; color:var(--text); font-family:var(--font-b); font-size:1rem; font-weight:700; padding:14px 18px; margin-bottom:16px; transition:border-color .2s; text-align:center; letter-spacing:0.1em; }
+.login-input:focus { outline:none; border-color:var(--accent); }
+.login-input.error { border-color:var(--red); background:var(--red-bg); }
+.login-btn { width:100%; background:linear-gradient(135deg,var(--accent),var(--pink)); border:none; border-radius:14px; color:#fff; font-family:var(--font-d); font-size:1.1rem; padding:14px; cursor:pointer; box-shadow:0 4px 0 rgba(255,80,100,.25); transition:all .2s cubic-bezier(.34,1.56,.64,1); }
+.login-btn:hover:not(:disabled) { transform:translateY(-2px); }
+.login-btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+.login-error { font-size:0.82rem; font-weight:800; color:var(--red); margin-top:12px; display:none; }
+.login-error.visible { display:block; }
+
+/* ── App ── */
+#app { display:none; }
+nav { display:flex; align-items:center; justify-content:space-between; padding:16px 32px; background:rgba(255,248,240,.95); backdrop-filter:blur(16px); border-bottom:2px solid var(--border); position:sticky; top:0; z-index:100; flex-wrap:wrap; gap:10px; }
+.nav-logo { font-family:var(--font-d); font-size:1.4rem; color:var(--text); text-decoration:none; display:flex; align-items:center; gap:8px; }
+.nav-logo-badge { background:linear-gradient(135deg,var(--accent),var(--pink)); color:#fff; font-size:0.6rem; font-weight:900; letter-spacing:0.1em; padding:2px 8px; border-radius:50px; text-transform:uppercase; }
+.nav-right { display:flex; align-items:center; gap:10px; }
+.nav-link { font-size:0.82rem; font-weight:800; color:var(--muted); text-decoration:none; transition:color .2s; }
+.nav-link:hover { color:var(--accent); }
+.logout-btn { background:none; border:2px solid var(--border); border-radius:50px; color:var(--muted); font-family:var(--font-b); font-size:0.78rem; font-weight:800; padding:6px 14px; cursor:pointer; transition:all .2s; }
+.logout-btn:hover { border-color:var(--red); color:var(--red); }
+
+.page { max-width:1080px; margin:0 auto; padding:32px 24px 64px; }
+
+/* ── Tabs ── */
+.tabs { display:flex; gap:8px; margin-bottom:28px; flex-wrap:wrap; }
+.tab-btn { background:var(--surface); border:2px solid var(--border); border-radius:50px; color:var(--muted); font-family:var(--font-d); font-size:0.9rem; padding:8px 20px; cursor:pointer; box-shadow:0 3px 0 var(--border); transition:all .2s cubic-bezier(.34,1.56,.64,1); }
+.tab-btn:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-1px); }
+.tab-btn.active { background:linear-gradient(135deg,var(--accent),var(--pink)); border-color:transparent; color:#fff; box-shadow:0 3px 0 rgba(255,80,100,.25); }
+
+.section-title { font-family:var(--font-d); font-size:1.5rem; color:var(--text); margin-bottom:6px; }
+.section-sub { font-size:0.82rem; font-weight:700; color:var(--muted); margin-bottom:24px; }
+
+/* ── Card ── */
+.card { background:var(--surface); border:2px solid var(--border); border-radius:20px; padding:24px; box-shadow:0 4px 0 var(--border); }
+
+/* ── Upload ── */
+.upload-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+.upload-box { background:var(--surface2); border:2px dashed var(--border); border-radius:16px; padding:28px 20px; text-align:center; cursor:pointer; transition:all .2s; }
+.upload-box:hover,.upload-box.drag { border-color:var(--accent); background:#fff4ec; }
+.upload-box.loaded { border-style:solid; border-color:var(--green); background:var(--green-bg); }
+.upload-icon { font-size:2rem; margin-bottom:8px; }
+.upload-label { font-size:0.72rem; font-weight:900; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+.upload-status { font-size:0.78rem; font-weight:800; color:var(--green); }
+.upload-hint { font-size:0.7rem; font-weight:700; color:var(--muted); margin-top:4px; }
+
+/* ── Stats ── */
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+.stat-card { background:var(--surface); border:2px solid var(--border); border-radius:16px; padding:16px 18px; box-shadow:0 3px 0 var(--border); }
+.stat-label { font-size:0.65rem; font-weight:900; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+.stat-value { font-family:var(--font-d); font-size:1.8rem; color:var(--text); line-height:1; }
+.stat-value.accent { color:var(--accent); }
+.stat-value.green  { color:var(--green); }
+.stat-value.pink   { color:var(--pink); }
+.stat-value.tiktok { color:#00c8a0; }
+
+/* ── Table ── */
+.table-wrap { border:2px solid var(--border); border-radius:16px; overflow:auto; margin-bottom:20px; }
+table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+th { text-align:left; padding:10px 16px; font-size:0.68rem; font-weight:900; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); background:var(--surface2); border-bottom:2px solid var(--border); }
+td { padding:10px 16px; border-bottom:1px solid var(--border); font-weight:700; color:var(--text); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:var(--surface2); }
+.badge { display:inline-block; font-size:0.62rem; font-weight:900; letter-spacing:0.08em; text-transform:uppercase; padding:3px 10px; border-radius:50px; }
+.badge-yt { background:#fff1f1; color:#ef4444; border:2px solid #fca5a5; }
+.badge-tt { background:#f0fffc; color:#00c8a0; border:2px solid #6ee7d8; }
+
+/* ── Patterns ── */
+.patterns-box { background:linear-gradient(135deg,#f5f0ff,#fdf4ff); border:2px solid #ddd6fe; border-left:4px solid var(--purple); border-radius:16px; padding:18px 20px; margin-bottom:20px; }
+.patterns-box ul { list-style:none; }
+.patterns-box li { font-size:0.82rem; font-weight:700; color:var(--text); padding:5px 0; border-bottom:1px solid #ede9fe; }
+.patterns-box li:last-child { border-bottom:none; }
+.patterns-box li::before { content:"✦ "; color:var(--purple); }
+
+/* ── Notes ── */
+.notes-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.note-card { background:var(--surface2); border:2px solid var(--border); border-radius:16px; padding:18px; }
+.note-label { font-size:0.7rem; font-weight:900; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.note-card textarea { width:100%; background:var(--surface); border:2px solid var(--border); border-radius:10px; color:var(--text); font-family:var(--font-b); font-size:0.82rem; font-weight:700; padding:10px 12px; resize:vertical; min-height:90px; }
+.note-card textarea:focus { outline:none; border-color:var(--accent); }
+
+/* ── Trends ── */
+.trends-layout { display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+.trends-controls { display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+.ctrl-select { background:var(--surface); border:2px solid var(--border); border-radius:50px; color:var(--text); font-family:var(--font-b); font-size:0.82rem; font-weight:800; padding:8px 16px; cursor:pointer; appearance:none; -webkit-appearance:none; }
+.ctrl-select:focus { outline:none; border-color:var(--accent); }
+.refresh-btn { background:var(--surface); border:2px solid var(--border); border-radius:50px; color:var(--muted); font-family:var(--font-b); font-size:0.82rem; font-weight:800; padding:8px 18px; cursor:pointer; box-shadow:0 3px 0 var(--border); transition:all .2s cubic-bezier(.34,1.56,.64,1); }
+.refresh-btn:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); transform:translateY(-1px); }
+.refresh-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+.trend-card { background:var(--surface); border:2px solid var(--border); border-radius:18px; padding:16px 18px; margin-bottom:10px; box-shadow:0 3px 0 var(--border); transition:all .15s; cursor:pointer; }
+.trend-card:hover { border-color:var(--accent); transform:translateY(-1px); }
+.trend-card.selected { border-color:var(--accent); background:#fff9f5; box-shadow:0 3px 0 rgba(255,140,66,.2); }
+.trend-meta { display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+.sub-chip { background:#fff1ec; border:2px solid #fddcb5; color:var(--reddit); font-size:0.65rem; font-weight:900; padding:2px 10px; border-radius:50px; }
+.trend-score { font-family:var(--font-d); font-size:0.9rem; color:var(--accent); }
+.trend-comments { font-size:0.72rem; font-weight:700; color:var(--muted); }
+.trend-flair { background:var(--surface2); border:2px solid var(--border); color:var(--muted); font-size:0.62rem; font-weight:900; padding:2px 10px; border-radius:50px; }
+.trend-title { font-size:0.88rem; font-weight:800; color:var(--text); line-height:1.4; }
+.trend-title a { color:var(--text); text-decoration:none; }
+.trend-title a:hover { color:var(--accent); }
+
+/* ── Post Ideas Panel ── */
+.ideas-panel { background:var(--surface); border:2px solid var(--border); border-radius:20px; padding:22px; box-shadow:0 4px 0 var(--border); position:sticky; top:90px; }
+.ideas-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:2px solid var(--border); }
+.ideas-label { font-family:var(--font-d); font-size:1rem; color:var(--text); }
+.ideas-thinking { font-size:0.78rem; font-weight:700; color:var(--accent); animation:pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:1} }
+
+.selected-topic-box { background:var(--surface2); border:2px solid var(--border); border-radius:12px; padding:10px 14px; margin-bottom:14px; font-size:0.78rem; font-weight:700; color:var(--muted); line-height:1.4; }
+.selected-topic-box strong { color:var(--text); display:block; margin-bottom:2px; font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; }
+
+.context-row { margin-bottom:14px; }
+.context-input { width:100%; background:var(--surface2); border:2px solid var(--border); border-radius:12px; color:var(--text); font-family:var(--font-b); font-size:0.82rem; font-weight:700; padding:10px 14px; resize:none; min-height:60px; }
+.context-input:focus { outline:none; border-color:var(--accent); }
+
+.generate-btn { width:100%; background:linear-gradient(135deg,var(--accent),var(--pink)); border:none; border-radius:14px; color:#fff; font-family:var(--font-d); font-size:1rem; padding:12px; cursor:pointer; box-shadow:0 4px 0 rgba(255,80,100,.25); transition:all .2s cubic-bezier(.34,1.56,.64,1); margin-bottom:16px; }
+.generate-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 6px 0 rgba(255,80,100,.25); }
+.generate-btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+
+.post-card { background:var(--surface2); border:2px solid var(--border); border-radius:14px; padding:16px; margin-bottom:12px; }
+.post-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:6px; }
+.post-angle { font-size:0.68rem; font-weight:900; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); }
+.post-platforms { display:flex; gap:5px; }
+.platform-pip { font-size:0.62rem; font-weight:900; padding:2px 8px; border-radius:50px; }
+.pip-both { background:#e0f2fe; color:#0369a1; border:2px solid #bae6fd; }
+.post-text { font-size:0.88rem; font-weight:700; color:var(--text); line-height:1.55; white-space:pre-wrap; margin-bottom:10px; }
+.post-why { font-size:0.72rem; font-weight:700; color:var(--muted); font-style:italic; margin-bottom:10px; line-height:1.4; }
+.post-footer { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.char-count { font-size:0.65rem; font-weight:800; color:var(--muted); }
+.char-count.over { color:var(--red); }
+
+.action-btn { background:var(--surface); border:2px solid var(--border); border-radius:50px; color:var(--muted); font-family:var(--font-b); font-size:0.72rem; font-weight:900; padding:5px 14px; cursor:pointer; transition:all .15s; }
+.action-btn:hover { border-color:var(--accent); color:var(--accent); }
+.action-btn.copied { border-color:var(--green); color:var(--green); background:var(--green-bg); }
+
+.empty-state { text-align:center; padding:36px 20px; font-size:0.85rem; font-weight:700; color:var(--muted); line-height:1.6; }
+.empty-icon { font-size:2rem; margin-bottom:10px; }
+
+/* ── Twitch / Potential ── */
+:root { --twitch: #9146ff; }
+.twitch-btn { background:var(--twitch); border:none; border-radius:14px; color:#fff; font-family:var(--font-d); font-size:1rem; padding:12px 24px; cursor:pointer; box-shadow:0 4px 0 rgba(100,50,200,.3); transition:all .2s cubic-bezier(.34,1.56,.64,1); display:inline-flex; align-items:center; gap:8px; }
+.twitch-btn:hover { transform:translateY(-2px); }
+.twitch-btn.connected { background:var(--green); box-shadow:0 4px 0 rgba(30,180,80,.3); }
+.twitch-btn.disconnected { background:var(--surface2); border:2px solid var(--border); color:var(--muted); box-shadow:0 3px 0 var(--border); }
+.twitch-btn.disconnected:hover { border-color:var(--twitch); color:var(--twitch); }
+.potential-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
+.potential-full { grid-column:1/-1; }
+.stat-mini-row { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
+.tier-section { margin-bottom:24px; }
+.tier-label { font-family:var(--font-d); font-size:0.9rem; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.tier-badge { font-size:0.65rem; font-weight:900; padding:3px 10px; border-radius:50px; }
+.tier-peer { background:#fef3e8; color:var(--accent); border:2px solid var(--border); }
+.tier-stretch { background:#f0f9ff; color:#0284c7; border:2px solid #bae6fd; }
+.raid-card { background:var(--surface); border:2px solid var(--border); border-radius:16px; padding:14px 16px; margin-bottom:8px; box-shadow:0 3px 0 var(--border); display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.raid-card:hover { border-color:var(--twitch); }
+.raid-info { flex:1; min-width:0; }
+.raid-name { font-family:var(--font-d); font-size:1rem; color:var(--text); margin-bottom:2px; }
+.raid-meta { font-size:0.72rem; font-weight:700; color:var(--muted); }
+.raid-viewers { font-family:var(--font-d); font-size:1.2rem; color:var(--twitch); white-space:nowrap; }
+.raid-why { font-size:0.72rem; font-weight:700; color:var(--muted); font-style:italic; width:100%; margin-top:6px; }
+.raid-link { background:var(--twitch); border:none; border-radius:50px; color:#fff; font-family:var(--font-b); font-size:0.72rem; font-weight:900; padding:5px 14px; cursor:pointer; text-decoration:none; white-space:nowrap; }
+.cat-card { background:var(--surface); border:2px solid var(--border); border-radius:16px; padding:14px 16px; margin-bottom:8px; box-shadow:0 3px 0 var(--border); }
+.cat-card:hover { border-color:var(--accent); }
+.cat-name { font-family:var(--font-d); font-size:1rem; color:var(--text); margin-bottom:4px; }
+.cat-stats { font-size:0.72rem; font-weight:700; color:var(--muted); margin-bottom:6px; display:flex; gap:12px; flex-wrap:wrap; }
+.cat-why { font-size:0.78rem; font-weight:700; color:var(--text); line-height:1.5; }
+.connect-box { background:linear-gradient(135deg,#f5f0ff,#fdf4ff); border:2px solid #ddd6fe; border-radius:20px; padding:28px; text-align:center; margin-bottom:20px; }
+.connect-box h3 { font-family:var(--font-d); font-size:1.2rem; color:var(--text); margin-bottom:8px; }
+.connect-box p { font-size:0.82rem; font-weight:700; color:var(--muted); margin-bottom:20px; line-height:1.5; }
+.tag-input-area { background:var(--surface2); border:2px solid var(--border); border-radius:14px; padding:10px 12px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; cursor:text; transition:border-color .2s; margin-bottom:8px; }
+.tag-input-area:focus-within { border-color:var(--accent); }
+.tag-chip { background:var(--surface); border:2px solid var(--border); border-radius:50px; font-size:0.72rem; font-weight:800; color:var(--text); padding:3px 10px 3px 12px; display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
+.tag-chip.interest { border-color:var(--accent); background:#fff4ec; color:var(--accent); }
+.tag-chip.exclude { border-color:#fca5a5; background:#fff1f2; color:var(--red); }
+.tag-chip-x { background:none; border:none; cursor:pointer; color:inherit; font-size:0.9rem; line-height:1; padding:0; opacity:.7; }
+.tag-chip-x:hover { opacity:1; }
+.tag-bare-input { background:none; border:none; outline:none; font-family:var(--font-b); font-size:0.78rem; font-weight:700; color:var(--text); min-width:120px; flex:1; padding:2px 4px; }
+.not-interested-btn { background:none; border:1px solid var(--border); border-radius:50px; color:var(--muted); font-family:var(--font-b); font-size:0.68rem; font-weight:800; padding:3px 10px; cursor:pointer; transition:all .15s; margin-top:8px; }
+.not-interested-btn:hover { border-color:var(--red); color:var(--red); }
+.potential-section-title { font-family:var(--font-d); font-size:1.1rem; color:var(--text); margin-bottom:4px; }
+.potential-section-sub { font-size:0.78rem; font-weight:700; color:var(--muted); margin-bottom:16px; }
+
+@media (max-width:760px) {
+  .upload-row,.stats-row,.notes-grid,.trends-layout { grid-template-columns:1fr; }
+  nav { padding:14px 18px; }
+  .page { padding:20px 14px 48px; }
+  .ideas-panel { position:static; }
+}
+</style>
 </head>
-<body></body>
+<body>
+
+<!-- LOGIN -->
+<div id="login-gate">
+  <div class="login-card">
+    <div class="login-logo">Streamer <span>Hub</span></div>
+    <div class="login-sub">PRIVATE ACCESS ONLY</div>
+      <label class="login-label" for="pw-input">PASSWORD</label>
+      <input type="password" id="pw-input" autocomplete="current-password" class="login-input" placeholder="••••••••••" />
+      <button type="button" class="login-btn" id="login-btn" onclick="attemptLogin()">Enter →</button>
+    <div class="login-error" id="login-error">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <nav>
+    <a class="nav-logo" href="#">Streamer Hub <span class="nav-logo-badge">Private</span></a>
+    <div class="nav-right">
+      <a class="nav-link" href="https://dualpost.app" target="_blank">← DualPost</a>
+      <button class="logout-btn" onclick="logout()">Log out</button>
+    </div>
+  </nav>
+
+  <div class="page">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('performance',this)">📊 Performance</button>
+      <button class="tab-btn" onclick="switchTab('trends',this)">🔥 Trends & Posts</button>
+      <button class="tab-btn" onclick="switchTab('settings',this)">⚙️ Settings</button>
+      <button class="tab-btn" onclick="switchTab('potential',this)">🚀 Potential</button>
+    </div>
+
+    <!-- PERFORMANCE TAB -->
+    <div id="tab-performance">
+      <div class="section-title">Performance Tracker</div>
+      <div class="section-sub">Upload your platform CSVs to surface patterns and track what's working.</div>
+      <div class="upload-row">
+        <div class="upload-box" id="yt-upload-box" onclick="document.getElementById('yt-file').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="handleDrop(event,'yt')">
+          <input type="file" id="yt-file" accept=".csv" style="display:none" onchange="handleFile(this.files[0],'yt')" />
+          <div class="upload-icon">📹</div>
+          <div class="upload-label">YouTube Studio CSV</div>
+          <div id="yt-status" class="upload-hint">Analytics → Content → Export</div>
+        </div>
+        <div class="upload-box" id="tt-upload-box" onclick="document.getElementById('tt-file').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="handleDrop(event,'tt')">
+          <input type="file" id="tt-file" accept=".csv" style="display:none" onchange="handleFile(this.files[0],'tt')" />
+          <div class="upload-icon">🎵</div>
+          <div class="upload-label">TikTok Studio CSV</div>
+          <div id="tt-status" class="upload-hint">studio.tiktok.com → Analytics → Content</div>
+        </div>
+      </div>
+      <div id="perf-data" style="display:none">
+        <div class="stats-row" id="stats-row"></div>
+        <div class="section-title" style="font-size:1rem;margin-bottom:12px;">✦ Pattern Analysis</div>
+        <div class="patterns-box" id="patterns-box"></div>
+        <div class="section-title" style="font-size:1rem;margin:20px 0 12px;">Top Performers</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Title</th><th>Platform</th><th>Views</th><th>Likes</th></tr></thead>
+            <tbody id="top-table"></tbody>
+          </table>
+        </div>
+        <div class="section-title" style="font-size:1rem;margin:20px 0 12px;">Experiment Log</div>
+        <div class="notes-grid">
+          <div class="note-card">
+            <div class="note-label">What worked / what I tested</div>
+            <textarea id="note-what" placeholder="e.g. Tried adding killer name in title..."></textarea>
+          </div>
+          <div class="note-card">
+            <div class="note-label">What to try next</div>
+            <textarea id="note-next" placeholder="e.g. Test red overlay thumbnail..."></textarea>
+          </div>
+        </div>
+      </div>
+      <div id="perf-empty" class="empty-state">
+        <div class="empty-icon">📂</div>
+        Upload your YouTube Studio and/or TikTok Studio CSVs above<br/>to unlock performance tracking and pattern analysis.
+      </div>
+    </div>
+
+    <!-- TRENDS & POSTS TAB -->
+    <div id="tab-trends" style="display:none">
+      <div class="section-title">Trends & Post Ideas</div>
+      <div class="section-sub">Paste your Reddit JSON below, pick a post, get Twitter/X + Bluesky ideas that spark genuine engagement.</div>
+
+      <div class="note-card" style="margin-bottom:20px;">
+        <div class="note-label">Paste Reddit JSON</div>
+        <textarea id="reddit-json-input" style="width:100%;background:var(--surface);border:2px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font-b);font-size:0.75rem;font-weight:600;padding:10px 12px;resize:vertical;min-height:80px;margin-top:8px;" placeholder="Paste the JSON from your Reddit feed URL here, then click Parse..."></textarea>
+        <button class="generate-btn" style="margin-top:10px;margin-bottom:0;" onclick="parseRedditJSON()">Parse Posts →</button>
+      </div>
+
+      <div class="trends-layout">
+        <div>
+          <div id="trends-list">
+            <div class="empty-state">
+              <div class="empty-icon">📋</div>
+              Paste your Reddit JSON above and click Parse to load posts.
+            </div>
+          </div>
+        </div>
+        <div class="ideas-panel">
+          <div class="ideas-header">
+            <span class="ideas-label">Post Ideas</span>
+            <span class="ideas-thinking" id="ideas-thinking" style="display:none">generating...</span>
+          </div>
+          <div id="ideas-output">
+            <div class="empty-state">
+              <div class="empty-icon">👈</div>
+              Click any post on the left to generate Twitter/X + Bluesky post ideas.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POTENTIAL TAB -->
+    <div id="tab-potential" style="display:none">
+      <div class="section-title">Growth Potential</div>
+      <div class="section-sub">Raid targets and category recommendations powered by your Twitch data + Gemini analysis.</div>
+
+      <!-- Twitch Connect Box -->
+      <div id="twitch-connect-box" class="connect-box">
+        <h3>🟣 Connect Twitch</h3>
+        <p>Connect your Twitch account to pull live stream data, recent categories, and channel stats for personalized recommendations.</p>
+        <button class="twitch-btn" id="twitch-connect-btn" onclick="connectTwitch()">Connect with Twitch</button>
+      </div>
+
+      <!-- Connected state -->
+      <div id="twitch-connected-bar" style="display:none;background:var(--green-bg);border:2px solid var(--green-border);border-radius:14px;padding:12px 16px;margin-bottom:20px;display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:0.82rem;font-weight:800;color:var(--green);">✓ Twitch connected as <span id="twitch-username-display"></span></span>
+        <button class="action-btn" onclick="disconnectTwitch()">Disconnect</button>
+      </div>
+
+      <!-- CSV Upload -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="note-label" style="margin-bottom:8px;">Twitch Analytics CSV (optional — adds historical depth)</div>
+        <p style="font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:12px;">Twitch Dashboard → Analytics → Export. Adds historical viewer averages and engagement trends to the analysis.</p>
+        <div class="upload-box" id="twitch-csv-box" style="padding:16px;" onclick="document.getElementById('twitch-csv-file').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="handleTwitchCSVDrop(event)">
+          <input type="file" id="twitch-csv-file" accept=".csv" style="display:none" onchange="handleTwitchCSV(this.files[0])" />
+          <div class="upload-label">Twitch Analytics CSV</div>
+          <div id="twitch-csv-status" class="upload-hint">Click or drag to upload</div>
+        </div>
+        <div id="twitch-csv-preview" style="display:none;margin-top:14px;"></div>
+      </div>
+
+      <!-- Interest Tags -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="note-label" style="margin-bottom:4px;">Your Interests & Playstyles</div>
+        <p style="font-size:0.72rem;font-weight:700;color:var(--muted);margin-bottom:10px;">Tags used to personalize recommendations. Auto-filled from your Twitch history. Add your own — game genres, styles, moods.</p>
+        <div class="tag-input-area" id="interest-tag-area" onclick="document.getElementById('interest-tag-input').focus()">
+          <div id="interest-tags-container"></div>
+          <input type="text" id="interest-tag-input" class="tag-bare-input" placeholder="Type a tag and press Enter..." />
+        </div>
+        <div class="note-label" style="margin-bottom:8px;margin-top:16px;">Focus on Twitch Categories (optional)</div>
+        <p style="font-size:0.72rem;font-weight:700;color:var(--muted);margin-bottom:10px;">Specific categories for raid targets. Leave blank to use your recent Twitch categories.</p>
+        <input type="text" id="potential-categories" class="login-input" style="text-align:left;letter-spacing:0.02em;margin-bottom:12px;" placeholder="e.g. Dead by Daylight, Phasmophobia" />
+        <button class="generate-btn" style="margin-bottom:0;" id="potential-generate-btn" onclick="generatePotential()">Analyze Growth Potential →</button>
+      </div>
+
+      <!-- Stats summary -->
+      <div id="potential-stats" style="display:none;margin-bottom:20px;">
+        <div class="potential-section-title">Your Stats</div>
+        <div class="potential-section-sub">Based on your uploaded CSV and Twitch account data.</div>
+        <div class="stat-mini-row" id="potential-stat-cards"></div>
+      </div>
+
+      <!-- Results -->
+      <div id="potential-results" style="display:none;">
+        <!-- Raid targets -->
+        <div style="margin-bottom:28px;">
+          <div class="potential-section-title">🎯 Raid Targets</div>
+          <div class="potential-section-sub">Live right now — sized appropriately for your channel. No clout chasing.</div>
+          <div id="raid-stretch-section" class="tier-section">
+            <div id="raid-stretch-list"></div>
+          </div>
+        </div>
+
+        <!-- Category recommendations -->
+        <div>
+          <div class="potential-section-title">📈 Category Opportunities</div>
+          <div class="potential-section-sub">Categories with genuine growth potential — not too saturated, not dead. Hit "Not Interested" to exclude and swap.</div>
+          <div id="category-list"></div>
+        </div>
+      </div>
+
+      <!-- Exclusion log -->
+      <div id="exclusion-log-section" style="margin-top:24px;display:none;">
+        <div class="potential-section-title" style="font-size:0.9rem;">🚫 Excluded Categories</div>
+        <p style="font-size:0.72rem;font-weight:700;color:var(--muted);margin:4px 0 10px;">These won't appear in future recommendations. Click × to restore.</p>
+        <div id="exclusion-tags-container" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+
+      <div id="potential-loading" style="display:none;" class="empty-state">
+        <div class="empty-icon" style="animation:pulse 1.2s ease-in-out infinite;">⚡</div>
+        Pulling live data and analyzing growth opportunities...
+      </div>
+
+      <div id="potential-empty" class="empty-state">
+        <div class="empty-icon">🚀</div>
+        Connect Twitch and/or upload your analytics CSV, then hit Analyze to get raid targets and category recommendations.
+      </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div id="tab-settings" style="display:none">
+      <div class="section-title">Settings</div>
+      <div class="section-sub">API keys stored locally in your browser — never sent anywhere except the respective API.</div>
+      <div class="card" style="max-width:500px;">
+        <div class="note-label" style="margin-bottom:12px;">Gemini API Key</div>
+        <p style="font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:14px;line-height:1.5;">Used for AI-powered performance analysis. Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent);">aistudio.google.com</a>.</p>
+        <input type="password" id="gemini-key-input" class="login-input" style="text-align:left;letter-spacing:0.02em;margin-bottom:12px;" placeholder="Paste your Gemini API key..." autocomplete="off" />
+        <div style="display:flex;gap:10px;">
+          <button class="generate-btn" style="margin-bottom:0;" onclick="saveGeminiKeyFromInput()">Save Key</button>
+          <button class="action-btn" onclick="clearGeminiKey()">Clear</button>
+        </div>
+        <div id="key-status" style="font-size:0.78rem;font-weight:800;margin-top:10px;display:none;"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+window.onerror = function(msg, src, line) {
+  document.getElementById('login-error').textContent = 'JS Error: ' + msg + ' (line ' + line + ')';
+  document.getElementById('login-error').classList.add('visible');
+};
+const WORKER_URL = 'https://withered-mud-dc44.portgamingsttv.workers.dev';
+const SESSION_KEY = 'sh_authed';
+
+// ── Auth ──────────────────────────────────────────
+async function attemptLogin() {
+  const pw = document.getElementById('pw-input').value.trim();
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  const input = document.getElementById('pw-input');
+  if (!pw) return;
+  btn.disabled = true; btn.textContent = 'Checking...';
+  err.classList.remove('visible'); input.classList.remove('error');
+  try {
+    const res = await fetch(WORKER_URL + '/verify-password', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    });
+    const data = await res.json();
+    if (data.ok) { sessionStorage.setItem(SESSION_KEY, '1'); showApp(); }
+    else { input.classList.add('error'); err.classList.add('visible'); btn.disabled = false; btn.textContent = 'Enter →'; }
+  } catch(e) {
+    err.textContent = 'Could not reach server — check your connection.';
+    err.classList.add('visible'); btn.disabled = false; btn.textContent = 'Enter →';
+  }
+}
+function showApp() {
+  document.getElementById('login-gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  renderInterestTags();
+  renderExclusionLog();
+  // Tag listener attached in switchTab
+}
+function logout() { sessionStorage.removeItem(SESSION_KEY); location.reload(); }
+// ── Interest Tags & Exclusions ──────────────────────────────
+function getInterestTags() { try { return JSON.parse(localStorage.getItem('sh_interest_tags') || '[]'); } catch(e) { return []; } }
+function saveInterestTags(tags) { localStorage.setItem('sh_interest_tags', JSON.stringify(tags)); }
+function getExcludedCats() { try { return JSON.parse(localStorage.getItem('sh_excluded_cats') || '[]'); } catch(e) { return []; } }
+function saveExcludedCats(cats) { localStorage.setItem('sh_excluded_cats', JSON.stringify(cats)); }
+
+function renderInterestTags() {
+  const tags = getInterestTags();
+  const container = document.getElementById('interest-tags-container');
+  if (!container) return;
+  container.innerHTML = tags.map(function(t, i) {
+    return '<span class="tag-chip interest">' + t.replace(/</g,'&lt;') + '<button class="tag-chip-x" onclick="removeInterestTagByIndex(' + i + ')" title="Remove">×</button></span>';
+  }).join('');
+}
+
+function removeInterestTag(tag) {
+  saveInterestTags(getInterestTags().filter(t => t !== tag));
+  renderInterestTags();
+}
+function removeInterestTagByIndex(i) {
+  var tags = getInterestTags();
+  tags.splice(i, 1);
+  saveInterestTags(tags);
+  renderInterestTags();
+}
+
+function handleInterestTagInput(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim().replace(/,$/, '');
+    if (!val) return;
+    const tags = getInterestTags();
+    if (!tags.includes(val)) { tags.push(val); saveInterestTags(tags); }
+    e.target.value = '';
+    renderInterestTags();
+  }
+}
+
+function renderExclusionLog() {
+  const cats = getExcludedCats();
+  const section = document.getElementById('exclusion-log-section');
+  const container = document.getElementById('exclusion-tags-container');
+  if (!section || !container) return;
+  if (!cats.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  container.innerHTML = cats.map(function(c, i) {
+    return '<span class="tag-chip exclude">' + c.replace(/</g,'&lt;') + '<button class="tag-chip-x" onclick="restoreExcludedCatByIndex(' + i + ')" title="Restore">×</button></span>';
+  }).join('');
+}
+
+function restoreExcludedCat(cat) {
+  saveExcludedCats(getExcludedCats().filter(c => c !== cat));
+  renderExclusionLog();
+}
+function restoreExcludedCatByIndex(i) {
+  var cats = getExcludedCats();
+  cats.splice(i, 1);
+  saveExcludedCats(cats);
+  renderExclusionLog();
+}
+
+let currentCategoryResults = [];
+
+function renderCategoryCards(categories) {
+  currentCategoryResults = categories;
+  const list = document.getElementById('category-list');
+  if (!list) return;
+  list.innerHTML = categories.map((c, i) =>
+    '<div class="cat-card" id="cat-card-' + i + '">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;">' +
+    '<div class="cat-name">' + c.name + '</div>' +
+    '<button class="not-interested-btn" onclick="notInterestedCat(' + i + ')">Not Interested</button>' +
+    '</div>' +
+    '<div style="font-size:0.65rem;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Why this fits you</div>' +
+    '<div class="cat-why">' + c.why + '</div>' +
+    '<div style="font-size:0.65rem;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-top:10px;margin-bottom:4px;">Content tip</div>' +
+    '<div style="font-size:0.78rem;font-weight:700;color:var(--muted);line-height:1.5;">' + c.content_tip + '</div>' +
+    '</div>'
+  ).join('');
+  renderExclusionLog();
+}
+
+async function notInterestedCat(index) {
+  var catName = currentCategoryResults[index] ? currentCategoryResults[index].name : '';
+  // Add to exclusion log
+  const excluded = getExcludedCats();
+  if (catName && !excluded.includes(catName)) { excluded.push(catName); saveExcludedCats(excluded); }
+
+  // Show loading state on that card
+  const card = document.getElementById('cat-card-' + index);
+  if (card) card.innerHTML = '<div style="color:var(--muted);font-size:0.78rem;font-weight:700;padding:8px;">Finding replacement...</div>';
+
+  // Ask Gemini for one replacement
+  const geminiKey = getGeminiKey();
+  if (!geminiKey) { renderExclusionLog(); return; }
+
+  const excluded2 = getExcludedCats();
+  const interestTags = getInterestTags();
+  const existing = currentCategoryResults.filter((_, i) => i !== index).map(c => c.name).join(', ');
+
+  try {
+    const prompt = 'You are a Twitch growth strategist. Recommend ONE new Twitch category for a small Dead by Daylight streamer to explore. ' +
+      'Their interest tags: ' + interestTags.join(', ') + '. ' +
+      'Already showing: ' + existing + '. ' +
+      'EXCLUDE these categories entirely (user not interested): ' + excluded2.join(', ') + '. ' +
+      'Pick a category with good growth potential — enough viewers to matter, not so many streamers that discovery is impossible. ' +
+      'Respond ONLY with valid JSON: {"name":"","why":"","content_tip":""}';
+
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + geminiKey, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
+    const newCat = JSON.parse(text);
+    currentCategoryResults[index] = newCat;
+    renderCategoryCards(currentCategoryResults);
+  } catch(e) {
+    if (card) card.innerHTML = '<div style="color:var(--red);font-size:0.78rem;font-weight:700;padding:8px;">Could not load replacement — try again.</div>';
+    renderExclusionLog();
+  }
+}
+
+// Static tag map for common DBD-adjacent games
+const GAME_TAG_MAP = {
+  'dead by daylight': ['horror','asymmetrical','multiplayer','survival','chill'],
+  'phasmophobia': ['horror','co-op','investigation','chill'],
+  'friday the 13th': ['horror','asymmetrical','multiplayer'],
+  'the texas chain saw massacre': ['horror','asymmetrical','multiplayer'],
+  'evil dead': ['horror','asymmetrical','multiplayer'],
+  'hunt: showdown': ['horror','fps','extraction','competitive'],
+  'back 4 blood': ['horror','co-op','fps'],
+  'left 4 dead 2': ['horror','co-op','fps'],
+  'alien: isolation': ['horror','survival','single-player'],
+  'resident evil': ['horror','survival','action'],
+  'lethal company': ['horror','co-op','chill','funny moments'],
+  'content warning': ['horror','co-op','chill','funny moments'],
+  'backrooms': ['horror','co-op','indie'],
+  'devour': ['horror','co-op'],
+  'dredge': ['horror','indie','chill'],
+  'subnautica': ['survival','exploration','chill'],
+  'the forest': ['survival','horror','co-op'],
+  'green hell': ['survival','co-op'],
+  'valheim': ['survival','co-op','chill'],
+  'minecraft': ['survival','co-op','variety','chill'],
+  'just chatting': ['variety','irl','chill'],
+};
+
+async function autoPopulateInterestTags() {
+  if (getInterestTags().length > 0) return;
+  const token = await getTwitchAccessToken();
+  if (!token || !twitchUser) return;
+  try {
+    // Get recent VODs to find streamed categories
+    const videosData = await twitchAPI('videos?user_id=' + twitchUser.id + '&type=archive&first=10');
+    const gameNames = [];
+    if (videosData && videosData.data) {
+      for (const v of videosData.data) {
+        if (v.game_name && !gameNames.includes(v.game_name)) gameNames.push(v.game_name);
+      }
+    }
+    // Also get current channel game
+    const channelData = await twitchAPI('channels?broadcaster_id=' + twitchUser.id);
+    if (channelData && channelData.data && channelData.data[0] && channelData.data[0].game_name) {
+      if (!gameNames.includes(channelData.data[0].game_name)) gameNames.unshift(channelData.data[0].game_name);
+    }
+
+    // Build tags from static map + game names themselves
+    const tags = new Set();
+    for (const name of gameNames.slice(0, 3)) {
+      const key = name.toLowerCase();
+      const mapped = Object.keys(GAME_TAG_MAP).find(k => key.includes(k));
+      if (mapped) {
+        GAME_TAG_MAP[mapped].forEach(t => tags.add(t));
+      }
+    }
+
+    // If Gemini key available, enhance with AI tags
+    const geminiKey = getGeminiKey();
+    if (geminiKey && gameNames.length) {
+      try {
+        const prompt = 'Convert these Twitch game names into 4-6 short gameplay style tags (e.g. "horror", "asymmetrical", "multiplayer", "survival", "cozy", "competitive", "funny moments"). Games: "' + gameNames.slice(0,3).join('", "') + '". Respond ONLY with a JSON array: ["tag1","tag2"]';
+        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + geminiKey, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const gemData = await res.json();
+        if (!gemData.error) {
+          const text = gemData.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
+          const aiTags = JSON.parse(text);
+          if (Array.isArray(aiTags)) aiTags.forEach(t => tags.add(t));
+        }
+      } catch(e) {}
+    }
+
+    const finalTags = [...tags].slice(0, 8);
+    if (finalTags.length) {
+      saveInterestTags(finalTags);
+      renderInterestTags();
+    }
+  } catch(e) {}
+}
+
+// ── Twitch Auth ──────────────────────────────────────────
+const TWITCH_CLIENT_ID_PUBLIC = 'c61m4k6iu31kfm6kihel1vswcx9hka';
+const TWITCH_REDIRECT = 'https://dualpost.app/streamer-hub/twitch-callback.html';
+const TWITCH_SCOPES = 'user:read:email channel:read:stream_key';
+
+function getTwitchTokens() {
+  return {
+    access: sessionStorage.getItem('twitch_access_token'),
+    refresh: localStorage.getItem('sh_twitch_refresh'),
+    expires: parseInt(sessionStorage.getItem('twitch_expires_at') || '0'),
+  };
+}
+
+function setTwitchTokens(access, refresh, expiresIn) {
+  sessionStorage.setItem('twitch_access_token', access);
+  sessionStorage.setItem('twitch_expires_at', Date.now() + (expiresIn * 1000));
+  if (refresh) localStorage.setItem('sh_twitch_refresh', refresh);
+}
+
+function clearTwitchTokens() {
+  sessionStorage.removeItem('twitch_access_token');
+  sessionStorage.removeItem('twitch_expires_at');
+  localStorage.removeItem('sh_twitch_refresh');
+}
+
+async function getTwitchAccessToken() {
+  const tokens = getTwitchTokens();
+  // If access token exists and not expired (with 5 min buffer)
+  if (tokens.access && tokens.expires > Date.now() + 300000) {
+    return tokens.access;
+  }
+  // Try to refresh
+  if (tokens.refresh) {
+    try {
+      const res = await fetch(WORKER_URL + '/twitch-refresh', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: tokens.refresh })
+      });
+      const data = await res.json();
+      if (data.access_token) {
+        setTwitchTokens(data.access_token, data.refresh_token, data.expires_in);
+        return data.access_token;
+      }
+    } catch(e) {}
+  }
+  return null;
+}
+
+function connectTwitch() {
+  const state = Math.random().toString(36).substring(2);
+  sessionStorage.setItem('twitch_oauth_state', state);
+  const params = new URLSearchParams({
+    client_id: TWITCH_CLIENT_ID_PUBLIC,
+    redirect_uri: TWITCH_REDIRECT,
+    response_type: 'code',
+    scope: TWITCH_SCOPES,
+    state: state,
+    force_verify: 'false',
+  });
+  window.location.href = 'https://id.twitch.tv/oauth2/authorize?' + params.toString();
+}
+
+function disconnectTwitch() {
+  clearTwitchTokens();
+  document.getElementById('twitch-connect-box').style.display = 'block';
+  document.getElementById('twitch-connected-bar').style.display = 'none';
+  twitchUser = null;
+}
+
+async function twitchAPI(endpoint) {
+  const token = await getTwitchAccessToken();
+  if (!token) return null;
+  const res = await fetch(WORKER_URL + '/twitch-api', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ endpoint, access_token: token })
+  });
+  return res.json();
+}
+
+async function twitchPublic(endpoint) {
+  const res = await fetch(WORKER_URL + '/twitch-public', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ endpoint })
+  });
+  return res.json();
+}
+
+let twitchUser = null;
+let twitchStats = null; // from CSV
+
+async function initTwitchConnection() {
+  const token = await getTwitchAccessToken();
+  if (!token) return;
+  try {
+    const data = await twitchAPI('users');
+    if (data && data.data && data.data[0]) {
+      twitchUser = data.data[0];
+      document.getElementById('twitch-connect-box').style.display = 'none';
+      const bar = document.getElementById('twitch-connected-bar');
+      bar.style.display = 'flex';
+      document.getElementById('twitch-username-display').textContent = twitchUser.display_name;
+      // Auto-populate interest tags from recent category
+      await autoPopulateInterestTags();
+    }
+  } catch(e) {}
+}
+
+// ── Twitch CSV ────────────────────────────────────────
+function handleTwitchCSVDrop(e) {
+  e.preventDefault();
+  document.getElementById('twitch-csv-box').classList.remove('drag');
+  handleTwitchCSV(e.dataTransfer.files[0]);
+}
+
+function handleTwitchCSV(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const rows = parseCSV(e.target.result);
+    // Filter to days where streaming happened
+    const streamDays = rows.filter(r => parseFloat(r['Minutes Streamed'] || 0) > 0);
+    if (!streamDays.length) {
+      document.getElementById('twitch-csv-status').innerHTML = '<span style="color:var(--red);font-weight:800;">No stream data found in CSV.</span>';
+      return;
+    }
+    const totalMinsW = streamDays.reduce((s,r) => s + parseFloat(r['Minutes Streamed']||0), 0);
+    const avgViewers = totalMinsW > 0
+      ? streamDays.reduce((s,r) => s + parseFloat(r['Average Viewers']||0) * parseFloat(r['Minutes Streamed']||0), 0) / totalMinsW
+      : streamDays.reduce((s,r) => s + parseFloat(r['Average Viewers']||0), 0) / streamDays.length;
+    const maxViewers = Math.max(...streamDays.map(r => parseFloat(r['Max Viewers']||0)));
+    const totalMins = totalMinsW;
+    const avgChatters = streamDays.reduce((s,r) => s + parseFloat(r['Chatters']||0), 0) / streamDays.length;
+    twitchStats = { avgViewers: Math.round(avgViewers * 10) / 10, maxViewers, totalMins, avgChatters: Math.round(avgChatters), streamDays: streamDays.length };
+    document.getElementById('twitch-csv-box').classList.add('loaded');
+    document.getElementById('twitch-csv-status').innerHTML = '<span class="upload-status">✓ ' + streamDays.length + ' stream days loaded</span>';
+    // Reset file input so same file can be re-uploaded or a new one replaces it
+    var fileInput = document.getElementById('twitch-csv-file');
+    if (fileInput) fileInput.value = '';
+
+    // Show parsed stats immediately in the upload card — visible before hitting Analyze
+    var preview = document.getElementById('twitch-csv-preview');
+    if (preview) {
+      preview.style.display = 'block';
+      preview.innerHTML =
+        '<div class="stat-mini-row" style="margin-bottom:8px;">' +
+        '<div class="stat-card"><div class="stat-label">Avg Viewers</div><div class="stat-value accent">' + twitchStats.avgViewers + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">Peak Viewers</div><div class="stat-value pink">' + twitchStats.maxViewers + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">Stream Days</div><div class="stat-value">' + twitchStats.streamDays + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">Avg Chatters</div><div class="stat-value green">' + twitchStats.avgChatters + '</div></div>' +
+        '</div>' +
+        '<div style="font-size:0.7rem;font-weight:700;color:var(--muted);line-height:1.8;">' +
+        streamDays.slice(0,5).map(function(r) {
+          return '<b>' + r['Date'] + '</b>: ' + r['Average Viewers'] + ' avg viewers, ' + r['Max Viewers'] + ' peak, ' + r['Minutes Streamed'] + ' mins streamed';
+        }).join('<br>') +
+        (streamDays.length > 5 ? '<br>...and ' + (streamDays.length-5) + ' more stream days' : '') +
+        '</div>';
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ── Generate Potential ────────────────────────────────
+async function generatePotential() {
+  const geminiKey = getGeminiKey();
+  if (!geminiKey) {
+    alert('Add your Gemini API key in Settings first.');
+    return;
+  }
+
+  const hasToken = await getTwitchAccessToken();
+  if (!hasToken && !twitchStats) {
+    alert('Connect Twitch or upload your analytics CSV first.');
+    return;
+  }
+
+  document.getElementById('potential-empty').style.display = 'none';
+  document.getElementById('potential-results').style.display = 'none';
+  document.getElementById('potential-stats').style.display = 'none';
+  document.getElementById('potential-loading').style.display = 'block';
+
+  try {
+    // Get categories to search
+    let categories = document.getElementById('potential-categories').value.trim();
+    let categoryList = categories ? categories.split(',').map(c => c.trim()).filter(Boolean) : [];
+
+    // If connected to Twitch and no manual categories, pull recent stream categories
+    if (!categoryList.length && hasToken && twitchUser) {
+      try {
+        // Get recent VODs to extract which categories were streamed
+        const videosData = await twitchAPI('videos?user_id=' + twitchUser.id + '&type=archive&first=20');
+        if (videosData && videosData.data && videosData.data.length) {
+          // Extract unique game names from recent streams
+          const seen = new Set();
+          for (const v of videosData.data) {
+            if (v.game_name && !seen.has(v.game_name)) {
+              seen.add(v.game_name);
+              categoryList.push(v.game_name);
+            }
+            if (categoryList.length >= 5) break;
+          }
+        }
+        // Fall back to current channel game if no VODs
+        if (!categoryList.length) {
+          const channelData = await twitchAPI('channels?broadcaster_id=' + twitchUser.id);
+          if (channelData && channelData.data && channelData.data[0] && channelData.data[0].game_name) {
+            categoryList = [channelData.data[0].game_name];
+          }
+        }
+      } catch(e) {}
+    }
+
+    if (!categoryList.length) categoryList = ['Dead by Daylight'];
+
+    // Get avg viewers for tier calculation
+    let myAvgViewers = twitchStats ? twitchStats.avgViewers : 7;
+    if (hasToken && twitchUser) {
+      try {
+        const streamData = await twitchAPI('streams?user_id=' + twitchUser.id);
+        if (streamData && streamData.data && streamData.data[0]) {
+          myAvgViewers = Math.max(myAvgViewers, streamData.data[0].viewer_count);
+        }
+      } catch(e) {}
+    }
+
+    const peerMin = 1;
+    const peerMax = Math.ceil(myAvgViewers * 2.5);
+    const stretchMin = peerMax + 1;
+    const stretchMax = Math.ceil(myAvgViewers * 5);
+
+    // Show stats
+    if (twitchStats) {
+      document.getElementById('potential-stats').style.display = 'block';
+      document.getElementById('potential-stat-cards').innerHTML = `
+        <div class="stat-card"><div class="stat-label">Avg Viewers</div><div class="stat-value accent">${twitchStats.avgViewers}</div></div>
+        <div class="stat-card"><div class="stat-label">Peak Viewers</div><div class="stat-value pink">${twitchStats.maxViewers}</div></div>
+        <div class="stat-card"><div class="stat-label">Stream Days</div><div class="stat-value">${twitchStats.streamDays}</div></div>
+        <div class="stat-card"><div class="stat-label">Avg Chatters</div><div class="stat-value green">${twitchStats.avgChatters}</div></div>`;
+    }
+
+    // Pull live streams - server-side deep pagination to find small streamers
+    async function fetchStreamsInRange(gameId, cat) {
+      const res = await fetch(WORKER_URL + '/twitch-streams-deep', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ game_id: gameId, min_viewers: peerMin, max_viewers: stretchMax })
+      });
+      const data = await res.json();
+      if (!data || !data.data) return [];
+      return data.data.map(s => ({...s, category: cat}));
+    }
+
+    // Resolve game IDs for all categories
+    const catsToSearch = categoryList.slice(0, 5);
+    const gameIdPromises = catsToSearch.map(async (cat) => {
+      try {
+        const gameData = await twitchPublic('games?name=' + encodeURIComponent(cat));
+        if (gameData && gameData.data && gameData.data[0]) return { cat, id: gameData.data[0].id };
+        const searchData = await twitchPublic('search/categories?query=' + encodeURIComponent(cat) + '&first=1');
+        if (searchData && searchData.data && searchData.data[0]) return { cat, id: searchData.data[0].id };
+      } catch(e) {}
+      return null;
+    });
+    const resolvedGames = (await Promise.all(gameIdPromises)).filter(Boolean);
+
+    // Fallback to DBD if nothing resolved
+    if (!resolvedGames.length) {
+      try {
+        const dbdData = await twitchPublic('games?name=Dead+by+Daylight');
+        if (dbdData && dbdData.data && dbdData.data[0]) resolvedGames.push({ cat: 'Dead by Daylight', id: dbdData.data[0].id });
+      } catch(e) {}
+    }
+
+    // Fetch streams for all categories in parallel
+    const streamResults = await Promise.all(resolvedGames.map(g => fetchStreamsInRange(g.id, g.cat).catch(() => [])));
+    let allStreams = streamResults.flat();
+
+    // Deduplicate by user_id in case same streamer appears in multiple categories
+    const seen = new Set();
+    allStreams = allStreams.filter(s => { if (seen.has(s.user_id)) return false; seen.add(s.user_id); return true; });
+
+    // Filter to tiers
+    const peerStreams = allStreams.filter(s => s.viewer_count >= peerMin && s.viewer_count <= peerMax);
+    const stretchStreams = allStreams.filter(s => s.viewer_count > peerMax && s.viewer_count <= stretchMax);
+
+    // Get category saturation data — use meaningful stats not skewed averages
+    function calcCategoryStats(streams, name, isAdjacent) {
+      if (!streams.length) return null;
+      const counts = streams.map(s => s.viewer_count).sort((a,b) => a-b);
+      const median = counts[Math.floor(counts.length / 2)];
+      const top = counts[counts.length - 1];
+      // Count streamers in viewer ranges
+      const under10 = counts.filter(v => v <= 10).length;
+      const under25 = counts.filter(v => v <= 25).length;
+      const discoveryScore = Math.round((under10 / counts.length) * 100); // % of streamers with ≤10 viewers
+      return {
+        name,
+        liveStreamers: streams.length,
+        medianViewers: median,
+        topStreamer: top,
+        streamersUnder10: under10,
+        streamersUnder25: under25,
+        discoveryScore, // higher = more small streamers = easier to get noticed
+        isAdjacent: !!isAdjacent,
+      };
+    }
+
+    let categoryData = [];
+    // Current categories
+    for (const cat of categoryList.slice(0, 5)) {
+      try {
+        const gameData = await twitchPublic('games?name=' + encodeURIComponent(cat));
+        if (!gameData || !gameData.data || !gameData.data[0]) continue;
+        const streamData = await twitchPublic('streams?game_id=' + gameData.data[0].id + '&first=100&language=en');
+        if (streamData && streamData.data) categoryData.push(calcCategoryStats(streamData.data, cat, false));
+      } catch(e) {}
+    }
+
+    // Adjacent categories from Twitch top games — filter to interest-adjacent ones
+    try {
+      const topGames = await twitchPublic('games/top?first=100');
+      if (topGames && topGames.data) {
+        const interestKeywords = (interestTags.length ? interestTags : ['horror','survival','co-op','asymmetrical'])
+          .map(t => t.toLowerCase());
+        const adjacentGames = topGames.data.filter(g => {
+          if (categoryData.find(c => c && c.name === g.name)) return false;
+          if (allExcluded.includes(g.name)) return false;
+          return true; // Let Gemini filter by relevance — just exclude known exclusions
+        }).slice(0, 20);
+
+        const adjacentResults = await Promise.all(adjacentGames.map(async (game) => {
+          try {
+            const streamData = await twitchPublic('streams?game_id=' + game.id + '&first=100&language=en');
+            if (streamData && streamData.data && streamData.data.length >= 3) {
+              return calcCategoryStats(streamData.data, game.name, true);
+            }
+          } catch(e) {}
+          return null;
+        }));
+        categoryData = categoryData.concat(adjacentResults.filter(Boolean));
+      }
+    } catch(e) {}
+
+    // ── Render raid targets directly from API data (no AI) ──────────
+    const renderRaid = (s) => {
+      // Extract language tags from stream tags
+      const langTags = (s.tags || []).filter(t =>
+        ['english','spanish','portuguese','french','german','japanese','korean','chinese','italian','russian','arabic','turkish','dutch','polish','swedish','norwegian','danish','finnish'].some(l => t.toLowerCase().includes(l))
+      );
+      const langDisplay = s.language ? s.language.toUpperCase() : '';
+      const tagDisplay = langTags.length ? langTags.join(', ') : '';
+      const langInfo = [langDisplay, tagDisplay].filter(Boolean).join(' · ');
+      return '<div class="raid-card">' +
+        '<div class="raid-info">' +
+          '<div class="raid-name">' + s.user_name + '</div>' +
+          '<div class="raid-meta">' + s.viewer_count + ' viewers · ' + s.category + '</div>' +
+          (langInfo ? '<div class="raid-meta" style="margin-top:3px;color:var(--muted);">🌐 ' + langInfo + '</div>' : '') +
+        '</div>' +
+        '<a href="https://twitch.tv/' + s.user_login + '" target="_blank" class="raid-link">Visit →</a>' +
+      '</div>';
+    };
+
+    // Sort peer by closest to our avg (most natural raid), stretch by lowest first
+    const sortedPeer = peerStreams.slice().sort((a, b) =>
+      Math.abs(a.viewer_count - myAvgViewers) - Math.abs(b.viewer_count - myAvgViewers)
+    ).slice(0, 8);
+    const sortedStretch = stretchStreams.slice().sort((a, b) => a.viewer_count - b.viewer_count).slice(0, 8);
+
+    document.getElementById('raid-stretch-list').innerHTML = sortedStretch.length
+      ? sortedStretch.map(renderRaid).join('')
+      : '<div class="empty-state" style="padding:16px">No stretch tier streamers found right now.</div>';
+
+    // ── Use Gemini only for category recommendations ──────────────
+    const statsContext = twitchStats
+      ? 'My stats: ' + twitchStats.avgViewers + ' avg viewers, ' + twitchStats.maxViewers + ' peak, ' + twitchStats.streamDays + ' stream days.'
+      : 'My estimated avg viewers: ' + myAvgViewers;
+
+    const catSummary = categoryData.filter(Boolean).map(c =>
+      c.name + ': ' + c.liveStreamers + ' live EN streamers, median ' + c.medianViewers + ' viewers, top streamer has ' + c.topStreamer + ' viewers, ' +
+      c.streamersUnder10 + ' streamers with ≤10 viewers (' + c.discoveryScore + '% discovery score)' +
+      (c.isAdjacent ? ' [adjacent category]' : ' [your category]')
+    ).join('\n');
+
+    const interestTags = getInterestTags();
+    const excludedCats = getExcludedCats();
+
+    // Auto-exclude the categories they already heavily stream
+    const alreadyStreamingCats = categoryList;
+    const allExcluded = excludedCats.concat(alreadyStreamingCats);
+
+    const catPrompt = 'You are a Twitch growth strategist recommending categories for a small streamer to explore.' +
+      '\n\nSTREAMER PROFILE:' +
+      '\n- ' + statsContext +
+      '\n- Interest/playstyle tags: ' + (interestTags.length ? interestTags.join(', ') : 'horror, multiplayer, variety') +
+      '\n- NEVER recommend: ' + (allExcluded.length ? allExcluded.join(', ') : 'none') +
+      '\n\nCATEGORY DATA (English streamers live right now):\n' + (catSummary || 'No data') +
+      '\n\nThe "discovery score" = % of streamers with ≤10 viewers. Higher score = easier to get noticed.' +
+      '\n\nINSTRUCTIONS:' +
+      '\nRecommend exactly 5 Twitch categories. Each MUST:' +
+      '\n1. Match AT LEAST 2 of their interest tags. Does not need to match all of them — partial overlap is fine and encouraged.' +
+      '\n2. Have a HIGH discovery score (lots of small streamers) so they can actually be found.' +
+      '\n3. NOT be dominated by one massive streamer inflating the numbers — check median vs top streamer gap.' +
+      '\n4. In the "why" field: mention the actual numbers (median viewers, discovery score) to justify the pick.' +
+      '\n5. In "content_tip": give one specific, actionable content idea for that category.' +
+      '\n\nIf a category has a huge gap between median and top streamer, flag that in the why field.' +
+      '\nRespond ONLY with valid JSON, no markdown: {"categories":[{"name":"","why":"","content_tip":""}]}';
+
+    const geminiRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + geminiKey, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: catPrompt }] }] })
+    });
+    const geminiData = await geminiRes.json();
+    if (geminiData.error) throw new Error(geminiData.error.message);
+    const text = geminiData.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
+    const result = JSON.parse(text);
+
+    // Render category recommendations
+    renderCategoryCards(result.categories || []);
+
+    document.getElementById('potential-loading').style.display = 'none';
+    document.getElementById('potential-results').style.display = 'block';
+
+  } catch(e) {
+    document.getElementById('potential-loading').style.display = 'none';
+    document.getElementById('potential-empty').style.display = 'block';
+    document.getElementById('potential-empty').innerHTML = '<div class="empty-icon">⚠️</div>Error: ' + e.message;
+  }
+}
+
+// Check for Twitch token on load (from callback redirect)
+async function checkTwitchOnLoad() {
+  const tokens = getTwitchTokens();
+  if (tokens.access || tokens.refresh) {
+    await initTwitchConnection();
+  }
+}
+
+// Check session on load
+if (sessionStorage.getItem(SESSION_KEY) === '1') {
+  showApp();
+  checkTwitchOnLoad();
+}
+
+// Enter key support
+document.getElementById('pw-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') attemptLogin();
+});
+
+// ── Tabs ──────────────────────────────────────────
+let trendsLoaded = false;
+function switchTab(name, btn) {
+  ['performance','trends','settings','potential'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  trendsLoaded = true;
+  if (name === 'settings') {
+    const existing = getGeminiKey();
+    if (existing) {
+      document.getElementById('key-status').style.display = 'block';
+      document.getElementById('key-status').style.color = 'var(--green)';
+      document.getElementById('key-status').textContent = '✓ API key is saved.';
+    }
+  }
+  if (name === 'potential') {
+    // Always reattach tag input listener fresh
+    var tagInput = document.getElementById('interest-tag-input');
+    if (tagInput) {
+      var newInput = tagInput.cloneNode(true);
+      tagInput.parentNode.replaceChild(newInput, tagInput);
+      newInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ',') {
+          e.preventDefault();
+          e.stopPropagation();
+          var val = this.value.trim().replace(/,$/, '');
+          if (!val) return;
+          var tags = getInterestTags();
+          if (!tags.includes(val)) { tags.push(val); saveInterestTags(tags); }
+          this.value = '';
+          renderInterestTags();
+        }
+      });
+      newInput.focus && newInput.blur(); // don't auto-focus
+    }
+  }
+}
+
+// ── Performance ───────────────────────────────────
+let ytVideos = [], ttVideos = [];
+
+function parseCSV(text) {
+  // Strip BOM if present
+  text = text.replace(/^\uFEFF/, '');
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+
+  function parseLine(line) {
+    const vals = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (ch === ',' && !inQ) {
+        vals.push(cur.trim());
+        cur = '';
+      } else {
+        cur += ch;
+      }
+    }
+    vals.push(cur.trim());
+    return vals;
+  }
+
+  const headers = parseLine(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = parseLine(line);
+    const row = {};
+    headers.forEach((h,i) => { row[h] = (vals[i]||'').replace(/^"|"$/g,'').trim(); });
+    return row;
+  });
+}
+function normalizeYT(rows) {
+  return rows.map(r => ({
+    platform:'YouTube', title:r['Video title']||r['Title']||r['title']||'Unknown',
+    views:parseInt(r['Views']||r['views']||'0')||0,
+    likes:parseInt(r['Likes']||r['likes']||'0')||0,
+  })).filter(r => r.views > 0 && r.title !== 'Unknown');
+}
+function normalizeTT(rows) {
+  return rows.map(r => ({
+    platform:'TikTok',
+    title:r['Video title']||r['Video caption']||r['Caption']||r['Title']||r['title']||'Unknown',
+    views:parseInt(r['Total views']||r['Video views']||r['Views']||r['views']||'0')||0,
+    likes:parseInt(r['Total likes']||r['Likes']||r['likes']||'0')||0,
+  })).filter(r => r.views > 0 && r.title !== 'Unknown');
+}
+function handleDrop(e, type) { e.preventDefault(); document.getElementById(type+'-upload-box').classList.remove('drag'); handleFile(e.dataTransfer.files[0], type); }
+function handleFile(file, type) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const rows = parseCSV(e.target.result);
+    if (type === 'yt') { ytVideos = normalizeYT(rows); document.getElementById('yt-upload-box').classList.add('loaded'); document.getElementById('yt-status').innerHTML = '<span class="upload-status">✓ ' + ytVideos.length + ' videos loaded</span>'; }
+    else { ttVideos = normalizeTT(rows); document.getElementById('tt-upload-box').classList.add('loaded'); document.getElementById('tt-status').innerHTML = '<span class="upload-status">✓ ' + ttVideos.length + ' videos loaded</span>'; }
+    renderPerformance();
+  };
+  reader.readAsText(file);
+}
+function renderPerformance() {
+  const all = [...ytVideos,...ttVideos];
+  if (!all.length) return;
+  document.getElementById('perf-data').style.display = 'block';
+  document.getElementById('perf-empty').style.display = 'none';
+  const avg = v => v.length ? Math.round(v.reduce((s,x)=>s+x.views,0)/v.length) : 0;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Videos</div><div class="stat-value">${all.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Views</div><div class="stat-value accent">${avg(all).toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-label">YT Short Avg</div><div class="stat-value pink">${avg(ytVideos).toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-label">TikTok Avg</div><div class="stat-value tiktok">${avg(ttVideos).toLocaleString()}</div></div>`;
+  analyzeWithGemini(all);
+  const top = [...all].sort((a,b)=>b.views-a.views).slice(0,10);
+  document.getElementById('top-table').innerHTML = top.map((v,i)=>`
+    <tr><td style="color:var(--muted)">${i+1}</td><td style="max-width:280px">${v.title}</td>
+    <td><span class="badge ${v.platform==='YouTube'?'badge-yt':'badge-tt'}">${v.platform==='YouTube'?'YT':'TT'}</span></td>
+    <td>${v.views.toLocaleString()}</td><td>${v.likes.toLocaleString()}</td></tr>`).join('');
+}
+// ── Gemini API key management ──────────────────────
+function getGeminiKey() { return localStorage.getItem('sh_gemini_key') || ''; }
+function saveGeminiKey(key) { localStorage.setItem('sh_gemini_key', key); }
+
+function saveGeminiKeyFromInput() {
+  const val = document.getElementById('gemini-key-input').value.trim();
+  if (!val) return;
+  saveGeminiKey(val);
+  document.getElementById('gemini-key-input').value = '';
+  const status = document.getElementById('key-status');
+  status.style.display = 'block';
+  status.style.color = 'var(--green)';
+  status.textContent = '✓ Key saved. Upload your CSVs in Performance to run analysis.';
+}
+function clearGeminiKey() {
+  localStorage.removeItem('sh_gemini_key');
+  document.getElementById('gemini-key-input').value = '';
+  const status = document.getElementById('key-status');
+  status.style.display = 'block';
+  status.style.color = 'var(--muted)';
+  status.textContent = 'Key cleared.';
+}
+
+async function analyzeWithGemini(videos) {
+  const key = getGeminiKey();
+  const patternsBox = document.getElementById('patterns-box');
+
+  if (!key) {
+    patternsBox.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;font-weight:700;">Add your Gemini API key in Settings to unlock AI analysis.</div>';
+    return;
+  }
+
+  patternsBox.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;font-weight:700;font-style:italic;animation:pulse 1.2s ease-in-out infinite;">Analyzing your content...</div>';
+
+  const sorted = [...videos].sort((a,b) => b.views - a.views);
+  const top10 = sorted.slice(0, 10).map(v => v.title + ' (' + v.views.toLocaleString() + ' views)').join('\n');
+  const bot10 = sorted.slice(-10).map(v => v.title + ' (' + v.views.toLocaleString() + ' views)').join('\n');
+  const avg = Math.round(videos.reduce((s,v) => s+v.views, 0) / videos.length);
+
+  const prompt = `You are analyzing a Dead by Daylight short-form content creator's video performance data. They post YouTube Shorts and TikToks. Their channel average is ${avg} views per video.
+
+TOP 10 PERFORMING VIDEOS:
+${top10}
+
+BOTTOM 10 PERFORMING VIDEOS:
+${bot10}
+
+Analyze this data and give 4-6 specific, actionable insights. Focus on:
+1. What patterns do the top performers share (specific words, topics, formats)?
+2. What are the bottom performers doing that isn't working?
+3. What specific content topics or title formulas should they try MORE of?
+4. What should they stop doing?
+5. Any hashtag or title structure patterns worth noting?
+
+Be specific and direct. Reference actual titles from their data. No generic advice.
+Respond as a JSON array of strings, each string being one insight. No markdown, no preamble.
+Example: ["insight one", "insight two"]`;
+
+  try {
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + key, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
+    const insights = JSON.parse(text);
+    patternsBox.innerHTML = '<ul>' + insights.map(i => '<li>' + i + '</li>').join('') + '</ul>';
+  } catch(e) {
+    patternsBox.innerHTML = '<div style="color:var(--red);font-size:0.82rem;font-weight:700;">Analysis failed: ' + e.message + '</div>';
+  }
+}
+
+// ── Trends ────────────────────────────────────────
+let selectedPost = null;
+
+function parseRedditJSON() {
+  const input = document.getElementById('reddit-json-input').value.trim();
+  const list = document.getElementById('trends-list');
+  if (!input) return;
+  try {
+    const data = JSON.parse(input);
+    const children = data.data ? data.data.children : [];
+    const all = children.map(c => ({
+      id: c.data.id,
+      title: c.data.title,
+      score: c.data.score,
+      comments: c.data.num_comments,
+      url: 'https://reddit.com' + c.data.permalink,
+      flair: c.data.link_flair_text || null,
+      sub: c.data.subreddit,
+    }));
+    if (!all.length) {
+      list.innerHTML = '<div class="empty-state" style="color:var(--red)">No posts found in that JSON.</div>';
+      return;
+    }
+    list.innerHTML = all.map(p =>
+      '<div class="trend-card" id="tcard-' + p.id + '" data-pid="' + p.id + '">' +
+        '<div class="trend-meta">' +
+        '<span class="sub-chip">r/' + p.sub + '</span>' +
+        '<span class="trend-score">↑ ' + p.score.toLocaleString() + '</span>' +
+        '<span class="trend-comments">💬 ' + p.comments + '</span>' +
+        (p.flair ? '<span class="trend-flair">' + p.flair + '</span>' : '') +
+        '</div>' +
+        '<div class="trend-title">' + p.title + ' <a href="' + p.url + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:0.72rem;color:var(--muted);font-weight:700;text-decoration:none;">↗</a></div>' +
+        '</div>'
+    ).join('');
+
+    // Store post data and attach click handlers
+    window._redditPosts = {};
+    all.forEach(p => {
+      window._redditPosts[p.id] = p;
+      var card = document.getElementById('tcard-' + p.id);
+      if (card) card.addEventListener('click', function() { selectPost(p.id); });
+    });
+    document.getElementById('reddit-json-input').value = '';
+  } catch(e) {
+    list.innerHTML = '<div class="empty-state" style="color:var(--red)">Invalid JSON — make sure you copied the full response.</div>';
+  }
+}
+
+function selectPost(id) {
+  const post = window._redditPosts[id];
+  if (!post) return;
+  selectedPost = post;
+  document.querySelectorAll('.trend-card').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById('tcard-' + post.id);
+  if (card) card.classList.add('selected');
+  generatePostIdeas(post);
+}
+
+async function generatePostIdeas(post) {
+  const output = document.getElementById('ideas-output');
+  const thinking = document.getElementById('ideas-thinking');
+  thinking.style.display = 'inline';
+
+  output.innerHTML = '<div class="selected-topic-box"><strong>Topic</strong>' + post.title + '</div>' +
+    '<div class="context-row"><textarea class="context-input" id="post-context" placeholder="Your angle or take (optional)..." rows="2"></textarea></div>' +
+    '<button class="generate-btn" onclick="regenerateWithContext()">✨ Generate Post Ideas</button>' +
+    '<div id="post-ideas-list"><div class="empty-state" style="padding:20px">Generating ideas...</div></div>';
+
+  thinking.style.display = 'none';
+  await fetchPostIdeas(post, '');
+}
+
+async function regenerateWithContext() {
+  if (!selectedPost) return;
+  const ctx = document.getElementById('post-context') ? document.getElementById('post-context').value.trim() : '';
+  await fetchPostIdeas(selectedPost, ctx);
+}
+
+async function fetchRedditPostDetails(post) {
+  try {
+    // Convert reddit.com URL to JSON endpoint
+    const jsonUrl = post.url.replace('https://reddit.com', 'https://www.reddit.com') + '.json?limit=10';
+    const res = await fetch(WORKER_URL + '/reddit-post', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: jsonUrl })
+    });
+    const data = await res.json();
+    if (data.error) return null;
+    const postData = data[0].data.children[0].data;
+    const comments = data[1].data.children
+      .filter(c => c.kind === 't1' && c.data.body && c.data.body !== '[deleted]')
+      .slice(0, 8)
+      .map(c => c.data.body.substring(0, 200))
+      .join('\n---\n');
+    return {
+      body: postData.selftext ? postData.selftext.substring(0, 500) : '',
+      comments: comments
+    };
+  } catch(e) {
+    return null;
+  }
+}
+
+async function fetchPostIdeas(post, context) {
+  const list = document.getElementById('post-ideas-list');
+  const thinking = document.getElementById('ideas-thinking');
+  if (!list) return;
+  thinking.style.display = 'inline';
+  list.innerHTML = '<div class="empty-state" style="padding:20px">Fetching post details...</div>';
+
+  list.innerHTML = '<div class="empty-state" style="padding:20px">Generating ideas...</div>';
+
+  try {
+    const prompt = `You are helping a Dead by Daylight content creator write social media posts for Twitter/X and Bluesky. Their vibe is chill, friendly, and genuine — they love the game and want to connect with other players who feel the same way.
+
+A trending Reddit post in the DBD community:
+Title: "${post.title}"
+Score: ${post.score} upvotes, ${post.comments} comments
+Reddit URL: ${post.url}
+
+Please read the Reddit post at the URL above for full context before generating ideas.
+${context ? 'Their personal angle: ' + context : ''}
+
+Write 3 social media posts (max 280 chars each) that feel like something a friendly, enthusiastic DBD player would genuinely post. The goal is to start fun conversations and connect with the community.
+
+Tone guide:
+- Warm and positive, like texting a friend about something cool in the game
+- Curious or excited, not cynical or angry
+- Specific to what's actually happening in the community right now
+- Conversational — leave space for people to share their own experiences
+- Hashtags only if completely natural (1-2 max: #DBD or #DeadByDaylight)
+- Never mention streaming, content creation, or self-promotion
+
+The 3 posts should each take a different angle:
+1. A genuine personal reaction or feeling about the topic
+2. A question that makes other players want to share their experience
+3. A fun or lighthearted observation about the topic
+
+Respond ONLY with valid JSON, no markdown:
+{"ideas":[
+  {"angle":"Personal Reaction","text":"post text here","why":"one sentence on why this feels authentic and gets replies"},
+  {"angle":"Community Question","text":"post text here","why":"one sentence on why this gets replies"},
+  {"angle":"Fun Observation","text":"post text here","why":"one sentence on why this resonates"}
+]}`;
+
+    const geminiKey = getGeminiKey();
+    if (!geminiKey) {
+      list.innerHTML = '<div class="empty-state" style="color:var(--red)">Add your Gemini API key in Settings first.</div>';
+      thinking.style.display = 'none';
+      return;
+    }
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + geminiKey, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(text);
+    list.innerHTML = parsed.ideas.map((idea, i) => {
+      const over = idea.text.length > 280;
+      return `<div class="post-card">
+        <div class="post-card-header">
+          <span class="post-angle">${idea.angle}</span>
+          <div class="post-platforms"><span class="platform-pip pip-both">𝕏 + Bluesky</span></div>
+        </div>
+        <div class="post-text" id="idea-text-${i}">${idea.text}</div>
+        <div class="post-why">💡 ${idea.why}</div>
+        <div class="post-footer">
+          <span class="char-count ${over?'over':''}">${idea.text.length}/280</span>
+          <button class="action-btn" id="idea-copy-${i}" onclick="copyIdea(${i})">Copy</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = '<div class="empty-state" style="color:var(--red)">Something went wrong — try again.</div>';
+  }
+  thinking.style.display = 'none';
+}
+
+function copyIdea(i) {
+  const text = document.getElementById('idea-text-' + i).textContent;
+  navigator.clipboard.writeText(text);
+  const btn = document.getElementById('idea-copy-' + i);
+  btn.textContent = '✓ Copied'; btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+}
+</script>
+</body>
 </html>
