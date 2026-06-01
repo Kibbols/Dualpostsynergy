@@ -1080,7 +1080,15 @@ async function generatePotential() {
       ? 'My stats: ' + twitchStats.avgViewers + ' avg viewers, ' + twitchStats.maxViewers + ' peak, ' + twitchStats.streamDays + ' stream days.'
       : 'My estimated avg viewers: ' + myAvgViewers;
 
-    const catSummary = categoryData.filter(Boolean).map(c =>
+    // Filter out categories with too few streamers or too low median (dead categories)
+    const viableCats = categoryData.filter(c =>
+      c &&
+      c.liveStreamers >= 10 &&        // at least 10 active streamers
+      c.medianViewers >= 8 &&         // median viewer count high enough to suggest real audience
+      c.topStreamer >= 50              // at least one established streamer shows the game has a real community
+    );
+
+    const catSummary = viableCats.map(c =>
       c.name + ': ' + c.liveStreamers + ' live EN streamers, median ' + c.medianViewers + ' viewers, top streamer has ' + c.topStreamer + ' viewers, ' +
       c.streamersUnder10 + ' streamers with ≤10 viewers (' + c.discoveryScore + '% discovery score)' +
       (c.isAdjacent ? ' [adjacent category]' : ' [your category]')
