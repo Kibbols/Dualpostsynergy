@@ -1083,9 +1083,10 @@ async function generatePotential() {
     // Filter out categories with too few streamers or too low median (dead categories)
     const viableCats = categoryData.filter(c =>
       c &&
-      c.liveStreamers >= 10 &&        // at least 10 active streamers
-      c.medianViewers >= 8 &&         // median viewer count high enough to suggest real audience
-      c.topStreamer >= 50              // at least one established streamer shows the game has a real community
+      c.liveStreamers >= 15 &&        // at least 15 active streamers
+      c.medianViewers >= 15 &&        // median ≥15 ensures a real audience exists
+      c.topStreamer >= 100 &&          // top streamer ≥100 confirms established community
+      c.topStreamer <= 50000           // cap to avoid massively saturated categories
     );
 
     const catSummary = viableCats.map(c =>
