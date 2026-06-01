@@ -284,7 +284,6 @@ export default {
     // ── Twitch app token (for public data like categories/streams) ───
     if (url.pathname === "/twitch-public") {
       try {
-        // Get app access token
         const tokenRes = await fetch("https://id.twitch.tv/oauth2/token", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -296,8 +295,6 @@ export default {
         });
         const tokenData = await tokenRes.json();
         const appToken = tokenData.access_token;
-
-        // Make the actual API call
         const twitchRes = await fetch("https://api.twitch.tv/helix/" + body.endpoint, {
           headers: {
             "Authorization": "Bearer " + appToken,
@@ -306,6 +303,66 @@ export default {
         });
         const data = await twitchRes.json();
         return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch(e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // ── Twitch deep stream search (paginates server-side to find small streamers) ──
+    if (url.pathname === "/twitch-streams-deep") {
+      try {
+        const tokenRes = await fetch("https://id.twitch.tv/oauth2/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            client_id: env.TWITCH_CLIENT_ID,
+            client_secret: env.TWITCH_CLIENT_SECRET,
+            grant_type: "client_credentials",
+          }),
+        });
+        const tokenData = await tokenRes.json();
+        const appToken = tokenData.access_token;
+        const gameId = body.game_id;
+        const maxViewers = body.max_viewers || 50;
+        const minViewers = body.min_viewers || 1;
+
+        let results = [];
+        let cursor = null;
+        let pages = 0;
+
+        while (pages < 10) {
+          const endpoint = "https://api.twitch.tv/helix/streams?game_id=" + gameId + "&first=100" + (cursor ? "&after=" + cursor : "");
+          const res = await fetch(endpoint, {
+            headers: {
+              "Authorization": "Bearer " + appToken,
+              "Client-Id": env.TWITCH_CLIENT_ID,
+            },
+          });
+          const data = await res.json();
+          if (!data.data || !data.data.length) break;
+
+          const streams = data.data;
+          const pageMin = streams[streams.length - 1].viewer_count;
+
+          // Collect streams in our target range
+          for (const s of streams) {
+            if (s.viewer_count >= minViewers && s.viewer_count <= maxViewers) {
+              results.push(s);
+            }
+          }
+
+          // If the lowest viewer count on this page is still above our max, keep paginating
+          if (pageMin > maxViewers && data.pagination && data.pagination.cursor) {
+            cursor = data.pagination.cursor;
+            pages++;
+          } else {
+            break;
+          }
+        }
+
+        return new Response(JSON.stringify({ data: results }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch(e) {
