@@ -332,7 +332,7 @@ export default {
         let cursor = null;
         let pages = 0;
 
-        while (pages < 10) {
+        while (pages < 25) {
           const endpoint = "https://api.twitch.tv/helix/streams?game_id=" + gameId + "&first=100" + (cursor ? "&after=" + cursor : "");
           const res = await fetch(endpoint, {
             headers: {
@@ -352,6 +352,9 @@ export default {
               results.push(s);
             }
           }
+
+          // Stop if we've collected enough or reached our target range
+          if (results.length >= 50) break;
 
           // If the lowest viewer count on this page is still above our max, keep paginating
           if (pageMin > maxViewers && data.pagination && data.pagination.cursor) {
