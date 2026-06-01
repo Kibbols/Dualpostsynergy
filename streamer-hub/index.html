@@ -840,6 +840,9 @@ function handleTwitchCSV(file) {
     twitchStats = { avgViewers: Math.round(avgViewers * 10) / 10, maxViewers, totalMins, avgChatters: Math.round(avgChatters), streamDays: streamDays.length };
     document.getElementById('twitch-csv-box').classList.add('loaded');
     document.getElementById('twitch-csv-status').innerHTML = '<span class="upload-status">✓ ' + streamDays.length + ' stream days loaded</span>';
+    // Reset file input so same file can be re-uploaded or a new one replaces it
+    var fileInput = document.getElementById('twitch-csv-file');
+    if (fileInput) fileInput.value = '';
 
     // Show parsed stats immediately in the upload card — visible before hitting Analyze
     var preview = document.getElementById('twitch-csv-preview');
@@ -941,24 +944,15 @@ async function generatePotential() {
         <div class="stat-card"><div class="stat-label">Avg Chatters</div><div class="stat-value green">${twitchStats.avgChatters}</div></div>`;
     }
 
-    // Pull live streams - paginate deep enough to find small streamers
-    async function fetchStreamsInRange(gameId, cat, maxViewers) {
-      var found = [];
-      var cursor = null;
-      var pages = 0;
-      while (pages < 8) { // max 8 pages of 100 = 800 streamers
-        var endpoint = 'streams?game_id=' + gameId + '&first=100' + (cursor ? '&after=' + cursor : '');
-        var data = await twitchPublic(endpoint);
-        if (!data || !data.data || !data.data.length) break;
-        var streams = data.data;
-        // If the smallest viewer count on this page is still above our max, paginate
-        var pageMin = streams[streams.length - 1].viewer_count;
-        found = found.concat(streams.filter(s => s.viewer_count <= maxViewers).map(s => ({...s, category: cat})));
-        if (pageMin <= maxViewers || !data.pagination || !data.pagination.cursor) break;
-        cursor = data.pagination.cursor;
-        pages++;
-      }
-      return found;
+    // Pull live streams - server-side deep pagination to find small streamers
+    async function fetchStreamsInRange(gameId, cat) {
+      const res = await fetch(WORKER_URL + '/twitch-streams-deep', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ game_id: gameId, min_viewers: peerMin, max_viewers: stretchMax })
+      });
+      const data = await res.json();
+      if (!data || !data.data) return [];
+      return data.data.map(s => ({...s, category: cat}));
     }
 
     let allStreams = [];
@@ -973,7 +967,7 @@ async function generatePotential() {
           if (searchData && searchData.data && searchData.data[0]) gameId = searchData.data[0].id;
         }
         if (!gameId) continue;
-        var streams = await fetchStreamsInRange(gameId, cat, stretchMax);
+        var streams = await fetchStreamsInRange(gameId, cat);
         allStreams = allStreams.concat(streams);
       } catch(e) {}
     }
@@ -983,7 +977,7 @@ async function generatePotential() {
       try {
         const dbdData = await twitchPublic('games?name=Dead+by+Daylight');
         if (dbdData && dbdData.data && dbdData.data[0]) {
-          allStreams = await fetchStreamsInRange(dbdData.data[0].id, 'Dead by Daylight', stretchMax);
+          allStreams = await fetchStreamsInRange(dbdData.data[0].id, 'Dead by Daylight');
         }
       } catch(e) {}
     }
@@ -1172,6 +1166,8 @@ function switchTab(name, btn) {
 let ytVideos = [], ttVideos = [];
 
 function parseCSV(text) {
+  // Strip BOM if present
+  text = text.replace(/^\uFEFF/, '');
   const lines = text.trim().split('\n');
   if (lines.length < 2) return [];
 
