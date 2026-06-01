@@ -1015,6 +1015,10 @@ async function generatePotential() {
 
     const skewTag = document.getElementById('skew-tag-input') ? document.getElementById('skew-tag-input').value.trim() : '';
 
+    const statsContext = twitchStats
+      ? 'Avg ' + twitchStats.avgViewers + ' viewers, ' + twitchStats.maxViewers + ' peak, ' + twitchStats.streamDays + ' stream days'
+      : 'Estimated avg viewers: ' + myAvgViewers;
+
     const catPrompt = 'You are a growth strategist for a Twitch streamer who also creates YouTube Shorts and TikToks.' +
       '\n\nSTREAMER PROFILE:' +
       '\n- ' + statsContext +
