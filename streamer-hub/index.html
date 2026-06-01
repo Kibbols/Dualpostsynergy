@@ -391,7 +391,10 @@ tr:hover td { background:var(--surface2); }
           <div id="interest-tags-container"></div>
           <input type="text" id="interest-tag-input" class="tag-bare-input" placeholder="Type a tag and press Enter..." />
         </div>
-        <div class="note-label" style="margin-bottom:8px;margin-top:16px;">Focus on Twitch Categories (optional)</div>
+        <div class="note-label" style="margin-bottom:4px;margin-top:16px;">Skew Tag (optional)</div>
+        <p style="font-size:0.72rem;font-weight:700;color:var(--muted);margin-bottom:8px;">Temporarily weight recommendations toward a specific trait this session. Not saved.</p>
+        <input type="text" id="skew-tag-input" class="login-input" style="text-align:left;letter-spacing:0.02em;margin-bottom:16px;" placeholder="e.g. cozy, competitive, funny, indie..." />
+        <div class="note-label" style="margin-bottom:8px;">Focus on Twitch Categories (optional)</div>
         <p style="font-size:0.72rem;font-weight:700;color:var(--muted);margin-bottom:10px;">Specific categories for raid targets. Leave blank to use your recent Twitch categories.</p>
         <input type="text" id="potential-categories" class="login-input" style="text-align:left;letter-spacing:0.02em;margin-bottom:12px;" placeholder="e.g. Dead by Daylight, Phasmophobia" />
         <button class="generate-btn" style="margin-bottom:0;" id="potential-generate-btn" onclick="generatePotential()">Analyze Growth Potential →</button>
@@ -1027,11 +1030,8 @@ async function generatePotential() {
         const adjacentGames = topGames.data.filter(g => {
           if (categoryData.find(c => c && c.name === g.name)) return false;
           if (allExcluded.includes(g.name)) return false;
-          // Only include games with names that suggest relevance to interests
-          const nameLower = g.name.toLowerCase();
-          return interestKeywords.some(k => nameLower.includes(k)) ||
-            ['horror','survival','dead','evil','dark','ghost','monster','escape','hunt','prey','fear','night','shadow','blood','crypt','haunt'].some(w => nameLower.includes(w));
-        }).slice(0, 15);
+          return true; // Let Gemini filter by relevance — just exclude known exclusions
+        }).slice(0, 20);
 
         const adjacentResults = await Promise.all(adjacentGames.map(async (game) => {
           try {
@@ -1093,16 +1093,19 @@ async function generatePotential() {
     const alreadyStreamingCats = categoryList;
     const allExcluded = excludedCats.concat(alreadyStreamingCats);
 
+    const skewTag = document.getElementById('skew-tag-input') ? document.getElementById('skew-tag-input').value.trim() : '';
+
     const catPrompt = 'You are a Twitch growth strategist recommending categories for a small streamer to explore.' +
       '\n\nSTREAMER PROFILE:' +
       '\n- ' + statsContext +
       '\n- Interest/playstyle tags: ' + (interestTags.length ? interestTags.join(', ') : 'horror, multiplayer, variety') +
+      (skewTag ? '\n- SKEW HEAVILY toward: "' + skewTag + '" — prioritize categories that strongly match this trait above all others.' : '') +
       '\n- NEVER recommend: ' + (allExcluded.length ? allExcluded.join(', ') : 'none') +
       '\n\nCATEGORY DATA (English streamers live right now):\n' + (catSummary || 'No data') +
       '\n\nThe "discovery score" = % of streamers with ≤10 viewers. Higher score = easier to get noticed.' +
       '\n\nINSTRUCTIONS:' +
       '\nRecommend exactly 5 Twitch categories. Each MUST:' +
-      '\n1. Match their interest tags. NO random genres unrelated to horror/survival/asymmetrical/co-op.' +
+      '\n1. Match AT LEAST 2 of their interest tags. Does not need to match all of them — partial overlap is fine and encouraged.' +
       '\n2. Have a HIGH discovery score (lots of small streamers) so they can actually be found.' +
       '\n3. NOT be dominated by one massive streamer inflating the numbers — check median vs top streamer gap.' +
       '\n4. In the "why" field: mention the actual numbers (median viewers, discovery score) to justify the pick.' +
