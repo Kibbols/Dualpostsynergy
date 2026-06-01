@@ -333,7 +333,7 @@ export default {
         let pages = 0;
 
         while (pages < 25) {
-          const endpoint = "https://api.twitch.tv/helix/streams?game_id=" + gameId + "&first=100" + (cursor ? "&after=" + cursor : "");
+          const endpoint = "https://api.twitch.tv/helix/streams?game_id=" + gameId + "&first=100&language=en" + (cursor ? "&after=" + cursor : "");
           const res = await fetch(endpoint, {
             headers: {
               "Authorization": "Bearer " + appToken,
@@ -346,7 +346,7 @@ export default {
           const streams = data.data;
           const pageMin = streams[streams.length - 1].viewer_count;
 
-          // Collect streams in our target range
+          // Collect streams in our target range (keep all fields including tags and language)
           for (const s of streams) {
             if (s.viewer_count >= minViewers && s.viewer_count <= maxViewers) {
               results.push(s);
