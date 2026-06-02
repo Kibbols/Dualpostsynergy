@@ -800,6 +800,8 @@ async function loadYTAStats() {
 
     const regData = await regRes.json();
     const srtData = await srtRes.json();
+    if (regData.error) console.warn('REG filter error:', JSON.stringify(regData.error));
+    if (srtData.error) console.warn('SRT filter error:', JSON.stringify(srtData.error));
     const regViews = (regData.rows && regData.rows[0]) ? parseFloat(regData.rows[0][0] || 0) : 0;
     const regWatch = (regData.rows && regData.rows[0]) ? parseFloat(regData.rows[0][1] || 0) : 0;
     const srtViews = (srtData.rows && srtData.rows[0]) ? parseFloat(srtData.rows[0][0] || 0) : 0;
