@@ -797,10 +797,9 @@ async function loadYTAStats() {
     const contentTypeData = await contentTypeRes.json();
     if (contentTypeData.error) console.warn('contentType dimension error:', JSON.stringify(contentTypeData.error));
     // Rows: [contentType, views, estimatedMinutesWatched] — find by content type value
-    console.log('contentType raw response:', JSON.stringify(contentTypeData));
     const ctRows = contentTypeData.rows || [];
-    const regRow = ctRows.find(r => r[0] === 'VIDEO_ON_DEMAND') || null;
-    const srtRow = ctRows.find(r => r[0] === 'SHORTS') || null;
+    const regRow = ctRows.find(r => r[0] === 'videoOnDemand') || null;
+    const srtRow = ctRows.find(r => r[0] === 'shorts') || null;
     const regViews = regRow ? parseFloat(regRow[1] || 0) : 0;
     const regWatch = regRow ? parseFloat(regRow[2] || 0) : 0;
     const srtViews = srtRow ? parseFloat(srtRow[1] || 0) : 0;
