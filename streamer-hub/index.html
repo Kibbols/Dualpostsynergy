@@ -482,8 +482,9 @@ tr:hover td { background:var(--surface2); }
       <div style="margin-bottom:16px;">
         <select id="yta-period" onchange="loadYTAStats()" style="background:var(--surface2);border:2px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font-b);font-size:0.85rem;font-weight:800;padding:10px 36px 10px 14px;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22><path fill=%22%2345f5a3%22 d=%22M0 0l6 8 6-8z%22/></svg>');background-repeat:no-repeat;background-position:right 12px center;">
           <option value="yesterday">Last Update</option>
-          <option value="mtd">MTD</option>
           <option value="wtd">WTD</option>
+          <option value="lcw">LCW</option>
+          <option value="mtd">MTD</option>
           <option value="ytd">YTD</option>
         </select>
       </div>
@@ -695,6 +696,21 @@ async function loadYTAStats() {
     lyStart = fmt(lyWeekStart);
     lyEnd = fmt(lddLY);
     label = 'WTD'; lyLabel = 'LY WTD';
+
+  } else if (period === 'lcw') {
+    // Last complete week: most recent fully completed Sun-Sat
+    const dowLdd = ldd.getUTCDay(); // 0=Sun 6=Sat
+    // End of last complete week = last Saturday before or on ldd
+    const lcwEnd = new Date(ldd);
+    lcwEnd.setDate(ldd.getDate() - ((dowLdd + 1) % 7));
+    const lcwStart = new Date(lcwEnd); lcwStart.setDate(lcwEnd.getDate() - 6);
+    curStart = fmt(lcwStart);
+    curEnd = fmt(lcwEnd);
+    const lyLcwStart = new Date(lcwStart); lyLcwStart.setFullYear(lcwStart.getFullYear() - 1);
+    const lyLcwEnd = new Date(lcwEnd); lyLcwEnd.setFullYear(lcwEnd.getFullYear() - 1);
+    lyStart = fmt(lyLcwStart);
+    lyEnd = fmt(lyLcwEnd);
+    label = 'LCW'; lyLabel = 'LY LCW';
 
   } else if (period === 'ytd') {
     curStart = fmt(new Date(ldd.getFullYear(), 0, 1));
