@@ -768,6 +768,14 @@ async function loadYTAStats() {
       fetch(WORKER_URL + '/yta-query', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ access_token: token, start_date: lyStart, end_date: lyEnd, metrics: 'views', dimensions: 'day' })
+      }),
+      fetch(WORKER_URL + '/yta-query', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: token, start_date: curStart, end_date: curEnd, metrics: metricsTyped, filters: 'videoType==VIDEO' })
+      }),
+      fetch(WORKER_URL + '/yta-query', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: token, start_date: curStart, end_date: curEnd, metrics: metricsTyped, filters: 'videoType==REEL' })
       })
     ]);
 
