@@ -656,46 +656,65 @@ async function loadYTAStats() {
 
   const period = document.getElementById('yta-period') ? document.getElementById('yta-period').value : 'mtd';
 
+  // Detect last available data date once — used across all periods for consistency
+  let lastDataDate = yesterday;
+  try {
+    const probeStart = new Date(yesterday); probeStart.setDate(yesterday.getDate() - 6);
+    const probeRes = await fetch(WORKER_URL + '/yta-query', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ access_token: token, start_date: fmt(probeStart), end_date: fmt(yesterday), metrics: 'views', dimensions: 'day' })
+    });
+    const probeData = await probeRes.json();
+    if (probeData.rows && probeData.rows.length) {
+      const daysWithData = probeData.rows.filter(r => parseFloat(r[1]) > 0);
+      if (daysWithData.length) {
+        const lastDay = daysWithData[daysWithData.length - 1][0];
+        lastDataDate = new Date(lastDay + 'T12:00:00Z');
+      }
+    }
+  } catch(e) {}
+
+  const ldd = lastDataDate; // shorthand
+  const lddLY = new Date(ldd); lddLY.setFullYear(ldd.getFullYear() - 1);
+
   let curStart, curEnd, lyStart, lyEnd, label, lyLabel;
 
   if (period === 'mtd') {
-    curStart = fmt(new Date(yesterday.getFullYear(), yesterday.getMonth(), 1));
-    curEnd = fmt(yesterday);
-    lyStart = fmt(new Date(yesterday.getFullYear() - 1, yesterday.getMonth(), 1));
-    lyEnd = fmt(new Date(yesterday.getFullYear() - 1, yesterday.getMonth(), yesterday.getDate()));
+    curStart = fmt(new Date(ldd.getFullYear(), ldd.getMonth(), 1));
+    curEnd = fmt(ldd);
+    lyStart = fmt(new Date(lddLY.getFullYear(), lddLY.getMonth(), 1));
+    lyEnd = fmt(lddLY);
     label = 'MTD'; lyLabel = 'LYMTD';
 
   } else if (period === 'wtd') {
-    // Week starts Sunday, resets each Sunday
-    const dow = yesterday.getDay(); // 0=Sun
-    const weekStart = new Date(yesterday); weekStart.setDate(yesterday.getDate() - dow);
+    const dow = ldd.getUTCDay();
+    const weekStart = new Date(ldd); weekStart.setDate(ldd.getDate() - dow);
     curStart = fmt(weekStart);
-    curEnd = fmt(yesterday);
+    curEnd = fmt(ldd);
     const lyWeekStart = new Date(weekStart); lyWeekStart.setFullYear(lyWeekStart.getFullYear() - 1);
-    const lyYesterday = new Date(yesterday); lyYesterday.setFullYear(lyYesterday.getFullYear() - 1);
     lyStart = fmt(lyWeekStart);
-    lyEnd = fmt(lyYesterday);
+    lyEnd = fmt(lddLY);
     label = 'WTD'; lyLabel = 'LYWTD';
 
   } else if (period === 'ytd') {
-    curStart = fmt(new Date(yesterday.getFullYear(), 0, 1));
-    curEnd = fmt(yesterday);
-    lyStart = fmt(new Date(yesterday.getFullYear() - 1, 0, 1));
-    lyEnd = fmt(new Date(yesterday.getFullYear() - 1, yesterday.getMonth(), yesterday.getDate()));
+    curStart = fmt(new Date(ldd.getFullYear(), 0, 1));
+    curEnd = fmt(ldd);
+    lyStart = fmt(new Date(lddLY.getFullYear(), 0, 1));
+    lyEnd = fmt(lddLY);
     label = 'YTD'; lyLabel = 'LYYTD';
 
   } else { // yesterday
-    curStart = fmt(yesterday);
-    curEnd = fmt(yesterday);
-    const lyYest = new Date(yesterday); lyYest.setFullYear(lyYest.getFullYear() - 1);
-    lyStart = fmt(lyYest);
-    lyEnd = fmt(lyYest);
+    curStart = fmt(ldd);
+    curEnd = fmt(ldd);
+    lyStart = fmt(lddLY);
+    lyEnd = fmt(lddLY);
     label = 'Yesterday'; lyLabel = 'LY Yesterday';
   }
 
   document.getElementById('yta-date-info').style.display = 'block';
   document.getElementById('yta-date-info').textContent =
-    label + ': ' + curStart + ' to ' + curEnd + '  |  ' + lyLabel + ': ' + lyStart + ' to ' + lyEnd;
+    label + ': ' + curStart + ' to ' + curEnd + '  |  ' + lyLabel + ': ' + lyStart + ' to ' + lyEnd +
+    '  (data through ' + fmt(ldd) + ')';
 
   const metrics = 'views,estimatedMinutesWatched,subscribersGained,subscribersLost,likes,comments';
 
