@@ -752,7 +752,7 @@ async function loadYTAStats() {
   const metricsTyped = 'views,estimatedMinutesWatched';
 
   try {
-    const [mtdRes, lymtdRes, chartRes, chartLYRes, contentTypeRes] = await Promise.all([
+    const [mtdRes, lymtdRes, chartRes, chartLYRes, contentTypeRes, lyContentTypeRes] = await Promise.all([
       fetch(WORKER_URL + '/yta-query', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ access_token: token, start_date: curStart, end_date: curEnd, metrics })
@@ -772,6 +772,10 @@ async function loadYTAStats() {
       fetch(WORKER_URL + '/yta-query', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ access_token: token, start_date: curStart, end_date: curEnd, metrics: metricsTyped, dimensions: 'creatorContentType' })
+      }),
+      fetch(WORKER_URL + '/yta-query', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: token, start_date: lyStart, end_date: lyEnd, metrics: metricsTyped, dimensions: 'creatorContentType' })
       })
     ]);
 
@@ -796,24 +800,33 @@ async function loadYTAStats() {
 
     const contentTypeData = await contentTypeRes.json();
     if (contentTypeData.error) console.warn('contentType dimension error:', JSON.stringify(contentTypeData.error));
+    const lyContentTypeData = await lyContentTypeRes.json();
+    if (lyContentTypeData.error) console.warn('LY contentType dimension error:', JSON.stringify(lyContentTypeData.error));
     // Rows: [contentType, views, estimatedMinutesWatched] — find by content type value
     const ctRows = contentTypeData.rows || [];
+    const lyCtRows = lyContentTypeData.rows || [];
     const regRow = ctRows.find(r => r[0] === 'videoOnDemand') || null;
     const srtRow = ctRows.find(r => r[0] === 'shorts') || null;
+    const lyRegRow = lyCtRows.find(r => r[0] === 'videoOnDemand') || null;
+    const lySrtRow = lyCtRows.find(r => r[0] === 'shorts') || null;
     const regViews = regRow ? parseFloat(regRow[1] || 0) : 0;
     const regWatch = regRow ? parseFloat(regRow[2] || 0) : 0;
     const srtViews = srtRow ? parseFloat(srtRow[1] || 0) : 0;
     const srtWatch = srtRow ? parseFloat(srtRow[2] || 0) : 0;
+    const lyRegViews = lyRegRow ? parseFloat(lyRegRow[1] || 0) : 0;
+    const lyRegWatch = lyRegRow ? parseFloat(lyRegRow[2] || 0) : 0;
+    const lySrtViews = lySrtRow ? parseFloat(lySrtRow[1] || 0) : 0;
+    const lySrtWatch = lySrtRow ? parseFloat(lySrtRow[2] || 0) : 0;
 
     const cardDefs = [
-      { label: 'REG Views', key: 'regViews', fmt: v => Math.round(v).toLocaleString(), mtdVal: regViews, lyVal: 0 },
-      { label: 'SRT Views', key: 'srtViews', fmt: v => Math.round(v).toLocaleString(), mtdVal: srtViews, lyVal: 0 },
+      { label: 'REG Views', key: 'regViews', fmt: v => Math.round(v).toLocaleString(), mtdVal: regViews, lyVal: lyRegViews },
+      { label: 'SRT Views', key: 'srtViews', fmt: v => Math.round(v).toLocaleString(), mtdVal: srtViews, lyVal: lySrtViews },
       { label: 'Watch Time (hrs)', key: 'watchTime', fmt: v => Math.round(v/60).toLocaleString(), mtdVal: mtd.estimatedMinutesWatched, lyVal: lymtd.estimatedMinutesWatched },
       { label: 'Net Subscribers', key: 'subs', fmt: v => (v >= 0 ? '+' : '') + Math.round(v), mtdVal: netSubs, lyVal: netSubsLY },
       { label: 'Likes', key: 'likes', fmt: v => Math.round(v).toLocaleString(), mtdVal: mtd.likes, lyVal: lymtd.likes },
       { label: 'Comments', key: 'comments', fmt: v => Math.round(v).toLocaleString(), mtdVal: mtd.comments, lyVal: lymtd.comments },
-      { label: 'REG Watch Time', key: 'avgRegWatch', fmt: v => { const m = Math.floor(v); const s = Math.round((v - m) * 60); return m + 'm ' + s + 's'; }, mtdVal: regViews > 0 ? (regWatch / regViews) : 0, lyVal: 0 },
-      { label: 'SRT Watch Time', key: 'avgSrtWatch', fmt: v => { const m = Math.floor(v); const s = Math.round((v - m) * 60); return m + 'm ' + s + 's'; }, mtdVal: srtViews > 0 ? (srtWatch / srtViews) : 0, lyVal: 0 },
+      { label: 'REG Watch Time', key: 'avgRegWatch', fmt: v => { const m = Math.floor(v); const s = Math.round((v - m) * 60); return m + 'm ' + s + 's'; }, mtdVal: regViews > 0 ? (regWatch / regViews) : 0, lyVal: lyRegViews > 0 ? (lyRegWatch / lyRegViews) : 0 },
+      { label: 'SRT Watch Time', key: 'avgSrtWatch', fmt: v => { const m = Math.floor(v); const s = Math.round((v - m) * 60); return m + 'm ' + s + 's'; }, mtdVal: srtViews > 0 ? (srtWatch / srtViews) : 0, lyVal: lySrtViews > 0 ? (lySrtWatch / lySrtViews) : 0 },
     ];
 
     document.getElementById('yta-cards').innerHTML = cardDefs.map(c => {
