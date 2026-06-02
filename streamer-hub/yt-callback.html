@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Connecting YouTube Analytics...</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;800&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #1c1c1c; font-family: 'Nunito', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.card { background: #252525; border: 2px solid #3a3a3a; border-radius: 24px; box-shadow: 0 6px 0 rgba(0,0,0,.4); padding: 48px 40px; max-width: 420px; width: 100%; text-align: center; }
+h1 { font-family: 'Fredoka One', cursive; font-size: 1.8rem; color: #e8e8e8; margin-bottom: 12px; }
+h1 span { color: #45f5a3; }
+p { font-size: 0.88rem; font-weight: 700; color: #888; line-height: 1.6; }
+.status { margin-top: 20px; font-size: 0.88rem; font-weight: 800; }
+.status.ok { color: #45f5a3; }
+.status.err { color: #ff5555; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Streamer <span>Hub</span></h1>
+  <p id="msg">Connecting YouTube Analytics...</p>
+  <div class="status" id="status"></div>
+</div>
+<script>
+const WORKER_URL = 'https://withered-mud-dc44.portgamingsttv.workers.dev';
+const REDIRECT_URI = 'https://dualpost.app/streamer-hub/yt-callback.html';
+
+async function handleCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const error = params.get('error');
+
+  if (error) {
+    document.getElementById('msg').textContent = 'Authorization was denied.';
+    document.getElementById('status').textContent = 'You can close this tab.';
+    document.getElementById('status').className = 'status err';
+    return;
+  }
+
+  if (!code) {
+    document.getElementById('msg').textContent = 'No authorization code received.';
+    document.getElementById('status').className = 'status err';
+    return;
+  }
+
+  try {
+    const res = await fetch(WORKER_URL + '/yta-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, redirect_uri: REDIRECT_URI })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    sessionStorage.setItem('yta_access_token', data.access_token);
+    sessionStorage.setItem('yta_expires_at', Date.now() + (data.expires_in * 1000));
+    if (data.refresh_token) localStorage.setItem('sh_yta_refresh', data.refresh_token);
+
+    document.getElementById('msg').textContent = 'YouTube Analytics connected!';
+    document.getElementById('status').textContent = 'Redirecting back...';
+    document.getElementById('status').className = 'status ok';
+
+    setTimeout(() => { window.location.href = 'https://dualpost.app/streamer-hub/'; }, 1500);
+  } catch(e) {
+    document.getElementById('msg').textContent = 'Something went wrong: ' + e.message;
+    document.getElementById('status').className = 'status err';
+  }
+}
+
+handleCallback();
+</script>
+</body>
+</html>

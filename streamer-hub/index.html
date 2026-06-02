@@ -10,24 +10,24 @@
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg:       #fff8f0;
-  --surface:  #ffffff;
-  --surface2: #fef3e8;
-  --border:   #fddcb5;
-  --text:     #2d1b00;
-  --muted:    #a07850;
-  --accent:   #ff8c42;
-  --accent2:  #ffc947;
-  --pink:     #ff6b9d;
-  --green:    #22c55e;
-  --green-bg: #f0fff4;
-  --green-border: #86efac;
-  --red:      #ef4444;
-  --red-bg:   #fff1f2;
+  --bg:       #1c1c1c;
+  --surface:  #252525;
+  --surface2: #2e2e2e;
+  --border:   #3a3a3a;
+  --text:     #e8e8e8;
+  --muted:    #888888;
+  --accent:   #45f5a3;
+  --accent2:  #2dd4bf;
+  --pink:     #3de8a0;
+  --green:    #45f5a3;
+  --green-bg: #1a2e25;
+  --green-border: #2d6b4a;
+  --red:      #ff5555;
+  --red-bg:   #2e1a1a;
   --reddit:   #ff4500;
   --bsky:     #0085ff;
   --twitter:  #1d9bf0;
-  --purple:   #8b5cf6;
+  --purple:   #a78bfa;
   --font-d:   'Fredoka One', cursive;
   --font-b:   'Nunito', sans-serif;
 }
@@ -36,7 +36,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-b); mi
 
 /* ── Login ── */
 #login-gate { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
-.login-card { background:var(--surface); border:2px solid var(--border); border-radius:24px; box-shadow:0 6px 0 var(--border); padding:48px 40px; width:100%; max-width:400px; text-align:center; }
+.login-card { background:var(--surface); border:2px solid var(--border); border-radius:24px; box-shadow:0 6px 0 rgba(0,0,0,.4); padding:48px 40px; width:100%; max-width:400px; text-align:center; }
 .login-logo { font-family:var(--font-d); font-size:2rem; color:var(--text); margin-bottom:6px; }
 .login-logo span { color:var(--accent); }
 .login-sub { font-size:0.8rem; font-weight:700; color:var(--muted); letter-spacing:0.06em; margin-bottom:36px; }
@@ -44,7 +44,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-b); mi
 .login-input { width:100%; background:var(--surface2); border:2px solid var(--border); border-radius:14px; color:var(--text); font-family:var(--font-b); font-size:1rem; font-weight:700; padding:14px 18px; margin-bottom:16px; transition:border-color .2s; text-align:center; letter-spacing:0.1em; }
 .login-input:focus { outline:none; border-color:var(--accent); }
 .login-input.error { border-color:var(--red); background:var(--red-bg); }
-.login-btn { width:100%; background:linear-gradient(135deg,var(--accent),var(--pink)); border:none; border-radius:14px; color:#fff; font-family:var(--font-d); font-size:1.1rem; padding:14px; cursor:pointer; box-shadow:0 4px 0 rgba(255,80,100,.25); transition:all .2s cubic-bezier(.34,1.56,.64,1); }
+.login-btn { width:100%; background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; border-radius:14px; color:#fff; font-family:var(--font-d); font-size:1.1rem; padding:14px; cursor:pointer; box-shadow:0 4px 0 rgba(255,80,100,.25); transition:all .2s cubic-bezier(.34,1.56,.64,1); }
 .login-btn:hover:not(:disabled) { transform:translateY(-2px); }
 .login-btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
 .login-error { font-size:0.82rem; font-weight:800; color:var(--red); margin-top:12px; display:none; }
@@ -54,7 +54,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-b); mi
 #app { display:none; }
 nav { display:flex; align-items:center; justify-content:space-between; padding:16px 32px; background:rgba(255,248,240,.95); backdrop-filter:blur(16px); border-bottom:2px solid var(--border); position:sticky; top:0; z-index:100; flex-wrap:wrap; gap:10px; }
 .nav-logo { font-family:var(--font-d); font-size:1.4rem; color:var(--text); text-decoration:none; display:flex; align-items:center; gap:8px; }
-.nav-logo-badge { background:linear-gradient(135deg,var(--accent),var(--pink)); color:#fff; font-size:0.6rem; font-weight:900; letter-spacing:0.1em; padding:2px 8px; border-radius:50px; text-transform:uppercase; }
+.nav-logo-badge { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; font-size:0.6rem; font-weight:900; letter-spacing:0.1em; padding:2px 8px; border-radius:50px; text-transform:uppercase; }
 .nav-right { display:flex; align-items:center; gap:10px; }
 .nav-link { font-size:0.82rem; font-weight:800; color:var(--muted); text-decoration:none; transition:color .2s; }
 .nav-link:hover { color:var(--accent); }
@@ -65,20 +65,20 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:1
 
 /* ── Tabs ── */
 .tabs { display:flex; gap:8px; margin-bottom:28px; flex-wrap:wrap; }
-.tab-btn { background:var(--surface); border:2px solid var(--border); border-radius:50px; color:var(--muted); font-family:var(--font-d); font-size:0.9rem; padding:8px 20px; cursor:pointer; box-shadow:0 3px 0 var(--border); transition:all .2s cubic-bezier(.34,1.56,.64,1); }
+.tab-btn { background:var(--surface); border:2px solid var(--border); border-radius:50px; color:var(--muted); font-family:var(--font-d); font-size:0.9rem; padding:8px 20px; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.3); transition:all .2s cubic-bezier(.34,1.56,.64,1); }
 .tab-btn:hover { border-color:var(--accent); color:var(--accent); transform:translateY(-1px); }
-.tab-btn.active { background:linear-gradient(135deg,var(--accent),var(--pink)); border-color:transparent; color:#fff; box-shadow:0 3px 0 rgba(255,80,100,.25); }
+.tab-btn.active { background:linear-gradient(135deg,var(--accent),var(--accent2)); border-color:transparent; color:#fff; box-shadow:0 3px 0 rgba(255,80,100,.25); }
 
 .section-title { font-family:var(--font-d); font-size:1.5rem; color:var(--text); margin-bottom:6px; }
 .section-sub { font-size:0.82rem; font-weight:700; color:var(--muted); margin-bottom:24px; }
 
 /* ── Card ── */
-.card { background:var(--surface); border:2px solid var(--border); border-radius:20px; padding:24px; box-shadow:0 4px 0 var(--border); }
+.card { background:var(--surface); border:2px solid var(--border); border-radius:20px; padding:24px; box-shadow:0 4px 0 rgba(0,0,0,.3); }
 
 /* ── Upload ── */
 .upload-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
 .upload-box { background:var(--surface2); border:2px dashed var(--border); border-radius:16px; padding:28px 20px; text-align:center; cursor:pointer; transition:all .2s; }
-.upload-box:hover,.upload-box.drag { border-color:var(--accent); background:#fff4ec; }
+.upload-box:hover,.upload-box.drag { border-color:var(--accent); background:#1e2e25; }
 .upload-box.loaded { border-style:solid; border-color:var(--green); background:var(--green-bg); }
 .upload-icon { font-size:2rem; margin-bottom:8px; }
 .upload-label { font-size:0.72rem; font-weight:900; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
@@ -87,7 +87,7 @@ nav { display:flex; align-items:center; justify-content:space-between; padding:1
 
 /* ── Stats ── */
 .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
-.stat-card { background:var(--surface); border:2px solid var(--border); border-radius:16px; padding:16px 18px; box-shadow:0 3px 0 var(--border); }
+.stat-card { background:var(--surface); border:2px solid var(--border); border-radius:16px; padding:16px 18px; box-shadow:0 3px 0 rgba(0,0,0,.3); }
 .stat-label { font-size:0.65rem; font-weight:900; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
 .stat-value { font-family:var(--font-d); font-size:1.8rem; color:var(--text); line-height:1; }
 .stat-value.accent { color:var(--accent); }
@@ -103,13 +103,13 @@ td { padding:10px 16px; border-bottom:1px solid var(--border); font-weight:700; 
 tr:last-child td { border-bottom:none; }
 tr:hover td { background:var(--surface2); }
 .badge { display:inline-block; font-size:0.62rem; font-weight:900; letter-spacing:0.08em; text-transform:uppercase; padding:3px 10px; border-radius:50px; }
-.badge-yt { background:#fff1f1; color:#ef4444; border:2px solid #fca5a5; }
+.badge-yt { background:#fff1f1; color:#ef4444; border:2px solid #5a2020; }
 .badge-tt { background:#f0fffc; color:#00c8a0; border:2px solid #6ee7d8; }
 
 /* ── Patterns ── */
-.patterns-box { background:linear-gradient(135deg,#f5f0ff,#fdf4ff); border:2px solid #ddd6fe; border-left:4px solid var(--purple); border-radius:16px; padding:18px 20px; margin-bottom:20px; }
+.patterns-box { background:#2a2040; border:2px solid #4a3d7a; border-left:4px solid var(--purple); border-radius:16px; padding:18px 20px; margin-bottom:20px; }
 .patterns-box ul { list-style:none; }
-.patterns-box li { font-size:0.82rem; font-weight:700; color:var(--text); padding:5px 0; border-bottom:1px solid #ede9fe; }
+.patterns-box li { font-size:0.82rem; font-weight:700; color:var(--text); padding:5px 0; border-bottom:1px solid #3a3060; }
 .patterns-box li:last-child { border-bottom:none; }
 .patterns-box li::before { content:"✦ "; color:var(--purple); }
 
@@ -125,13 +125,13 @@ tr:hover td { background:var(--surface2); }
 .trends-controls { display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
 .ctrl-select { background:var(--surface); border:2px solid var(--border); border-radius:50px; color:var(--text); font-family:var(--font-b); font-size:0.82rem; font-weight:800; padding:8px 16px; cursor:pointer; appearance:none; -webkit-appearance:none; }
 .ctrl-select:focus { outline:none; border-color:var(--accent); }
-.refresh-btn { background:var(--surface); border:2px solid var(--border); border-radius:50px; color:var(--muted); font-family:var(--font-b); font-size:0.82rem; font-weight:800; padding:8px 18px; cursor:pointer; box-shadow:0 3px 0 var(--border); transition:all .2s cubic-bezier(.34,1.56,.64,1); }
+.refresh-btn { background:var(--surface); border:2px solid var(--border); border-radius:50px; color:var(--muted); font-family:var(--font-b); font-size:0.82rem; font-weight:800; padding:8px 18px; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.3); transition:all .2s cubic-bezier(.34,1.56,.64,1); }
 .refresh-btn:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); transform:translateY(-1px); }
 .refresh-btn:disabled { opacity:.5; cursor:not-allowed; }
 
-.trend-card { background:var(--surface); border:2px solid var(--border); border-radius:18px; padding:16px 18px; margin-bottom:10px; box-shadow:0 3px 0 var(--border); transition:all .15s; cursor:pointer; }
+.trend-card { background:var(--surface); border:2px solid var(--border); border-radius:18px; padding:16px 18px; margin-bottom:10px; box-shadow:0 3px 0 rgba(0,0,0,.3); transition:all .15s; cursor:pointer; }
 .trend-card:hover { border-color:var(--accent); transform:translateY(-1px); }
-.trend-card.selected { border-color:var(--accent); background:#fff9f5; box-shadow:0 3px 0 rgba(255,140,66,.2); }
+.trend-card.selected { border-color:var(--accent); background:#1e2e25; box-shadow:0 3px 0 rgba(255,140,66,.2); }
 .trend-meta { display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
 .sub-chip { background:#fff1ec; border:2px solid #fddcb5; color:var(--reddit); font-size:0.65rem; font-weight:900; padding:2px 10px; border-radius:50px; }
 .trend-score { font-family:var(--font-d); font-size:0.9rem; color:var(--accent); }
@@ -142,7 +142,7 @@ tr:hover td { background:var(--surface2); }
 .trend-title a:hover { color:var(--accent); }
 
 /* ── Post Ideas Panel ── */
-.ideas-panel { background:var(--surface); border:2px solid var(--border); border-radius:20px; padding:22px; box-shadow:0 4px 0 var(--border); position:sticky; top:90px; }
+.ideas-panel { background:var(--surface); border:2px solid var(--border); border-radius:20px; padding:22px; box-shadow:0 4px 0 rgba(0,0,0,.3); position:sticky; top:90px; }
 .ideas-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:2px solid var(--border); }
 .ideas-label { font-family:var(--font-d); font-size:1rem; color:var(--text); }
 .ideas-thinking { font-size:0.78rem; font-weight:700; color:var(--accent); animation:pulse 1.2s ease-in-out infinite; }
@@ -155,7 +155,7 @@ tr:hover td { background:var(--surface2); }
 .context-input { width:100%; background:var(--surface2); border:2px solid var(--border); border-radius:12px; color:var(--text); font-family:var(--font-b); font-size:0.82rem; font-weight:700; padding:10px 14px; resize:none; min-height:60px; }
 .context-input:focus { outline:none; border-color:var(--accent); }
 
-.generate-btn { width:100%; background:linear-gradient(135deg,var(--accent),var(--pink)); border:none; border-radius:14px; color:#fff; font-family:var(--font-d); font-size:1rem; padding:12px; cursor:pointer; box-shadow:0 4px 0 rgba(255,80,100,.25); transition:all .2s cubic-bezier(.34,1.56,.64,1); margin-bottom:16px; }
+.generate-btn { width:100%; background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; border-radius:14px; color:#fff; font-family:var(--font-d); font-size:1rem; padding:12px; cursor:pointer; box-shadow:0 4px 0 rgba(255,80,100,.25); transition:all .2s cubic-bezier(.34,1.56,.64,1); margin-bottom:16px; }
 .generate-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 6px 0 rgba(255,80,100,.25); }
 .generate-btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
 
@@ -164,7 +164,7 @@ tr:hover td { background:var(--surface2); }
 .post-angle { font-size:0.68rem; font-weight:900; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); }
 .post-platforms { display:flex; gap:5px; }
 .platform-pip { font-size:0.62rem; font-weight:900; padding:2px 8px; border-radius:50px; }
-.pip-both { background:#e0f2fe; color:#0369a1; border:2px solid #bae6fd; }
+.pip-both { background:#1a2535; color:#45f5a3; border:2px solid #1e4070; }
 .post-text { font-size:0.88rem; font-weight:700; color:var(--text); line-height:1.55; white-space:pre-wrap; margin-bottom:10px; }
 .post-why { font-size:0.72rem; font-weight:700; color:var(--muted); font-style:italic; margin-bottom:10px; line-height:1.4; }
 .post-footer { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
@@ -180,10 +180,10 @@ tr:hover td { background:var(--surface2); }
 
 /* ── Twitch / Potential ── */
 :root { --twitch: #9146ff; }
-.twitch-btn { background:var(--twitch); border:none; border-radius:14px; color:#fff; font-family:var(--font-d); font-size:1rem; padding:12px 24px; cursor:pointer; box-shadow:0 4px 0 rgba(100,50,200,.3); transition:all .2s cubic-bezier(.34,1.56,.64,1); display:inline-flex; align-items:center; gap:8px; }
+.twitch-btn { background:#9146ff; border:none; border-radius:14px; color:#fff; font-family:var(--font-d); font-size:1rem; padding:12px 24px; cursor:pointer; box-shadow:0 4px 0 rgba(100,50,200,.3); transition:all .2s cubic-bezier(.34,1.56,.64,1); display:inline-flex; align-items:center; gap:8px; }
 .twitch-btn:hover { transform:translateY(-2px); }
 .twitch-btn.connected { background:var(--green); box-shadow:0 4px 0 rgba(30,180,80,.3); }
-.twitch-btn.disconnected { background:var(--surface2); border:2px solid var(--border); color:var(--muted); box-shadow:0 3px 0 var(--border); }
+.twitch-btn.disconnected { background:var(--surface2); border:2px solid var(--border); color:var(--muted); box-shadow:0 3px 0 rgba(0,0,0,.3); }
 .twitch-btn.disconnected:hover { border-color:var(--twitch); color:var(--twitch); }
 .potential-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
 .potential-full { grid-column:1/-1; }
@@ -192,28 +192,28 @@ tr:hover td { background:var(--surface2); }
 .tier-label { font-family:var(--font-d); font-size:0.9rem; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
 .tier-badge { font-size:0.65rem; font-weight:900; padding:3px 10px; border-radius:50px; }
 .tier-peer { background:#fef3e8; color:var(--accent); border:2px solid var(--border); }
-.tier-stretch { background:#f0f9ff; color:#0284c7; border:2px solid #bae6fd; }
-.raid-card { background:var(--surface); border:2px solid var(--border); border-radius:16px; padding:14px 16px; margin-bottom:8px; box-shadow:0 3px 0 var(--border); display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.tier-stretch { background:#f0f9ff; color:#0284c7; border:2px solid #1e4070; }
+.raid-card { background:var(--surface); border:2px solid var(--border); border-radius:16px; padding:14px 16px; margin-bottom:8px; box-shadow:0 3px 0 rgba(0,0,0,.3); display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
 .raid-card:hover { border-color:var(--twitch); }
 .raid-info { flex:1; min-width:0; }
 .raid-name { font-family:var(--font-d); font-size:1rem; color:var(--text); margin-bottom:2px; }
 .raid-meta { font-size:0.72rem; font-weight:700; color:var(--muted); }
 .raid-viewers { font-family:var(--font-d); font-size:1.2rem; color:var(--twitch); white-space:nowrap; }
 .raid-why { font-size:0.72rem; font-weight:700; color:var(--muted); font-style:italic; width:100%; margin-top:6px; }
-.raid-link { background:var(--twitch); border:none; border-radius:50px; color:#fff; font-family:var(--font-b); font-size:0.72rem; font-weight:900; padding:5px 14px; cursor:pointer; text-decoration:none; white-space:nowrap; }
-.cat-card { background:var(--surface); border:2px solid var(--border); border-radius:16px; padding:14px 16px; margin-bottom:8px; box-shadow:0 3px 0 var(--border); }
+.raid-link { background:#9146ff; border:none; border-radius:50px; color:#fff; font-family:var(--font-b); font-size:0.72rem; font-weight:900; padding:5px 14px; cursor:pointer; text-decoration:none; white-space:nowrap; }
+.cat-card { background:var(--surface); border:2px solid var(--border); border-radius:16px; padding:14px 16px; margin-bottom:8px; box-shadow:0 3px 0 rgba(0,0,0,.3); }
 .cat-card:hover { border-color:var(--accent); }
 .cat-name { font-family:var(--font-d); font-size:1rem; color:var(--text); margin-bottom:4px; }
 .cat-stats { font-size:0.72rem; font-weight:700; color:var(--muted); margin-bottom:6px; display:flex; gap:12px; flex-wrap:wrap; }
 .cat-why { font-size:0.78rem; font-weight:700; color:var(--text); line-height:1.5; }
-.connect-box { background:linear-gradient(135deg,#f5f0ff,#fdf4ff); border:2px solid #ddd6fe; border-radius:20px; padding:28px; text-align:center; margin-bottom:20px; }
+.connect-box { background:#2a2040; border:2px solid #4a3d7a; border-radius:20px; padding:28px; text-align:center; margin-bottom:20px; }
 .connect-box h3 { font-family:var(--font-d); font-size:1.2rem; color:var(--text); margin-bottom:8px; }
 .connect-box p { font-size:0.82rem; font-weight:700; color:var(--muted); margin-bottom:20px; line-height:1.5; }
 .tag-input-area { background:var(--surface2); border:2px solid var(--border); border-radius:14px; padding:10px 12px; display:flex; flex-wrap:wrap; gap:6px; align-items:center; cursor:text; transition:border-color .2s; margin-bottom:8px; }
 .tag-input-area:focus-within { border-color:var(--accent); }
 .tag-chip { background:var(--surface); border:2px solid var(--border); border-radius:50px; font-size:0.72rem; font-weight:800; color:var(--text); padding:3px 10px 3px 12px; display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
-.tag-chip.interest { border-color:var(--accent); background:#fff4ec; color:var(--accent); }
-.tag-chip.exclude { border-color:#fca5a5; background:#fff1f2; color:var(--red); }
+.tag-chip.interest { border-color:var(--accent); background:#1e2e25; color:var(--accent); }
+.tag-chip.exclude { border-color:#fca5a5; background:#2e1a1a; color:var(--red); }
 .tag-chip-x { background:none; border:none; cursor:pointer; color:inherit; font-size:0.9rem; line-height:1; padding:0; opacity:.7; }
 .tag-chip-x:hover { opacity:1; }
 .tag-bare-input { background:none; border:none; outline:none; font-family:var(--font-b); font-size:0.78rem; font-weight:700; color:var(--text); min-width:120px; flex:1; padding:2px 4px; }
@@ -221,6 +221,17 @@ tr:hover td { background:var(--surface2); }
 .not-interested-btn:hover { border-color:var(--red); color:var(--red); }
 .potential-section-title { font-family:var(--font-d); font-size:1.1rem; color:var(--text); margin-bottom:4px; }
 .potential-section-sub { font-size:0.78rem; font-weight:700; color:var(--muted); margin-bottom:16px; }
+
+.yta-card { background:var(--surface); border:2px solid var(--border); border-radius:16px; padding:16px 18px; box-shadow:0 3px 0 rgba(0,0,0,.3); }
+.yta-label { font-size:0.65rem; font-weight:900; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.yta-value { font-family:var(--font-d); font-size:2rem; color:var(--text); line-height:1; margin-bottom:6px; }
+.yta-compare { display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:800; }
+.yta-delta { font-size:0.75rem; font-weight:800; }
+.yta-delta.up { color:var(--green); }
+.yta-delta.down { color:var(--red); }
+.yta-prev { font-size:0.72rem; font-weight:700; color:var(--muted); margin-top:4px; }
+.yta-bar { height:4px; border-radius:2px; background:var(--border); margin-top:10px; overflow:hidden; }
+.yta-bar-fill { height:100%; border-radius:2px; transition:width .5s ease; }
 
 @media (max-width:760px) {
   .upload-row,.stats-row,.notes-grid,.trends-layout { grid-template-columns:1fr; }
@@ -260,6 +271,7 @@ tr:hover td { background:var(--surface2); }
       <button class="tab-btn" onclick="switchTab('trends',this)">🔥 Trends & Posts</button>
       <button class="tab-btn" onclick="switchTab('settings',this)">⚙️ Settings</button>
       <button class="tab-btn" onclick="switchTab('potential',this)">🚀 Potential</button>
+      <button class="tab-btn" onclick="switchTab('ytstats',this)">📺 YT Stats</button>
     </div>
 
     <!-- PERFORMANCE TAB -->
@@ -448,6 +460,43 @@ tr:hover td { background:var(--surface2); }
       </div>
     </div>
 
+    <!-- YT STATS TAB -->
+    <div id="tab-ytstats" style="display:none">
+      <div class="section-title">YouTube Stats</div>
+      <div class="section-sub">MTD vs LYMTD — pulled live from YouTube Analytics.</div>
+
+      <!-- Connect box -->
+      <div id="yta-connect-box" class="connect-box" style="margin-bottom:20px;">
+        <h3 style="color:#e8e8e8;">📺 Connect YouTube Analytics</h3>
+        <p>Connect your YouTube account to pull channel analytics directly — views, watch time, CTR, subscribers and more.</p>
+        <button class="twitch-btn" style="background:linear-gradient(135deg,#45f5a3,#2dd4bf);color:#1c1c1c;" onclick="connectYTA()">Connect YouTube Analytics</button>
+      </div>
+
+      <!-- Connected bar -->
+      <div id="yta-connected-bar" style="display:none;background:var(--green-bg);border:2px solid var(--green-border);border-radius:14px;padding:12px 16px;margin-bottom:20px;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:0.82rem;font-weight:800;color:var(--green);">✓ YouTube Analytics connected</span>
+        <button class="action-btn" onclick="disconnectYTA()">Disconnect</button>
+      </div>
+
+      <!-- Date range info -->
+      <div id="yta-date-info" style="display:none;font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:16px;"></div>
+
+      <!-- Stats grid -->
+      <div id="yta-stats-grid" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;" id="yta-cards"></div>
+      </div>
+
+      <!-- Loading / empty -->
+      <div id="yta-loading" style="display:none;" class="empty-state">
+        <div class="empty-icon" style="animation:pulse 1.2s ease-in-out infinite;">📊</div>
+        Fetching your analytics...
+      </div>
+      <div id="yta-empty" class="empty-state">
+        <div class="empty-icon">📺</div>
+        Connect YouTube Analytics above to see your MTD stats vs last year.
+      </div>
+    </div>
+
     <!-- SETTINGS TAB -->
     <div id="tab-settings" style="display:none">
       <div class="section-title">Settings</div>
@@ -505,6 +554,180 @@ function showApp() {
   // Tag listener attached in switchTab
 }
 function logout() { sessionStorage.removeItem(SESSION_KEY); location.reload(); }
+// ── YouTube Analytics Auth ───────────────────────────────────
+const YTA_CLIENT_ID = '684633849089-jtdi2tcldp3reb9qodljjj71p5mqb5i3.apps.googleusercontent.com';
+const YTA_REDIRECT = 'https://dualpost.app/streamer-hub/yt-callback.html';
+const YTA_SCOPE = 'https://www.googleapis.com/auth/yt-analytics.readonly';
+
+function getYTATokens() {
+  return {
+    access: sessionStorage.getItem('yta_access_token'),
+    refresh: localStorage.getItem('sh_yta_refresh'),
+    expires: parseInt(sessionStorage.getItem('yta_expires_at') || '0'),
+  };
+}
+
+function setYTATokens(access, refresh, expiresIn) {
+  sessionStorage.setItem('yta_access_token', access);
+  sessionStorage.setItem('yta_expires_at', Date.now() + (expiresIn * 1000));
+  if (refresh) localStorage.setItem('sh_yta_refresh', refresh);
+}
+
+function clearYTATokens() {
+  sessionStorage.removeItem('yta_access_token');
+  sessionStorage.removeItem('yta_expires_at');
+  localStorage.removeItem('sh_yta_refresh');
+}
+
+async function getYTAAccessToken() {
+  const t = getYTATokens();
+  if (t.access && t.expires > Date.now() + 300000) return t.access;
+  if (t.refresh) {
+    try {
+      const res = await fetch(WORKER_URL + '/yta-refresh', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: t.refresh })
+      });
+      const data = await res.json();
+      if (data.access_token) {
+        setYTATokens(data.access_token, data.refresh_token, data.expires_in);
+        return data.access_token;
+      }
+    } catch(e) {}
+  }
+  return null;
+}
+
+function connectYTA() {
+  const state = Math.random().toString(36).substring(2);
+  sessionStorage.setItem('yta_oauth_state', state);
+  const params = new URLSearchParams({
+    client_id: YTA_CLIENT_ID,
+    redirect_uri: YTA_REDIRECT,
+    response_type: 'code',
+    scope: YTA_SCOPE,
+    access_type: 'offline',
+    prompt: 'consent',
+    state,
+  });
+  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+}
+
+function disconnectYTA() {
+  clearYTATokens();
+  document.getElementById('yta-connect-box').style.display = 'block';
+  document.getElementById('yta-connected-bar').style.display = 'none';
+  document.getElementById('yta-stats-grid').style.display = 'none';
+  document.getElementById('yta-empty').style.display = 'block';
+  document.getElementById('yta-date-info').style.display = 'none';
+}
+
+async function initYTAConnection() {
+  const token = await getYTAAccessToken();
+  if (!token) return;
+  document.getElementById('yta-connect-box').style.display = 'none';
+  document.getElementById('yta-connected-bar').style.display = 'flex';
+  document.getElementById('yta-empty').style.display = 'none';
+}
+
+async function loadYTAStats() {
+  const token = await getYTAAccessToken();
+  if (!token) return;
+
+  document.getElementById('yta-loading').style.display = 'block';
+  document.getElementById('yta-stats-grid').style.display = 'none';
+  document.getElementById('yta-empty').style.display = 'none';
+
+  // Calculate MTD date ranges
+  const now = new Date();
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const today = now.toISOString().split('T')[0];
+  const mtdStart = firstOfMonth.toISOString().split('T')[0];
+
+  // Same period last year
+  const lymtdStart = new Date(now.getFullYear() - 1, now.getMonth(), 1).toISOString().split('T')[0];
+  const lymtdEnd = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()).toISOString().split('T')[0];
+
+  document.getElementById('yta-date-info').style.display = 'block';
+  document.getElementById('yta-date-info').textContent =
+    'MTD: ' + mtdStart + ' to ' + today + '  |  LYMTD: ' + lymtdStart + ' to ' + lymtdEnd;
+
+  const metrics = 'views,estimatedMinutesWatched,subscribersGained,subscribersLost,impressions,impressionClickThroughRate';
+
+  try {
+    const [mtdRes, lymtdRes] = await Promise.all([
+      fetch(WORKER_URL + '/yta-query', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: token, start_date: mtdStart, end_date: today, metrics })
+      }),
+      fetch(WORKER_URL + '/yta-query', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: token, start_date: lymtdStart, end_date: lymtdEnd, metrics })
+      })
+    ]);
+
+    const mtdData = await mtdRes.json();
+    const lymtdData = await lymtdRes.json();
+
+    if (mtdData.error) throw new Error(mtdData.error.message);
+    if (lymtdData.error) throw new Error(lymtdData.error.message);
+
+    // Parse results — API returns rows array, first row is totals
+    const metricNames = metrics.split(',');
+    const mtd = {};
+    const lymtd = {};
+    metricNames.forEach((m, i) => {
+      mtd[m] = mtdData.rows ? parseFloat(mtdData.rows[0][i] || 0) : 0;
+      lymtd[m] = lymtdData.rows ? parseFloat(lymtdData.rows[0][i] || 0) : 0;
+    });
+
+    const netSubs = mtd.subscribersGained - mtd.subscribersLost;
+    const netSubsLY = lymtd.subscribersGained - lymtd.subscribersLost;
+
+    const cardDefs = [
+      { label: 'Views', key: 'views', fmt: v => Math.round(v).toLocaleString(), mtdVal: mtd.views, lyVal: lymtd.views },
+      { label: 'Watch Time (hrs)', key: 'watchTime', fmt: v => Math.round(v/60).toLocaleString(), mtdVal: mtd.estimatedMinutesWatched, lyVal: lymtd.estimatedMinutesWatched },
+      { label: 'Net Subscribers', key: 'subs', fmt: v => (v >= 0 ? '+' : '') + Math.round(v), mtdVal: netSubs, lyVal: netSubsLY },
+      { label: 'Impressions', key: 'impressions', fmt: v => Math.round(v).toLocaleString(), mtdVal: mtd.impressions, lyVal: lymtd.impressions },
+      { label: 'CTR', key: 'ctr', fmt: v => v.toFixed(2) + '%', mtdVal: mtd.impressionClickThroughRate, lyVal: lymtd.impressionClickThroughRate },
+      { label: 'Avg Watch Time (min)', key: 'avgWatch', fmt: v => v.toFixed(1) + 'm', mtdVal: mtd.views > 0 ? (mtd.estimatedMinutesWatched / mtd.views) : 0, lyVal: lymtd.views > 0 ? (lymtd.estimatedMinutesWatched / lymtd.views) : 0 },
+    ];
+
+    document.getElementById('yta-cards').innerHTML = cardDefs.map(c => {
+      const delta = c.mtdVal - c.lyVal;
+      const pct = c.lyVal !== 0 ? ((delta / Math.abs(c.lyVal)) * 100).toFixed(1) : null;
+      const isUp = delta >= 0;
+      const arrow = isUp ? '▲' : '▼';
+      const cls = isUp ? 'up' : 'down';
+      const barPct = c.lyVal > 0 ? Math.min(100, Math.round((c.mtdVal / c.lyVal) * 100)) : (c.mtdVal > 0 ? 100 : 0);
+      const barColor = isUp ? '#45f5a3' : '#ff5555';
+      return '<div class="yta-card">' +
+        '<div class="yta-label">' + c.label + '</div>' +
+        '<div class="yta-value">' + c.fmt(c.mtdVal) + '</div>' +
+        '<div class="yta-compare">' +
+          '<span class="yta-delta ' + cls + '">' + arrow + ' ' + (pct !== null ? pct + '%' : 'N/A') + '</span>' +
+          '<span style="font-size:0.68rem;font-weight:700;color:var(--muted);">vs LYMTD</span>' +
+        '</div>' +
+        '<div class="yta-prev">LYMTD: ' + c.fmt(c.lyVal) + '</div>' +
+        '<div class="yta-bar"><div class="yta-bar-fill" style="width:' + barPct + '%;background:' + barColor + ';"></div></div>' +
+      '</div>';
+    }).join('');
+
+    document.getElementById('yta-loading').style.display = 'none';
+    document.getElementById('yta-stats-grid').style.display = 'block';
+
+  } catch(e) {
+    document.getElementById('yta-loading').style.display = 'none';
+    document.getElementById('yta-empty').style.display = 'block';
+    document.getElementById('yta-empty').innerHTML = '<div class="empty-icon">⚠️</div>Error: ' + e.message;
+  }
+}
+
+async function checkYTAOnLoad() {
+  const t = getYTATokens();
+  if (t.access || t.refresh) await initYTAConnection();
+}
+
 // ── Interest Tags & Exclusions ──────────────────────────────
 function getInterestTags() { try { return JSON.parse(localStorage.getItem('sh_interest_tags') || '[]'); } catch(e) { return []; } }
 function saveInterestTags(tags) { localStorage.setItem('sh_interest_tags', JSON.stringify(tags)); }
@@ -1131,6 +1354,7 @@ async function checkTwitchOnLoad() {
 if (sessionStorage.getItem(SESSION_KEY) === '1') {
   showApp();
   checkTwitchOnLoad();
+  checkYTAOnLoad();
 }
 
 // Enter key support
@@ -1141,7 +1365,7 @@ document.getElementById('pw-input').addEventListener('keydown', function(e) {
 // ── Tabs ──────────────────────────────────────────
 let trendsLoaded = false;
 function switchTab(name, btn) {
-  ['performance','trends','settings','potential'].forEach(t => {
+  ['performance','trends','settings','potential','ytstats'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
   });
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1154,6 +1378,9 @@ function switchTab(name, btn) {
       document.getElementById('key-status').style.color = 'var(--green)';
       document.getElementById('key-status').textContent = '✓ API key is saved.';
     }
+  }
+  if (name === 'ytstats') {
+    loadYTAStats();
   }
   if (name === 'potential') {
     // Always reattach tag input listener fresh
