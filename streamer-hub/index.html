@@ -752,7 +752,7 @@ async function loadYTAStats() {
   const metricsTyped = 'views,estimatedMinutesWatched';
 
   try {
-    const [mtdRes, lymtdRes, chartRes, chartLYRes, regRes, srtRes] = await Promise.all([
+    const [mtdRes, lymtdRes, chartRes, chartLYRes, contentTypeRes] = await Promise.all([
       fetch(WORKER_URL + '/yta-query', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ access_token: token, start_date: curStart, end_date: curEnd, metrics })
@@ -771,11 +771,7 @@ async function loadYTAStats() {
       }),
       fetch(WORKER_URL + '/yta-query', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_token: token, start_date: curStart, end_date: curEnd, metrics: metricsTyped, filters: 'creatorContentType==VIDEO_ON_DEMAND' })
-      }),
-      fetch(WORKER_URL + '/yta-query', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_token: token, start_date: curStart, end_date: curEnd, metrics: metricsTyped, filters: 'creatorContentType==SHORTS' })
+        body: JSON.stringify({ access_token: token, start_date: curStart, end_date: curEnd, metrics: metricsTyped, dimensions: 'creatorContentType' })
       })
     ]);
 
@@ -798,14 +794,16 @@ async function loadYTAStats() {
     const netSubs = mtd.subscribersGained - mtd.subscribersLost;
     const netSubsLY = lymtd.subscribersGained - lymtd.subscribersLost;
 
-    const regData = await regRes.json();
-    const srtData = await srtRes.json();
-    if (regData.error) console.warn('REG filter error:', JSON.stringify(regData.error));
-    if (srtData.error) console.warn('SRT filter error:', JSON.stringify(srtData.error));
-    const regViews = (regData.rows && regData.rows[0]) ? parseFloat(regData.rows[0][0] || 0) : 0;
-    const regWatch = (regData.rows && regData.rows[0]) ? parseFloat(regData.rows[0][1] || 0) : 0;
-    const srtViews = (srtData.rows && srtData.rows[0]) ? parseFloat(srtData.rows[0][0] || 0) : 0;
-    const srtWatch = (srtData.rows && srtData.rows[0]) ? parseFloat(srtData.rows[0][1] || 0) : 0;
+    const contentTypeData = await contentTypeRes.json();
+    if (contentTypeData.error) console.warn('contentType dimension error:', JSON.stringify(contentTypeData.error));
+    // Rows: [contentType, views, estimatedMinutesWatched] — find by content type value
+    const ctRows = contentTypeData.rows || [];
+    const regRow = ctRows.find(r => r[0] === 'VIDEO_ON_DEMAND') || null;
+    const srtRow = ctRows.find(r => r[0] === 'SHORTS') || null;
+    const regViews = regRow ? parseFloat(regRow[1] || 0) : 0;
+    const regWatch = regRow ? parseFloat(regRow[2] || 0) : 0;
+    const srtViews = srtRow ? parseFloat(srtRow[1] || 0) : 0;
+    const srtWatch = srtRow ? parseFloat(srtRow[2] || 0) : 0;
 
     const cardDefs = [
       { label: 'REG Views', key: 'regViews', fmt: v => Math.round(v).toLocaleString(), mtdVal: regViews, lyVal: 0 },
