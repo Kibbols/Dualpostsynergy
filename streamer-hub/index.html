@@ -1304,71 +1304,43 @@ function clearGeminiKey() {
 async function analyzeWithGemini(videos) {
   const key = getGeminiKey();
   const patternsBox = document.getElementById('patterns-box');
-
-  if (!key) {
-    patternsBox.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;font-weight:700;">Add your Gemini API key in Settings to unlock AI analysis.</div>';
-    return;
-  }
-
-  patternsBox.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;font-weight:700;font-style:italic;animation:pulse 1.2s ease-in-out infinite;">Analyzing your content...</div>';
-
+  if (!key) { patternsBox.innerHTML = '<div style="color:var(--muted)">Add your Gemini API key in Settings to unlock AI analysis.</div>'; return; }
+  patternsBox.innerHTML = '<div style="color:var(--muted);font-style:italic;animation:pulse 1.2s ease-in-out infinite;">Analyzing your content...</div>';
   const sorted = [...videos].sort((a,b) => b.views - a.views);
-  const top10 = sorted.slice(0, 10).map(v =>
-    v.title + ' — ' + v.views.toLocaleString() + ' views' +
-    (v.ctr > 0 ? ', ' + v.ctr + '% CTR' : '') +
-    (v.watchTime > 0 ? ', ' + v.watchTime.toFixed(2) + 'h watch time' : '')
-  ).join('\n');
-  const bot10 = sorted.slice(-10).map(v =>
-    v.title + ' — ' + v.views.toLocaleString() + ' views' +
-    (v.ctr > 0 ? ', ' + v.ctr + '% CTR' : '') +
-    (v.watchTime > 0 ? ', ' + v.watchTime.toFixed(2) + 'h watch time' : '')
-  ).join('\n');
+  const fmt = v => v.title + ' - ' + v.views.toLocaleString() + ' views' + (v.ctr > 0 ? ', ' + v.ctr + '% CTR' : '') + (v.watchTime > 0 ? ', ' + v.watchTime.toFixed(2) + 'h watch time' : '');
+  const top10 = sorted.slice(0, 10).map(fmt).join('\n');
+  const bot10 = sorted.slice(-10).map(fmt).join('\n');
   const avg = Math.round(videos.reduce((s,v) => s+v.views, 0) / videos.length);
-
+  let ytTrendSummary = '';
+  try {
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), 5000);
+    const ytRes = await fetch(WORKER_URL + '/youtube-trending', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ regionCode: 'US' }), signal: ctrl.signal });
+    clearTimeout(to);
+    const ytJson = await ytRes.json();
+    if (ytJson.videos && ytJson.videos.length) ytTrendSummary = ytJson.videos.slice(0, 20).map(v => v.title + ' (' + Math.round(v.views/1000) + 'k views)').join(', ');
+  } catch(e) {}
   const prompt = 'You are analyzing a Dead by Daylight content creator video performance data. Channel avg: ' + avg + ' views. Sample: ' + videos.length + ' videos.' +
-    '\n\nIMPORTANT: Small channel, limited data. Be constructive. Do NOT tell them to stop whole content categories based on small samples.' +
-    '\nYouTube Table CSV does not include likes — use CTR and watch time as engagement quality signals.' +
+    '\n\nIMPORTANT: Small channel. Be constructive. No stopping whole categories based on small samples. No likes in CSV - use CTR and watch time as engagement signals.' +
     '\n\nTOP PERFORMING:\n' + top10 +
     '\n\nBOTTOM PERFORMING:\n' + bot10 +
-    '\n\nGive 4-6 specific actionable insights focusing on: title patterns that correlate with views/CTR, content formats to do MORE of, what watch time suggests about retention, specific title formulas to try. Only suggest stopping something if there is CLEAR consistent evidence across multiple videos.' +
-    '\n\nYOUTUBE TRENDING GAMING RIGHT NOW: ' + (ytTrendSummary || 'unavailable') +
-    '\n\nGive 4-6 performance insights as above, then add 2-3 CONTENT RECOMMENDATIONS at the end.' +
-    '\nRecommendations should suggest specific video/title ideas that combine what has worked in YOUR data with what is trending on YouTube right now.' +
-    '\nReference actual titles and trending videos by name.' +
-    '\nRespond as a JSON object: {"insights": ["insight 1"], "recommendations": ["rec 1"]}. No markdown.';
-
+    '\n\nGive 4-6 actionable insights: title patterns correlating with views/CTR, formats to do MORE of, what watch time suggests, title formulas to try.' +
+    (ytTrendSummary ? '\n\nYOUTUBE TRENDING GAMING NOW: ' + ytTrendSummary : '') +
+    '\n\nAlso give 2-3 CONTENT RECOMMENDATIONS: specific video/title ideas combining what worked with current YouTube trends.' +
+    '\nRespond ONLY as JSON: {"insights":["..."],"recommendations":["..."]}. No markdown.';
   try {
-
-  // Fetch YouTube trending gaming data for recommendations
-  let ytTrendingData = [];
-  try {
-    const ytRes = await fetch(WORKER_URL + '/youtube-trending', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ regionCode: 'US' })
-    });
-    const ytJson = await ytRes.json();
-    if (ytJson.videos) ytTrendingData = ytJson.videos;
-  } catch(e) {}
-  const ytTrendSummary = ytTrendingData.slice(0, 20).map(v => v.title + ' (' + Math.round(v.views/1000) + 'k views)').join(', ');
-
-    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + key, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    });
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + key, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
-    let rawText = data.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
-    const jStart = rawText.indexOf('{') !== -1 ? rawText.indexOf('{') : 0;
-    const jEnd = rawText.lastIndexOf('}') !== -1 ? rawText.lastIndexOf('}') + 1 : rawText.length;
-    rawText = rawText.slice(jStart, jEnd);
-    let parsed;
-    try { parsed = JSON.parse(rawText); } catch(e) { parsed = { insights: JSON.parse(rawText), recommendations: [] }; }
-    const insights = parsed.insights || parsed;
+    let raw = data.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
+    const js = raw.indexOf('{'); const je = raw.lastIndexOf('}');
+    if (js !== -1 && je !== -1) raw = raw.slice(js, je+1);
+    let parsed; try { parsed = JSON.parse(raw); } catch(e) { parsed = {insights:[],recommendations:[]}; }
+    const ins = parsed.insights || [];
     const recs = parsed.recommendations || [];
-    let html = '<ul>' + insights.map(i => '<li>' + i + '</li>').join('') + '</ul>';
+    let html = '<ul>' + ins.map(i => '<li>' + i + '</li>').join('') + '</ul>';
     if (recs.length) {
-      html += '<div style="font-family:var(--font-d);font-size:0.9rem;color:var(--text);margin:16px 0 8px;">📹 Content Recommendations</div>';
+      html += '<div style="font-family:var(--font-d);font-size:0.9rem;color:var(--text);margin:16px 0 8px;">Content Recommendations</div>';
       html += '<ul style="border-top:2px solid #ede9fe;padding-top:10px;">' + recs.map(r => '<li style="color:var(--accent);">' + r + '</li>').join('') + '</ul>';
     }
     patternsBox.innerHTML = html;
@@ -1376,6 +1348,8 @@ async function analyzeWithGemini(videos) {
     patternsBox.innerHTML = '<div style="color:var(--red);font-size:0.82rem;font-weight:700;">Analysis failed: ' + e.message + '</div>';
   }
 }
+
+  patternsBox.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;font-weight:700;font-style:italic;animation:pulse 1.2s ease-in-out infinite;">Analyzing your content...</div>';
 
 // ── Trends ────────────────────────────────────────
 let selectedPost = null;
