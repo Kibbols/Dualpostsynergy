@@ -752,7 +752,7 @@ async function loadYTAStats() {
   const metricsTyped = 'views,estimatedMinutesWatched';
 
   try {
-    const [mtdRes, lymtdRes, chartRes, chartLYRes] = await Promise.all([
+    const [mtdRes, lymtdRes, chartRes, chartLYRes, regRes, srtRes] = await Promise.all([
       fetch(WORKER_URL + '/yta-query', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ access_token: token, start_date: curStart, end_date: curEnd, metrics })
