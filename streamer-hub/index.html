@@ -478,6 +478,16 @@ tr:hover td { background:var(--surface2); }
         <button class="action-btn" onclick="disconnectYTA()">Disconnect</button>
       </div>
 
+      <!-- Period selector -->
+      <div style="margin-bottom:16px;">
+        <select id="yta-period" class="ctrl-select" onchange="loadYTAStats()" style="width:auto;background:var(--surface2);">
+          <option value="mtd">MTD vs LYMTD</option>
+          <option value="wtd">WTD vs LYWTD</option>
+          <option value="ytd">YTD vs LYYTD</option>
+          <option value="yesterday">Yesterday vs LY Yesterday</option>
+        </select>
+      </div>
+
       <!-- Date range info -->
       <div id="yta-date-info" style="display:none;font-size:0.78rem;font-weight:700;color:var(--muted);margin-bottom:16px;"></div>
 
@@ -638,19 +648,54 @@ async function loadYTAStats() {
   document.getElementById('yta-stats-grid').style.display = 'none';
   document.getElementById('yta-empty').style.display = 'none';
 
-  // Calculate MTD date ranges
+  // Date helpers
+  const fmt = d => d.toISOString().split('T')[0];
   const now = new Date();
-  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const today = now.toISOString().split('T')[0];
-  const mtdStart = firstOfMonth.toISOString().split('T')[0];
+  // "through yesterday" — business reporting convention
+  const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
 
-  // Same period last year
-  const lymtdStart = new Date(now.getFullYear() - 1, now.getMonth(), 1).toISOString().split('T')[0];
-  const lymtdEnd = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()).toISOString().split('T')[0];
+  const period = document.getElementById('yta-period') ? document.getElementById('yta-period').value : 'mtd';
+
+  let curStart, curEnd, lyStart, lyEnd, label, lyLabel;
+
+  if (period === 'mtd') {
+    curStart = fmt(new Date(yesterday.getFullYear(), yesterday.getMonth(), 1));
+    curEnd = fmt(yesterday);
+    lyStart = fmt(new Date(yesterday.getFullYear() - 1, yesterday.getMonth(), 1));
+    lyEnd = fmt(new Date(yesterday.getFullYear() - 1, yesterday.getMonth(), yesterday.getDate()));
+    label = 'MTD'; lyLabel = 'LYMTD';
+
+  } else if (period === 'wtd') {
+    // Week starts Sunday, resets each Sunday
+    const dow = yesterday.getDay(); // 0=Sun
+    const weekStart = new Date(yesterday); weekStart.setDate(yesterday.getDate() - dow);
+    curStart = fmt(weekStart);
+    curEnd = fmt(yesterday);
+    const lyWeekStart = new Date(weekStart); lyWeekStart.setFullYear(lyWeekStart.getFullYear() - 1);
+    const lyYesterday = new Date(yesterday); lyYesterday.setFullYear(lyYesterday.getFullYear() - 1);
+    lyStart = fmt(lyWeekStart);
+    lyEnd = fmt(lyYesterday);
+    label = 'WTD'; lyLabel = 'LYWTD';
+
+  } else if (period === 'ytd') {
+    curStart = fmt(new Date(yesterday.getFullYear(), 0, 1));
+    curEnd = fmt(yesterday);
+    lyStart = fmt(new Date(yesterday.getFullYear() - 1, 0, 1));
+    lyEnd = fmt(new Date(yesterday.getFullYear() - 1, yesterday.getMonth(), yesterday.getDate()));
+    label = 'YTD'; lyLabel = 'LYYTD';
+
+  } else { // yesterday
+    curStart = fmt(yesterday);
+    curEnd = fmt(yesterday);
+    const lyYest = new Date(yesterday); lyYest.setFullYear(lyYest.getFullYear() - 1);
+    lyStart = fmt(lyYest);
+    lyEnd = fmt(lyYest);
+    label = 'Yesterday'; lyLabel = 'LY Yesterday';
+  }
 
   document.getElementById('yta-date-info').style.display = 'block';
   document.getElementById('yta-date-info').textContent =
-    'MTD: ' + mtdStart + ' to ' + today + '  |  LYMTD: ' + lymtdStart + ' to ' + lymtdEnd;
+    label + ': ' + curStart + ' to ' + curEnd + '  |  ' + lyLabel + ': ' + lyStart + ' to ' + lyEnd;
 
   const metrics = 'views,estimatedMinutesWatched,subscribersGained,subscribersLost,likes,comments';
 
@@ -658,11 +703,11 @@ async function loadYTAStats() {
     const [mtdRes, lymtdRes] = await Promise.all([
       fetch(WORKER_URL + '/yta-query', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_token: token, start_date: mtdStart, end_date: today, metrics })
+        body: JSON.stringify({ access_token: token, start_date: curStart, end_date: curEnd, metrics })
       }),
       fetch(WORKER_URL + '/yta-query', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_token: token, start_date: lymtdStart, end_date: lymtdEnd, metrics })
+        body: JSON.stringify({ access_token: token, start_date: lyStart, end_date: lyEnd, metrics })
       })
     ]);
 
