@@ -757,11 +757,11 @@ async function loadYTAStats() {
       }),
       fetch(WORKER_URL + '/yta-query', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_token: token, start_date: curStart, end_date: curEnd, metrics: 'views', dimensions: (period === 'ytd' ? 'month' : 'day') })
+        body: JSON.stringify({ access_token: token, start_date: curStart, end_date: curEnd, metrics: 'views', dimensions: 'day' })
       }),
       fetch(WORKER_URL + '/yta-query', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_token: token, start_date: lyStart, end_date: lyEnd, metrics: 'views', dimensions: (period === 'ytd' ? 'month' : 'day') })
+        body: JSON.stringify({ access_token: token, start_date: lyStart, end_date: lyEnd, metrics: 'views', dimensions: 'day' })
       })
     ]);
 
@@ -816,8 +816,20 @@ async function loadYTAStats() {
     // Draw chart
     const chartData = await chartRes.json();
     const chartLYData = await chartLYRes.json();
-    const curViews = (chartData.rows || []).map(r => ({ label: r[0], val: parseFloat(r[1] || 0) }));
-    const lyViews = (chartLYData.rows || []).map(r => ({ label: r[0], val: parseFloat(r[1] || 0) }));
+    function aggregateRows(rows, period) {
+      const raw = (rows || []).map(r => ({ label: r[0], val: parseFloat(r[1] || 0) }));
+      if (period !== 'ytd') return raw;
+      // Aggregate daily into monthly for YTD
+      const buckets = {};
+      raw.forEach(r => {
+        const month = r.label.slice(0, 7); // YYYY-MM
+        if (!buckets[month]) buckets[month] = { label: month, val: 0 };
+        buckets[month].val += r.val;
+      });
+      return Object.values(buckets).sort((a, b) => a.label.localeCompare(b.label));
+    }
+    const curViews = aggregateRows(chartData.rows, period);
+    const lyViews = aggregateRows(chartLYData.rows, period);
     drawYTAChart(curViews, lyViews, period);
 
     document.getElementById('yta-loading').style.display = 'none';
