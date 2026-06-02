@@ -749,6 +749,7 @@ async function loadYTAStats() {
     '  (data through ' + fmt(ldd) + ')';
 
   const metrics = 'views,estimatedMinutesWatched,subscribersGained,subscribersLost,likes,comments';
+  const metricsTyped = 'views,estimatedMinutesWatched';
 
   try {
     const [mtdRes, lymtdRes, chartRes, chartLYRes] = await Promise.all([
@@ -790,12 +791,14 @@ async function loadYTAStats() {
     const netSubsLY = lymtd.subscribersGained - lymtd.subscribersLost;
 
     const cardDefs = [
-      { label: 'Views', key: 'views', fmt: v => Math.round(v).toLocaleString(), mtdVal: mtd.views, lyVal: lymtd.views },
+      { label: 'REG Views', key: 'regViews', fmt: v => Math.round(v).toLocaleString(), mtdVal: regViews, lyVal: 0 },
+      { label: 'SRT Views', key: 'srtViews', fmt: v => Math.round(v).toLocaleString(), mtdVal: srtViews, lyVal: 0 },
       { label: 'Watch Time (hrs)', key: 'watchTime', fmt: v => Math.round(v/60).toLocaleString(), mtdVal: mtd.estimatedMinutesWatched, lyVal: lymtd.estimatedMinutesWatched },
       { label: 'Net Subscribers', key: 'subs', fmt: v => (v >= 0 ? '+' : '') + Math.round(v), mtdVal: netSubs, lyVal: netSubsLY },
       { label: 'Likes', key: 'likes', fmt: v => Math.round(v).toLocaleString(), mtdVal: mtd.likes, lyVal: lymtd.likes },
       { label: 'Comments', key: 'comments', fmt: v => Math.round(v).toLocaleString(), mtdVal: mtd.comments, lyVal: lymtd.comments },
-      { label: 'Avg Watch Time (min)', key: 'avgWatch', fmt: v => v.toFixed(1) + 'm', mtdVal: mtd.views > 0 ? (mtd.estimatedMinutesWatched / mtd.views) : 0, lyVal: lymtd.views > 0 ? (lymtd.estimatedMinutesWatched / lymtd.views) : 0 },
+      { label: 'REG Watch Time', key: 'avgRegWatch', fmt: v => { const m = Math.floor(v); const s = Math.round((v - m) * 60); return m + 'm ' + s + 's'; }, mtdVal: regViews > 0 ? (regWatch / regViews) : 0, lyVal: 0 },
+      { label: 'SRT Watch Time', key: 'avgSrtWatch', fmt: v => { const m = Math.floor(v); const s = Math.round((v - m) * 60); return m + 'm ' + s + 's'; }, mtdVal: srtViews > 0 ? (srtWatch / srtViews) : 0, lyVal: 0 },
     ];
 
     document.getElementById('yta-cards').innerHTML = cardDefs.map(c => {
@@ -819,6 +822,13 @@ async function loadYTAStats() {
     }).join('');
 
     // Draw chart
+    const regData = await regRes.json();
+    const srtData = await srtRes.json();
+    const regViews = (regData.rows && regData.rows[0]) ? parseFloat(regData.rows[0][0] || 0) : 0;
+    const regWatch = (regData.rows && regData.rows[0]) ? parseFloat(regData.rows[0][1] || 0) : 0;
+    const srtViews = (srtData.rows && srtData.rows[0]) ? parseFloat(srtData.rows[0][0] || 0) : 0;
+    const srtWatch = (srtData.rows && srtData.rows[0]) ? parseFloat(srtData.rows[0][1] || 0) : 0;
+
     const chartData = await chartRes.json();
     const chartLYData = await chartLYRes.json();
     function aggregateRows(rows, period) {
