@@ -1217,9 +1217,14 @@ function parseCSV(text) {
 function normalizeYT(rows) {
   var excludeHashtags = document.getElementById('yt-exclude-hashtags') ? document.getElementById('yt-exclude-hashtags').checked : true;
   return rows.map(r => ({
-    platform:'YouTube', title:r['Video title']||r['Title']||r['title']||'Unknown',
+    platform:'YouTube',
+    title:r['Video title']||r['Title']||r['title']||'Unknown',
     views:parseInt(r['Views']||r['views']||'0')||0,
     likes:parseInt(r['Likes']||r['likes']||'0')||0,
+    watchTime:parseFloat(r['Watch time (hours)']||'0')||0,
+    ctr:parseFloat(r['Impressions click-through rate (%)']||r['CTR']||'0')||0,
+    impressions:parseInt(r['Impressions']||'0')||0,
+    duration:parseInt(r['Duration']||'0')||0,
   })).filter(r => {
     if (r.views <= 0 || r.title === 'Unknown') return false;
     if (excludeHashtags && r.title.includes('#')) return false;
@@ -1307,28 +1312,25 @@ async function analyzeWithGemini(videos) {
   patternsBox.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;font-weight:700;font-style:italic;animation:pulse 1.2s ease-in-out infinite;">Analyzing your content...</div>';
 
   const sorted = [...videos].sort((a,b) => b.views - a.views);
-  const top10 = sorted.slice(0, 10).map(v => v.title + ' (' + v.views.toLocaleString() + ' views)').join('\n');
-  const bot10 = sorted.slice(-10).map(v => v.title + ' (' + v.views.toLocaleString() + ' views)').join('\n');
+  const top10 = sorted.slice(0, 10).map(v =>
+    v.title + ' — ' + v.views.toLocaleString() + ' views' +
+    (v.ctr > 0 ? ', ' + v.ctr + '% CTR' : '') +
+    (v.watchTime > 0 ? ', ' + v.watchTime.toFixed(2) + 'h watch time' : '')
+  ).join('\n');
+  const bot10 = sorted.slice(-10).map(v =>
+    v.title + ' — ' + v.views.toLocaleString() + ' views' +
+    (v.ctr > 0 ? ', ' + v.ctr + '% CTR' : '') +
+    (v.watchTime > 0 ? ', ' + v.watchTime.toFixed(2) + 'h watch time' : '')
+  ).join('\n');
   const avg = Math.round(videos.reduce((s,v) => s+v.views, 0) / videos.length);
 
-  const prompt = `You are analyzing a Dead by Daylight short-form content creator's video performance data. They post YouTube Shorts and TikToks. Their channel average is ${avg} views per video.
-
-TOP 10 PERFORMING VIDEOS:
-${top10}
-
-BOTTOM 10 PERFORMING VIDEOS:
-${bot10}
-
-Analyze this data and give 4-6 specific, actionable insights. Focus on:
-1. What patterns do the top performers share (specific words, topics, formats)?
-2. What are the bottom performers doing that isn't working?
-3. What specific content topics or title formulas should they try MORE of?
-4. What should they stop doing?
-5. Any hashtag or title structure patterns worth noting?
-
-Be specific and direct. Reference actual titles from their data. No generic advice.
-Respond as a JSON array of strings, each string being one insight. No markdown, no preamble.
-Example: ["insight one", "insight two"]`;
+  const prompt = 'You are analyzing a Dead by Daylight content creator video performance data. Channel avg: ' + avg + ' views. Sample: ' + videos.length + ' videos.' +
+    '\n\nIMPORTANT: Small channel, limited data. Be constructive. Do NOT tell them to stop whole content categories based on small samples.' +
+    '\nYouTube Table CSV does not include likes — use CTR and watch time as engagement quality signals.' +
+    '\n\nTOP PERFORMING:\n' + top10 +
+    '\n\nBOTTOM PERFORMING:\n' + bot10 +
+    '\n\nGive 4-6 specific actionable insights focusing on: title patterns that correlate with views/CTR, content formats to do MORE of, what watch time suggests about retention, specific title formulas to try. Only suggest stopping something if there is CLEAR consistent evidence across multiple videos.' +
+    '\nReference actual titles. No generic advice. Respond as a JSON array of strings, no markdown. Example: ["insight one"]';
 
   try {
     const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=' + key, {
