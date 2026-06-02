@@ -1,0 +1,23 @@
+{
+  "name": "DualPost Appraisal",
+  "short_name": "Appraisal",
+  "description": "Private growth analytics and tools for DualPost streamers.",
+  "start_url": "/streamer-hub/",
+  "scope": "/streamer-hub/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1c1c1c",
+  "theme_color": "#45f5a3",
+  "icons": [
+    {
+      "src": "/streamer-hub/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/streamer-hub/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

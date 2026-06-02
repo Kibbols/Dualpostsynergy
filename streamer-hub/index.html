@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Streamer Hub</title>
 <meta name="robots" content="noindex, nofollow" />
+<link rel="manifest" href="/streamer-hub/manifest.json" />
+<meta name="theme-color" content="#45f5a3" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="DualPost Appraisal" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
 <style>
@@ -504,7 +509,7 @@ tr:hover td { background:var(--surface2); }
 
       <!-- Stats grid -->
       <div id="yta-stats-grid" style="display:none;">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:20px;" id="yta-cards"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;" id="yta-cards"></div>
       </div>
 
       <!-- Loading / empty -->
@@ -2012,6 +2017,11 @@ function copyIdea(i) {
   const btn = document.getElementById('idea-copy-' + i);
   btn.textContent = '✓ Copied'; btn.classList.add('copied');
   setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/streamer-hub/sw.js');
 }
 </script>
 </body>
