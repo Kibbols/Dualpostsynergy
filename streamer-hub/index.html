@@ -652,7 +652,7 @@ async function loadYTAStats() {
   document.getElementById('yta-date-info').textContent =
     'MTD: ' + mtdStart + ' to ' + today + '  |  LYMTD: ' + lymtdStart + ' to ' + lymtdEnd;
 
-  const metrics = 'views,estimatedMinutesWatched,subscribersGained,subscribersLost,impressions,impressionClickThroughRate';
+  const metrics = 'views,estimatedMinutesWatched,subscribersGained,subscribersLost,likes,comments';
 
   try {
     const [mtdRes, lymtdRes] = await Promise.all([
@@ -688,8 +688,8 @@ async function loadYTAStats() {
       { label: 'Views', key: 'views', fmt: v => Math.round(v).toLocaleString(), mtdVal: mtd.views, lyVal: lymtd.views },
       { label: 'Watch Time (hrs)', key: 'watchTime', fmt: v => Math.round(v/60).toLocaleString(), mtdVal: mtd.estimatedMinutesWatched, lyVal: lymtd.estimatedMinutesWatched },
       { label: 'Net Subscribers', key: 'subs', fmt: v => (v >= 0 ? '+' : '') + Math.round(v), mtdVal: netSubs, lyVal: netSubsLY },
-      { label: 'Impressions', key: 'impressions', fmt: v => Math.round(v).toLocaleString(), mtdVal: mtd.impressions, lyVal: lymtd.impressions },
-      { label: 'CTR', key: 'ctr', fmt: v => v.toFixed(2) + '%', mtdVal: mtd.impressionClickThroughRate, lyVal: lymtd.impressionClickThroughRate },
+      { label: 'Likes', key: 'likes', fmt: v => Math.round(v).toLocaleString(), mtdVal: mtd.likes, lyVal: lymtd.likes },
+      { label: 'Comments', key: 'comments', fmt: v => Math.round(v).toLocaleString(), mtdVal: mtd.comments, lyVal: lymtd.comments },
       { label: 'Avg Watch Time (min)', key: 'avgWatch', fmt: v => v.toFixed(1) + 'm', mtdVal: mtd.views > 0 ? (mtd.estimatedMinutesWatched / mtd.views) : 0, lyVal: lymtd.views > 0 ? (lymtd.estimatedMinutesWatched / lymtd.views) : 0 },
     ];
 
