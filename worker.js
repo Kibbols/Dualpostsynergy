@@ -468,12 +468,13 @@ export default {
     // ── YouTube Analytics API proxy ───────────────────────────────────
     if (url.pathname === "/yta-query") {
       try {
-        const { access_token, start_date, end_date, metrics, dimensions } = body;
+        const { access_token, start_date, end_date, metrics, dimensions, filters } = body;
         let url_str = "https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE";
         url_str += "&startDate=" + start_date;
         url_str += "&endDate=" + end_date;
-        url_str += "&metrics=" + (metrics || "views,estimatedMinutesWatched,subscribersGained,subscribersLost,impressions,impressionClickThroughRate");
+        url_str += "&metrics=" + (metrics || "views,estimatedMinutesWatched,subscribersGained,subscribersLost,likes,comments");
         if (dimensions) url_str += "&dimensions=" + dimensions;
+        if (filters) url_str += "&filters=" + encodeURIComponent(filters);
         const ytRes = await fetch(url_str, {
           headers: { "Authorization": "Bearer " + access_token },
         });
