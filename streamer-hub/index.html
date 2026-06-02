@@ -790,6 +790,13 @@ async function loadYTAStats() {
     const netSubs = mtd.subscribersGained - mtd.subscribersLost;
     const netSubsLY = lymtd.subscribersGained - lymtd.subscribersLost;
 
+    const regData = await regRes.json();
+    const srtData = await srtRes.json();
+    const regViews = (regData.rows && regData.rows[0]) ? parseFloat(regData.rows[0][0] || 0) : 0;
+    const regWatch = (regData.rows && regData.rows[0]) ? parseFloat(regData.rows[0][1] || 0) : 0;
+    const srtViews = (srtData.rows && srtData.rows[0]) ? parseFloat(srtData.rows[0][0] || 0) : 0;
+    const srtWatch = (srtData.rows && srtData.rows[0]) ? parseFloat(srtData.rows[0][1] || 0) : 0;
+
     const cardDefs = [
       { label: 'REG Views', key: 'regViews', fmt: v => Math.round(v).toLocaleString(), mtdVal: regViews, lyVal: 0 },
       { label: 'SRT Views', key: 'srtViews', fmt: v => Math.round(v).toLocaleString(), mtdVal: srtViews, lyVal: 0 },
@@ -822,13 +829,6 @@ async function loadYTAStats() {
     }).join('');
 
     // Draw chart
-    const regData = await regRes.json();
-    const srtData = await srtRes.json();
-    const regViews = (regData.rows && regData.rows[0]) ? parseFloat(regData.rows[0][0] || 0) : 0;
-    const regWatch = (regData.rows && regData.rows[0]) ? parseFloat(regData.rows[0][1] || 0) : 0;
-    const srtViews = (srtData.rows && srtData.rows[0]) ? parseFloat(srtData.rows[0][0] || 0) : 0;
-    const srtWatch = (srtData.rows && srtData.rows[0]) ? parseFloat(srtData.rows[0][1] || 0) : 0;
-
     const chartData = await chartRes.json();
     const chartLYData = await chartLYRes.json();
     function aggregateRows(rows, period) {
