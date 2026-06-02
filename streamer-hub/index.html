@@ -673,12 +673,13 @@ async function loadYTAStats() {
     if (lymtdData.error) throw new Error(lymtdData.error.message);
 
     // Parse results — API returns rows array, first row is totals
+    // Rows may be undefined if no data exists for that period
     const metricNames = metrics.split(',');
     const mtd = {};
     const lymtd = {};
     metricNames.forEach((m, i) => {
-      mtd[m] = mtdData.rows ? parseFloat(mtdData.rows[0][i] || 0) : 0;
-      lymtd[m] = lymtdData.rows ? parseFloat(lymtdData.rows[0][i] || 0) : 0;
+      mtd[m] = (mtdData.rows && mtdData.rows[0]) ? parseFloat(mtdData.rows[0][i] || 0) : 0;
+      lymtd[m] = (lymtdData.rows && lymtdData.rows[0]) ? parseFloat(lymtdData.rows[0][i] || 0) : 0;
     });
 
     const netSubs = mtd.subscribersGained - mtd.subscribersLost;
@@ -1576,7 +1577,6 @@ async function analyzeWithGemini(videos) {
   }
 }
 
-  patternsBox.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;font-weight:700;font-style:italic;animation:pulse 1.2s ease-in-out infinite;">Analyzing your content...</div>';
 
 // ── Trends ────────────────────────────────────────
 let selectedPost = null;
