@@ -504,7 +504,7 @@ tr:hover td { background:var(--surface2); }
 
       <!-- Stats grid -->
       <div id="yta-stats-grid" style="display:none;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;" id="yta-cards"></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:20px;" id="yta-cards"></div>
       </div>
 
       <!-- Loading / empty -->
@@ -757,11 +757,11 @@ async function loadYTAStats() {
       }),
       fetch(WORKER_URL + '/yta-query', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_token: token, start_date: curStart, end_date: curEnd, metrics: 'views', dimensions: 'day' })
+        body: JSON.stringify({ access_token: token, start_date: curStart, end_date: curEnd, metrics: 'views', dimensions: (period === 'ytd' ? 'month' : 'day') })
       }),
       fetch(WORKER_URL + '/yta-query', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ access_token: token, start_date: lyStart, end_date: lyEnd, metrics: 'views', dimensions: 'day' })
+        body: JSON.stringify({ access_token: token, start_date: lyStart, end_date: lyEnd, metrics: 'views', dimensions: (period === 'ytd' ? 'month' : 'day') })
       })
     ]);
 
@@ -816,9 +816,9 @@ async function loadYTAStats() {
     // Draw chart
     const chartData = await chartRes.json();
     const chartLYData = await chartLYRes.json();
-    const curViews = (chartData.rows || []).map(r => parseFloat(r[1] || 0));
-    const lyViews = (chartLYData.rows || []).map(r => parseFloat(r[1] || 0));
-    drawYTAChart(curViews, lyViews);
+    const curViews = (chartData.rows || []).map(r => ({ label: r[0], val: parseFloat(r[1] || 0) }));
+    const lyViews = (chartLYData.rows || []).map(r => ({ label: r[0], val: parseFloat(r[1] || 0) }));
+    drawYTAChart(curViews, lyViews, period);
 
     document.getElementById('yta-loading').style.display = 'none';
     document.getElementById('yta-stats-grid').style.display = 'block';
@@ -831,85 +831,132 @@ async function loadYTAStats() {
   }
 }
 
-function drawYTAChart(curData, lyData) {
+function drawYTAChart(curData, lyData, period) {
   const canvas = document.getElementById('yta-chart');
   if (!canvas) return;
+
   const dpr = window.devicePixelRatio || 1;
+  const isMobile = window.innerWidth < 600;
   const rect = canvas.parentElement.getBoundingClientRect();
-  const W = rect.width || 800;
-  const H = 160;
+  const W = Math.max(rect.width || 300, 280);
+  const H = isMobile ? 120 : 160;
   canvas.width = W * dpr;
   canvas.height = H * dpr;
   canvas.style.width = W + 'px';
   canvas.style.height = H + 'px';
+
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
 
-  const pad = { top: 12, right: 12, bottom: 28, left: 44 };
+  const pad = { top: 10, right: 10, bottom: isMobile ? 16 : 24, left: isMobile ? 34 : 44 };
   const cW = W - pad.left - pad.right;
   const cH = H - pad.top - pad.bottom;
 
-  ctx.clearRect(0, 0, W, H);
-
-  const allVals = [...curData, ...lyData].filter(v => v > 0);
-  if (!allVals.length) return;
-  const maxVal = Math.max(...allVals) * 1.15;
-  const minVal = 0;
-
-  function toX(i, len) { return pad.left + (i / Math.max(len - 1, 1)) * cW; }
-  function toY(v) { return pad.top + cH - ((v - minVal) / (maxVal - minVal)) * cH; }
-
-  // Grid lines
-  ctx.strokeStyle = '#2e2e2e';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = pad.top + (i / 4) * cH;
-    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
-    const label = Math.round(maxVal - (i / 4) * maxVal);
+  // For "yesterday"/last update with single point — draw horizontal line
+  const curVals = curData.map(d => d.val);
+  const lyVals = lyData.map(d => d.val);
+  const allVals = [...curVals, ...lyVals].filter(v => v > 0);
+  if (!allVals.length) {
     ctx.fillStyle = '#555';
-    ctx.font = '10px Nunito, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText(label >= 1000 ? (label/1000).toFixed(1) + 'k' : label, pad.left - 4, y + 4);
+    ctx.font = (isMobile ? '10' : '12') + 'px Nunito, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No data available for this period', W/2, H/2);
+    return;
   }
+
+  const maxVal = Math.max(...allVals) * 1.15 || 1;
+
+  function toX(i, len) {
+    if (len === 1) return pad.left + cW / 2;
+    return pad.left + (i / (len - 1)) * cW;
+  }
+  function toY(v) { return pad.top + cH - (v / maxVal) * cH; }
+  function fmtVal(v) { return v >= 1000 ? (v/1000).toFixed(1) + 'k' : Math.round(v); }
+
+  // Grid lines + Y labels
+  const gridLines = isMobile ? 3 : 4;
+  for (let i = 0; i <= gridLines; i++) {
+    const y = pad.top + (i / gridLines) * cH;
+    ctx.strokeStyle = '#2a2a2a';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+    const v = Math.round(maxVal * (1 - i / gridLines));
+    ctx.fillStyle = '#555';
+    ctx.font = (isMobile ? '9' : '10') + 'px Nunito, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(fmtVal(v), pad.left - 4, y + 3);
+  }
+
+  // X axis labels (show first, middle, last)
+  function drawXLabels(data) {
+    if (!data.length) return;
+    const indices = data.length === 1 ? [0] : [0, Math.floor(data.length/2), data.length-1];
+    indices.forEach(i => {
+      const x = toX(i, data.length);
+      const lbl = data[i].label || '';
+      const short = lbl.length > 7 ? lbl.slice(5) : lbl; // strip year for space
+      ctx.fillStyle = '#555';
+      ctx.font = (isMobile ? '8' : '9') + 'px Nunito, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(short, x, H - 4);
+    });
+  }
+  if (curData.length) drawXLabels(curData);
 
   function drawLine(data, color, dash) {
     if (!data.length) return;
+    const vals = data.map(d => d.val);
     ctx.save();
     if (dash) ctx.setLineDash([4, 3]);
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = isMobile ? 1.5 : 2;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
 
-    // Fill gradient under line
+    // Single point = horizontal line
+    if (vals.length === 1) {
+      const y = toY(vals[0]);
+      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
+    // Gradient fill
     const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + cH);
-    grad.addColorStop(0, color + '33');
+    grad.addColorStop(0, color + '30');
     grad.addColorStop(1, color + '00');
     ctx.beginPath();
-    ctx.moveTo(toX(0, data.length), toY(data[0]));
-    data.forEach((v, i) => { if (i > 0) ctx.lineTo(toX(i, data.length), toY(v)); });
-    ctx.lineTo(toX(data.length - 1, data.length), pad.top + cH);
-    ctx.lineTo(toX(0, data.length), pad.top + cH);
+    ctx.moveTo(toX(0, vals.length), toY(vals[0]));
+    vals.forEach((v, i) => { if (i > 0) ctx.lineTo(toX(i, vals.length), toY(v)); });
+    ctx.lineTo(toX(vals.length-1, vals.length), pad.top + cH);
+    ctx.lineTo(pad.left, pad.top + cH);
     ctx.closePath();
     ctx.fillStyle = grad;
     ctx.fill();
 
+    // Line
     ctx.beginPath();
-    ctx.moveTo(toX(0, data.length), toY(data[0]));
-    data.forEach((v, i) => { if (i > 0) ctx.lineTo(toX(i, data.length), toY(v)); });
+    ctx.moveTo(toX(0, vals.length), toY(vals[0]));
+    vals.forEach((v, i) => { if (i > 0) ctx.lineTo(toX(i, vals.length), toY(v)); });
     ctx.stroke();
     ctx.restore();
   }
 
-  drawLine(lyData, '#444444', true);
+  drawLine(lyData, '#3a3a3a', true);
   drawLine(curData, '#45f5a3', false);
 
-  // Dots on last point of current
-  if (curData.length) {
-    const lx = toX(curData.length - 1, curData.length);
-    const ly2 = toY(curData[curData.length - 1]);
-    ctx.beginPath(); ctx.arc(lx, ly2, 4, 0, Math.PI * 2);
+  // End dot on current
+  if (curVals.length) {
+    const lx = toX(curVals.length-1, curVals.length);
+    const ly2 = toY(curVals[curVals.length-1]);
+    ctx.beginPath(); ctx.arc(lx, ly2, isMobile ? 3 : 4, 0, Math.PI*2);
     ctx.fillStyle = '#45f5a3'; ctx.fill();
+    // Value label
+    ctx.fillStyle = '#45f5a3';
+    ctx.font = 'bold ' + (isMobile ? '9' : '10') + 'px Nunito, sans-serif';
+    ctx.textAlign = lx > W - 40 ? 'right' : 'left';
+    ctx.fillText(fmtVal(curVals[curVals.length-1]), lx + (lx > W - 40 ? -6 : 6), ly2 - 6);
   }
 }
 
