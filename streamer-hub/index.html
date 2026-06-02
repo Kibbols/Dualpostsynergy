@@ -480,11 +480,11 @@ tr:hover td { background:var(--surface2); }
 
       <!-- Period selector -->
       <div style="margin-bottom:16px;">
-        <select id="yta-period" class="ctrl-select" onchange="loadYTAStats()" style="width:auto;background:var(--surface2);">
-          <option value="mtd">MTD vs LYMTD</option>
-          <option value="wtd">WTD vs LYWTD</option>
-          <option value="ytd">YTD vs LYYTD</option>
-          <option value="yesterday">Yesterday vs LY Yesterday</option>
+        <select id="yta-period" onchange="loadYTAStats()" style="background:var(--surface2);border:2px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font-b);font-size:0.85rem;font-weight:800;padding:10px 36px 10px 14px;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22><path fill=%22%2345f5a3%22 d=%22M0 0l6 8 6-8z%22/></svg>');background-repeat:no-repeat;background-position:right 12px center;">
+          <option value="yesterday">Last Update</option>
+          <option value="mtd">MTD</option>
+          <option value="wtd">WTD</option>
+          <option value="ytd">YTD</option>
         </select>
       </div>
 
@@ -684,7 +684,7 @@ async function loadYTAStats() {
     curEnd = fmt(ldd);
     lyStart = fmt(new Date(lddLY.getFullYear(), lddLY.getMonth(), 1));
     lyEnd = fmt(lddLY);
-    label = 'MTD'; lyLabel = 'LYMTD';
+    label = 'MTD'; lyLabel = 'LY MTD';
 
   } else if (period === 'wtd') {
     const dow = ldd.getUTCDay();
@@ -694,21 +694,21 @@ async function loadYTAStats() {
     const lyWeekStart = new Date(weekStart); lyWeekStart.setFullYear(lyWeekStart.getFullYear() - 1);
     lyStart = fmt(lyWeekStart);
     lyEnd = fmt(lddLY);
-    label = 'WTD'; lyLabel = 'LYWTD';
+    label = 'WTD'; lyLabel = 'LY WTD';
 
   } else if (period === 'ytd') {
     curStart = fmt(new Date(ldd.getFullYear(), 0, 1));
     curEnd = fmt(ldd);
     lyStart = fmt(new Date(lddLY.getFullYear(), 0, 1));
     lyEnd = fmt(lddLY);
-    label = 'YTD'; lyLabel = 'LYYTD';
+    label = 'YTD'; lyLabel = 'LY YTD';
 
   } else { // yesterday
     curStart = fmt(ldd);
     curEnd = fmt(ldd);
     lyStart = fmt(lddLY);
     lyEnd = fmt(lddLY);
-    label = 'Yesterday'; lyLabel = 'LY Yesterday';
+    label = 'Last Update'; lyLabel = 'LY';
   }
 
   document.getElementById('yta-date-info').style.display = 'block';
@@ -771,9 +771,9 @@ async function loadYTAStats() {
         '<div class="yta-value">' + c.fmt(c.mtdVal) + '</div>' +
         '<div class="yta-compare">' +
           '<span class="yta-delta ' + cls + '">' + arrow + ' ' + (pct !== null ? pct + '%' : 'N/A') + '</span>' +
-          '<span style="font-size:0.68rem;font-weight:700;color:var(--muted);">vs LYMTD</span>' +
+          '<span style="font-size:0.68rem;font-weight:700;color:var(--muted);">vs ' + lyLabel + '</span>' +
         '</div>' +
-        '<div class="yta-prev">LYMTD: ' + c.fmt(c.lyVal) + '</div>' +
+        '<div class="yta-prev">' + lyLabel + ': ' + c.fmt(c.lyVal) + '</div>' +
         '<div class="yta-bar"><div class="yta-bar-fill" style="width:' + barPct + '%;background:' + barColor + ';"></div></div>' +
       '</div>';
     }).join('');
