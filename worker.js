@@ -190,22 +190,34 @@ export default {
     // ── YouTube trending gaming data ─────────────────────────────────
     if (url.pathname === "/youtube-trending") {
       try {
-        const regionCode = body.regionCode || "US";
-        // Get trending gaming videos
-        const ytRes = await fetch(
-          "https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&videoCategoryId=20&regionCode=" + regionCode + "&maxResults=50&key=" + env.YOUTUBE_API_KEY,
+        const query = body.query || "Dead by Daylight";
+        // Search for recent DBD-specific videos sorted by view count
+        const searchRes = await fetch(
+          "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + encodeURIComponent(query) + "&type=video&videoCategoryId=20&order=viewCount&publishedAfter=" + new Date(Date.now() - 30*24*60*60*1000).toISOString() + "&maxResults=25&key=" + env.YOUTUBE_API_KEY,
           { headers: { "Accept": "application/json" } }
         );
-        const ytData = await ytRes.json();
-        if (ytData.error) throw new Error(ytData.error.message);
+        const searchData = await searchRes.json();
+        if (searchData.error) throw new Error(searchData.error.message);
 
-        // Extract game names from titles and tags
-        const videos = (ytData.items || []).map(v => ({
+        const videoIds = (searchData.items || []).map(v => v.id.videoId).filter(Boolean).join(',');
+        if (!videoIds) return new Response(JSON.stringify({ videos: [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+        // Get full stats for those videos
+        const statsRes = await fetch(
+          "https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=" + videoIds + "&key=" + env.YOUTUBE_API_KEY,
+          { headers: { "Accept": "application/json" } }
+        );
+        const statsData = await statsRes.json();
+        if (statsData.error) throw new Error(statsData.error.message);
+
+        const videos = (statsData.items || []).map(v => ({
           title: v.snippet.title,
+          channel: v.snippet.channelTitle,
           tags: v.snippet.tags || [],
           views: parseInt(v.statistics.viewCount || 0),
-          isShort: (v.snippet.title.toLowerCase().includes('#short') || (v.snippet.tags || []).some(t => t.toLowerCase().includes('short'))),
-        }));
+          likes: parseInt(v.statistics.likeCount || 0),
+          published: v.snippet.publishedAt,
+        })).sort((a, b) => b.views - a.views);
 
         return new Response(JSON.stringify({ videos }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -396,6 +408,77 @@ export default {
         return new Response(JSON.stringify({ data: results }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      } catch(e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+
+    // ── YouTube Analytics OAuth token exchange ───────────────────────
+    if (url.pathname === "/yta-auth") {
+      try {
+        const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            client_id: env.YT_ANALYTICS_CLIENT_ID,
+            client_secret: env.YT_ANALYTICS_CLIENT_SECRET,
+            code: body.code,
+            grant_type: "authorization_code",
+            redirect_uri: body.redirect_uri,
+          }),
+        });
+        const data = await tokenRes.json();
+        if (!data.access_token) throw new Error(data.error_description || "Token exchange failed");
+        return new Response(JSON.stringify({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          expires_in: data.expires_in,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch(e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // ── YouTube Analytics refresh token ──────────────────────────────
+    if (url.pathname === "/yta-refresh") {
+      try {
+        const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            client_id: env.YT_ANALYTICS_CLIENT_ID,
+            client_secret: env.YT_ANALYTICS_CLIENT_SECRET,
+            grant_type: "refresh_token",
+            refresh_token: body.refresh_token,
+          }),
+        });
+        const data = await tokenRes.json();
+        if (!data.access_token) throw new Error(data.error_description || "Refresh failed");
+        return new Response(JSON.stringify({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token || body.refresh_token,
+          expires_in: data.expires_in,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch(e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // ── YouTube Analytics API proxy ───────────────────────────────────
+    if (url.pathname === "/yta-query") {
+      try {
+        const { access_token, start_date, end_date, metrics, dimensions } = body;
+        let url_str = "https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE";
+        url_str += "&startDate=" + start_date;
+        url_str += "&endDate=" + end_date;
+        url_str += "&metrics=" + (metrics || "views,estimatedMinutesWatched,subscribersGained,subscribersLost,impressions,impressionClickThroughRate");
+        if (dimensions) url_str += "&dimensions=" + dimensions;
+        const ytRes = await fetch(url_str, {
+          headers: { "Authorization": "Bearer " + access_token },
+        });
+        const data = await ytRes.json();
+        return new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       } catch(e) {
         return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
