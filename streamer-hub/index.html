@@ -275,6 +275,10 @@ tr:hover td { background:var(--surface2); }
           <div class="upload-icon">📹</div>
           <div class="upload-label">YouTube Studio CSV</div>
           <div id="yt-status" class="upload-hint">Analytics → Content → Export</div>
+          <label style="display:flex;align-items:center;gap:6px;margin-top:10px;font-size:0.72rem;font-weight:800;color:var(--muted);cursor:pointer;">
+            <input type="checkbox" id="yt-exclude-hashtags" checked style="width:14px;height:14px;cursor:pointer;">
+            Exclude videos with hashtags (Shorts)
+          </label>
         </div>
         <div class="upload-box" id="tt-upload-box" onclick="document.getElementById('tt-file').click()"
           ondragover="event.preventDefault();this.classList.add('drag')"
@@ -568,19 +572,46 @@ function renderCategoryCards(categories) {
   currentCategoryResults = categories;
   const list = document.getElementById('category-list');
   if (!list) return;
-  list.innerHTML = categories.map((c, i) =>
+  // Add bulk action bar at top
+  const bulkBar = '<div id="cat-bulk-bar" style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">' +
+    '<label style="font-size:0.78rem;font-weight:800;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer;">' +
+    '<input type="checkbox" id="cat-select-all" onchange="toggleSelectAllCats(this.checked)" style="width:16px;height:16px;cursor:pointer;"> Select all</label>' +
+    '<button class="not-interested-btn" onclick="massNotInterested()" style="margin-left:auto;">🚫 Exclude Selected</button>' +
+    '</div>';
+  list.innerHTML = bulkBar + categories.map((c, i) =>
     '<div class="cat-card" id="cat-card-' + i + '">' +
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;">' +
+    '<div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">' +
+    '<input type="checkbox" class="cat-checkbox" data-index="' + i + '" style="width:16px;height:16px;margin-top:4px;cursor:pointer;flex-shrink:0;">' +
+    '<div style="flex:1;">' +
     '<div class="cat-name">' + c.name + '</div>' +
-    '<button class="not-interested-btn" onclick="notInterestedCat(' + i + ')">Not Interested</button>' +
-    '</div>' +
-    '<div style="font-size:0.65rem;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Why this fits you</div>' +
+    '<div style="font-size:0.65rem;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 4px;">Why this fits you</div>' +
     '<div class="cat-why">' + c.why + '</div>' +
     '<div style="font-size:0.65rem;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-top:10px;margin-bottom:4px;">Content tip</div>' +
     '<div style="font-size:0.78rem;font-weight:700;color:var(--muted);line-height:1.5;">' + c.content_tip + '</div>' +
+    '</div>' +
+    '</div>' +
     '</div>'
   ).join('');
   renderExclusionLog();
+}
+
+function toggleSelectAllCats(checked) {
+  document.querySelectorAll('.cat-checkbox').forEach(cb => cb.checked = checked);
+}
+
+async function massNotInterested() {
+  const checked = Array.from(document.querySelectorAll('.cat-checkbox:checked'));
+  if (!checked.length) return;
+  const indices = checked.map(cb => parseInt(cb.getAttribute('data-index')));
+  const excluded = getExcludedCats();
+  indices.forEach(i => {
+    const name = currentCategoryResults[i] ? currentCategoryResults[i].name : null;
+    if (name && !excluded.includes(name)) excluded.push(name);
+  });
+  saveExcludedCats(excluded);
+  // Remove excluded cards and re-render remaining
+  currentCategoryResults = currentCategoryResults.filter((_, i) => !indices.includes(i));
+  renderCategoryCards(currentCategoryResults);
 }
 
 async function notInterestedCat(index) {
@@ -1184,11 +1215,16 @@ function parseCSV(text) {
   });
 }
 function normalizeYT(rows) {
+  var excludeHashtags = document.getElementById('yt-exclude-hashtags') ? document.getElementById('yt-exclude-hashtags').checked : true;
   return rows.map(r => ({
     platform:'YouTube', title:r['Video title']||r['Title']||r['title']||'Unknown',
     views:parseInt(r['Views']||r['views']||'0')||0,
     likes:parseInt(r['Likes']||r['likes']||'0')||0,
-  })).filter(r => r.views > 0 && r.title !== 'Unknown');
+  })).filter(r => {
+    if (r.views <= 0 || r.title === 'Unknown') return false;
+    if (excludeHashtags && r.title.includes('#')) return false;
+    return true;
+  });
 }
 function normalizeTT(rows) {
   return rows.map(r => ({
@@ -1199,12 +1235,20 @@ function normalizeTT(rows) {
   })).filter(r => r.views > 0 && r.title !== 'Unknown');
 }
 function handleDrop(e, type) { e.preventDefault(); document.getElementById(type+'-upload-box').classList.remove('drag'); handleFile(e.dataTransfer.files[0], type); }
+
+// Re-render when hashtag filter toggled
+document.addEventListener('change', function(e) {
+  if (e.target && e.target.id === 'yt-exclude-hashtags' && ytVideos.length) {
+    // Re-parse from stored raw rows
+    if (window._ytRawRows) { ytVideos = normalizeYT(window._ytRawRows); renderPerformance(); }
+  }
+});
 function handleFile(file, type) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
     const rows = parseCSV(e.target.result);
-    if (type === 'yt') { ytVideos = normalizeYT(rows); document.getElementById('yt-upload-box').classList.add('loaded'); document.getElementById('yt-status').innerHTML = '<span class="upload-status">✓ ' + ytVideos.length + ' videos loaded</span>'; }
+    if (type === 'yt') { window._ytRawRows = rows; ytVideos = normalizeYT(rows); document.getElementById('yt-upload-box').classList.add('loaded'); document.getElementById('yt-status').innerHTML = '<span class="upload-status">✓ ' + ytVideos.length + ' videos loaded</span>'; }
     else { ttVideos = normalizeTT(rows); document.getElementById('tt-upload-box').classList.add('loaded'); document.getElementById('tt-status').innerHTML = '<span class="upload-status">✓ ' + ttVideos.length + ' videos loaded</span>'; }
     renderPerformance();
   };
