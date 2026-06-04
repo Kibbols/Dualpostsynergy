@@ -629,6 +629,17 @@ function updateTtDisclosure() {
       disclaimer.innerHTML = "By posting, you agree to TikTok's <a href='https://www.tiktok.com/legal/music-usage-confirmation' target='_blank'>Music Usage Confirmation</a>";
     }
   }
+
+  // Disable publish button if disclosure toggle is on but no option selected
+  const uploadBtn = document.getElementById('uploadBtn');
+  if (uploadBtn && document.getElementById('ttCheck')?.checked) {
+    const yb = yourBrand?.checked;
+    const bc = branded?.checked;
+    const shouldDisable = isOn && !yb && !bc;
+    uploadBtn.disabled = shouldDisable;
+    uploadBtn.style.opacity = shouldDisable ? '0.4' : '';
+    uploadBtn.title = shouldDisable ? 'You need to indicate if your content promotes yourself, a third party, or both.' : '';
+  }
 }
 
 // ── YouTube Channel Info ──────────────────────────────────────
@@ -805,6 +816,11 @@ async function fetchTikTokCreatorInfo() {
     try { data = JSON.parse(text); } catch(parseErr) { dbg('TT JSON parse error: ' + parseErr.message); }
     if (data.data && data.data.creator_nickname) {
       populateTikTokCreatorInfo(data.data);
+      // Check if creator can post right now
+      if (data.data.creator_max_video_post_duration_sec === 0) {
+        state.ttCanPost = false;
+        toast('TikTok says you cannot post right now. Please try again later.', 'error');
+      }
     } else {
       dbg('TT no valid data — showing placeholder');
       showTikTokPlaceholder();
@@ -863,10 +879,12 @@ function populateTikTokCreatorInfo(info) {
   setInteraction('ttDuet',    'ttDuetLabel',    info.duet_disabled);
   setInteraction('ttStitch',  'ttStitchLabel',  info.stitch_disabled);
 
-  // Store max duration for validation
+  // Store max duration and posting eligibility for validation
   if (info.max_video_post_duration_sec) {
     state.ttMaxDuration = info.max_video_post_duration_sec;
   }
+  // If creator_info loaded successfully, posting is allowed unless explicitly blocked
+  state.ttCanPost = true;
 }
 
 // ── Upload Orchestration ───────────────────────────────────────
@@ -893,6 +911,10 @@ async function startUpload() {
     const ttPrivacy = document.getElementById('ttPrivacy').value;
     const ttDraft = document.getElementById('ttDraftMode')?.checked || false;
     if (!ttPrivacy && !ttDraft) { toast('Please select a TikTok visibility.', 'error'); return; }
+    // Check if creator is eligible to post right now
+    if (!state.testMode && state.ttCanPost === false) {
+      toast('TikTok says you cannot post right now. Please try again later.', 'error'); return;
+    }
     // Check video duration against max_video_post_duration_sec
     if (state.ttMaxDuration && state.file) {
       const videoEl = document.createElement('video');
