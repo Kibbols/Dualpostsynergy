@@ -1432,6 +1432,34 @@ function handleTwitchCSV(file) {
   reader.readAsText(file);
 }
 
+// ── Render raid card (module-scope so raidNeverMind can call it) ──
+function renderRaid(s, idx) {
+  const langTags = (s.tags || []).filter(t =>
+    ['english','spanish','portuguese','french','german','japanese','korean','chinese','italian','russian','arabic','turkish','dutch','polish','swedish','norwegian','danish','finnish'].some(l => t.toLowerCase().includes(l))
+  );
+  const langDisplay = s.language ? s.language.toUpperCase() : '';
+  const tagDisplay = langTags.length ? langTags.join(', ') : '';
+  const langInfo = [langDisplay, tagDisplay].filter(Boolean).join(' · ');
+  const cardId = 'raid-card-' + idx;
+  return '<div class="raid-card" id="' + cardId + '">' +
+    '<div class="raid-info">' +
+      '<div class="raid-name">' + s.user_name + '</div>' +
+      '<div class="raid-meta">' + s.viewer_count + ' viewers · ' + s.category + '</div>' +
+      (langInfo ? '<div class="raid-meta" style="margin-top:3px;color:var(--muted);">🌐 ' + langInfo + '</div>' : '') +
+    '</div>' +
+    '<div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">' +
+      '<button class="action-btn" onclick="raidWantTo('' + s.user_login + '','' + s.user_name + '',' + idx + ')">I'd like to raid</button>' +
+    '</div>' +
+    '<div class="raid-embed" id="raid-embed-' + idx + '" style="display:none;width:100%;margin-top:10px;">' +
+      '<iframe src="https://player.twitch.tv/?channel=' + s.user_login + '&parent=dualpost.app&quality=low" width="100%" height="200" frameborder="0" allowfullscreen style="border-radius:10px;"></iframe>' +
+      '<div style="display:flex;gap:8px;margin-top:8px;">' +
+        '<button class="generate-btn" style="margin-bottom:0;flex:1;padding:10px;" onclick="raidDefinitely('' + s.user_login + '','' + s.user_name + '',' + idx + ')">✅ Definitely Raid</button>' +
+        '<button class="action-btn" style="flex:1;text-align:center;" onclick="raidNeverMind('' + s.user_login + '',' + idx + ')">Never Mind</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
 // ── Generate Potential ────────────────────────────────
 async function generatePotential() {
   const geminiKey = getGeminiKey();
@@ -1558,33 +1586,6 @@ async function generatePotential() {
     // ── Render raid targets directly from API data ───────────────────
     // Store current stretch list for "Never Mind" replacement
     window._currentRaidList = [];
-
-    const renderRaid = (s, idx) => {
-      const langTags = (s.tags || []).filter(t =>
-        ['english','spanish','portuguese','french','german','japanese','korean','chinese','italian','russian','arabic','turkish','dutch','polish','swedish','norwegian','danish','finnish'].some(l => t.toLowerCase().includes(l))
-      );
-      const langDisplay = s.language ? s.language.toUpperCase() : '';
-      const tagDisplay = langTags.length ? langTags.join(', ') : '';
-      const langInfo = [langDisplay, tagDisplay].filter(Boolean).join(' · ');
-      const cardId = 'raid-card-' + idx;
-      return '<div class="raid-card" id="' + cardId + '">' +
-        '<div class="raid-info">' +
-          '<div class="raid-name">' + s.user_name + '</div>' +
-          '<div class="raid-meta">' + s.viewer_count + ' viewers · ' + s.category + '</div>' +
-          (langInfo ? '<div class="raid-meta" style="margin-top:3px;color:var(--muted);">🌐 ' + langInfo + '</div>' : '') +
-        '</div>' +
-        '<div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">' +
-          '<button class="action-btn" onclick="raidWantTo('' + s.user_login + '','' + s.user_name + '',' + idx + ')">I'd like to raid</button>' +
-        '</div>' +
-        '<div class="raid-embed" id="raid-embed-' + idx + '" style="display:none;width:100%;margin-top:10px;">' +
-          '<iframe src="https://player.twitch.tv/?channel=' + s.user_login + '&parent=dualpost.app&quality=low" width="100%" height="200" frameborder="0" allowfullscreen style="border-radius:10px;"></iframe>' +
-          '<div style="display:flex;gap:8px;margin-top:8px;">' +
-            '<button class="generate-btn" style="margin-bottom:0;flex:1;padding:10px;" onclick="raidDefinitely('' + s.user_login + '','' + s.user_name + '',' + idx + ')">✅ Definitely Raid</button>' +
-            '<button class="action-btn" style="flex:1;text-align:center;" onclick="raidNeverMind('' + s.user_login + '',' + idx + ')">Never Mind</button>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-    };
 
     const sortedStretch = stretchStreams.slice().sort((a, b) => a.viewer_count - b.viewer_count).slice(0, 8);
     window._currentRaidList = sortedStretch;
