@@ -277,6 +277,7 @@ tr:hover td { background:var(--surface2); }
       <button class="tab-btn" onclick="switchTab('settings',this)">⚙️ Settings</button>
       <button class="tab-btn" onclick="switchTab('potential',this)">🚀 Potential</button>
       <button class="tab-btn" onclick="switchTab('ytstats',this)">📺 YT Stats</button>
+      <button class="tab-btn" onclick="switchTab('homework',this)">📋 Homework</button>
     </div>
 
     <!-- PERFORMANCE TAB -->
@@ -536,6 +537,30 @@ tr:hover td { background:var(--surface2); }
           <button class="action-btn" onclick="clearGeminiKey()">Clear</button>
         </div>
         <div id="key-status" style="font-size:0.78rem;font-weight:800;margin-top:10px;display:none;"></div>
+      </div>
+    </div>
+
+  </div>
+
+    <!-- HOMEWORK TAB -->
+    <div id="tab-homework" style="display:none">
+      <div class="section-title">Homework</div>
+      <div class="section-sub">Streamers to follow up with. Added from raid targets or manually.</div>
+
+      <!-- Manual add -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="note-label" style="margin-bottom:8px;">Add a streamer</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <input type="text" id="hw-add-input" class="login-input" style="text-align:left;letter-spacing:0.02em;margin-bottom:0;flex:1;min-width:200px;" placeholder="Paste Twitch URL or username..." />
+          <button class="generate-btn" style="margin-bottom:0;width:auto;padding:12px 24px;" onclick="hwAddManual()">Add</button>
+        </div>
+      </div>
+
+      <!-- List -->
+      <div id="hw-list"></div>
+      <div id="hw-empty" class="empty-state">
+        <div class="empty-icon">📋</div>
+        No streamers yet. Hit "Definitely Raid" on a raid target, or paste a Twitch URL above.
       </div>
     </div>
 
@@ -1253,21 +1278,21 @@ const TWITCH_SCOPES = 'user:read:email channel:read:stream_key';
 
 function getTwitchTokens() {
   return {
-    access: sessionStorage.getItem('twitch_access_token'),
+    access: localStorage.getItem('twitch_access_token'),
     refresh: localStorage.getItem('sh_twitch_refresh'),
-    expires: parseInt(sessionStorage.getItem('twitch_expires_at') || '0'),
+    expires: parseInt(localStorage.getItem('twitch_expires_at') || '0'),
   };
 }
 
 function setTwitchTokens(access, refresh, expiresIn) {
-  sessionStorage.setItem('twitch_access_token', access);
-  sessionStorage.setItem('twitch_expires_at', Date.now() + (expiresIn * 1000));
+  localStorage.setItem('twitch_access_token', access);
+  localStorage.setItem('twitch_expires_at', Date.now() + (expiresIn * 1000));
   if (refresh) localStorage.setItem('sh_twitch_refresh', refresh);
 }
 
 function clearTwitchTokens() {
-  sessionStorage.removeItem('twitch_access_token');
-  sessionStorage.removeItem('twitch_expires_at');
+  localStorage.removeItem('twitch_access_token');
+  localStorage.removeItem('twitch_expires_at');
   localStorage.removeItem('sh_twitch_refresh');
 }
 
@@ -1471,6 +1496,7 @@ async function generatePotential() {
     }
 
     const peerMin = 1;
+    window._lastMyAvgViewers = myAvgViewers;
     const peerMax = Math.ceil(myAvgViewers * 2.5);
     const stretchMin = peerMax + 1;
     const stretchMax = Math.ceil(myAvgViewers * 5);
@@ -1530,27 +1556,41 @@ async function generatePotential() {
     const stretchStreams = allStreams.filter(s => s.viewer_count > peerMax && s.viewer_count <= stretchMax);
 
     // ── Render raid targets directly from API data ───────────────────
-    const renderRaid = (s) => {
+    // Store current stretch list for "Never Mind" replacement
+    window._currentRaidList = [];
+
+    const renderRaid = (s, idx) => {
       const langTags = (s.tags || []).filter(t =>
         ['english','spanish','portuguese','french','german','japanese','korean','chinese','italian','russian','arabic','turkish','dutch','polish','swedish','norwegian','danish','finnish'].some(l => t.toLowerCase().includes(l))
       );
       const langDisplay = s.language ? s.language.toUpperCase() : '';
       const tagDisplay = langTags.length ? langTags.join(', ') : '';
       const langInfo = [langDisplay, tagDisplay].filter(Boolean).join(' · ');
-      return '<div class="raid-card">' +
+      const cardId = 'raid-card-' + idx;
+      return '<div class="raid-card" id="' + cardId + '">' +
         '<div class="raid-info">' +
           '<div class="raid-name">' + s.user_name + '</div>' +
           '<div class="raid-meta">' + s.viewer_count + ' viewers · ' + s.category + '</div>' +
           (langInfo ? '<div class="raid-meta" style="margin-top:3px;color:var(--muted);">🌐 ' + langInfo + '</div>' : '') +
         '</div>' +
-        '<a href="https://twitch.tv/' + s.user_login + '" target="_blank" class="raid-link">Visit →</a>' +
+        '<div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">' +
+          '<button class="action-btn" onclick="raidWantTo('' + s.user_login + '','' + s.user_name + '',' + idx + ')">I'd like to raid</button>' +
+        '</div>' +
+        '<div class="raid-embed" id="raid-embed-' + idx + '" style="display:none;width:100%;margin-top:10px;">' +
+          '<iframe src="https://player.twitch.tv/?channel=' + s.user_login + '&parent=dualpost.app&quality=low" width="100%" height="200" frameborder="0" allowfullscreen style="border-radius:10px;"></iframe>' +
+          '<div style="display:flex;gap:8px;margin-top:8px;">' +
+            '<button class="generate-btn" style="margin-bottom:0;flex:1;padding:10px;" onclick="raidDefinitely('' + s.user_login + '','' + s.user_name + '',' + idx + ')">✅ Definitely Raid</button>' +
+            '<button class="action-btn" style="flex:1;text-align:center;" onclick="raidNeverMind('' + s.user_login + '',' + idx + ')">Never Mind</button>' +
+          '</div>' +
+        '</div>' +
       '</div>';
     };
 
     const sortedStretch = stretchStreams.slice().sort((a, b) => a.viewer_count - b.viewer_count).slice(0, 8);
+    window._currentRaidList = sortedStretch;
 
     document.getElementById('raid-stretch-list').innerHTML = sortedStretch.length
-      ? sortedStretch.map(renderRaid).join('')
+      ? sortedStretch.map((s, i) => renderRaid(s, i)).join('')
       : '<div class="empty-state" style="padding:16px">No raid targets found right now. Try again later or add more categories.</div>';
 
     // Fetch YouTube trending gaming Shorts for category recommendations
@@ -1650,7 +1690,7 @@ document.getElementById('pw-input').addEventListener('keydown', function(e) {
 // ── Tabs ──────────────────────────────────────────
 let trendsLoaded = false;
 function switchTab(name, btn) {
-  ['performance','trends','settings','potential','ytstats'].forEach(t => {
+  ['performance','trends','settings','potential','ytstats','homework'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === name ? 'block' : 'none';
   });
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1666,6 +1706,11 @@ function switchTab(name, btn) {
   }
   if (name === 'ytstats') {
     loadYTAStats();
+  }
+  if (name === 'homework') {
+    renderHomeworkList();
+    checkHomeworkLiveStatus();
+    initPushIfNeeded();
   }
   if (name === 'potential') {
     // Always reattach tag input listener fresh
@@ -2049,11 +2094,329 @@ function copyIdea(i) {
   btn.textContent = '✓ Copied'; btn.classList.add('copied');
   setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
 }
+
+
+// ── Homework Tab ──────────────────────────────────────────────
+const VAPID_PUBLIC_KEY = 'BNcB3SUY5pfa-x2k9nwvcE-oFNmpXllK3sPw2DFbME_UyF9Pt8XsehsSL9ZXSk2PBBdN5zmFlz2Jx97pcWMh1L4';
+
+function getHomeworkList() {
+  try { return JSON.parse(localStorage.getItem('sh_homework') || '[]'); } catch(e) { return []; }
+}
+function saveHomeworkList(list) {
+  localStorage.setItem('sh_homework', JSON.stringify(list));
+  // Sync to worker KV so cron can check live status and notify
+  fetch(WORKER_URL + '/push-homework-sync', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ list })
+  }).catch(() => {});
+}
+
+function hwAddStreamer(login, displayName) {
+  const list = getHomeworkList();
+  if (list.find(s => s.login === login.toLowerCase())) return; // already exists
+  list.push({
+    login: login.toLowerCase(),
+    name: displayName || login,
+    addedAt: Date.now(),
+    socials: []
+  });
+  saveHomeworkList(list);
+}
+
+function hwAddManual() {
+  const input = document.getElementById('hw-add-input');
+  if (!input) return;
+  let val = input.value.trim();
+  if (!val) return;
+  // Parse out username from URL or plain text
+  val = val.replace(/\/$/, '');
+  const urlMatch = val.match(/twitch\.tv\/([a-zA-Z0-9_]+)/i);
+  const login = urlMatch ? urlMatch[1] : val.replace(/[^a-zA-Z0-9_]/g,'');
+  if (!login) return;
+  hwAddStreamer(login, login);
+  input.value = '';
+  renderHomeworkList();
+  checkHomeworkLiveStatus();
+}
+
+function hwRemove(login) {
+  saveHomeworkList(getHomeworkList().filter(s => s.login !== login));
+  renderHomeworkList();
+}
+
+function hwAddSocialUrl(login, url) {
+  const list = getHomeworkList();
+  const entry = list.find(s => s.login === login);
+  if (!entry) return;
+  const platform = detectSocialPlatform(url);
+  if (!platform) return;
+  if (!entry.socials) entry.socials = [];
+  entry.socials.push({ platform, url });
+  saveHomeworkList(list);
+}
+
+function detectSocialPlatform(url) {
+  url = url.toLowerCase();
+  if (url.includes('twitter.com') || url.includes('x.com')) return 'Twitter / X';
+  if (url.includes('bsky.app') || url.includes('bluesky')) return 'Bluesky';
+  if (url.includes('discord.gg') || url.includes('discord.com')) return 'Discord';
+  if (url.includes('youtube.com') || url.includes('youtu.be')) return 'YouTube';
+  if (url.includes('tiktok.com')) return 'TikTok';
+  if (url.includes('instagram.com')) return 'Instagram';
+  if (url.includes('twitch.tv')) return 'Twitch';
+  if (url.includes('threads.net')) return 'Threads';
+  if (url.includes('kick.com')) return 'Kick';
+  if (url.includes('facebook.com') || url.includes('fb.com')) return 'Facebook';
+  return null;
+}
+
+function socialPlatformIcon(platform) {
+  const icons = {
+    'Twitter / X': '𝕏',
+    'Bluesky': '🦋',
+    'Discord': '💬',
+    'YouTube': '▶',
+    'TikTok': '🎵',
+    'Instagram': '📸',
+    'Twitch': '🟣',
+    'Threads': '🧵',
+    'Kick': '🟩',
+    'Facebook': '📘',
+  };
+  return icons[platform] || '🔗';
+}
+
+function renderHomeworkList() {
+  const list = getHomeworkList();
+  const container = document.getElementById('hw-list');
+  const empty = document.getElementById('hw-empty');
+  if (!container) return;
+  if (!list.length) {
+    container.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  container.innerHTML = list.map((s, i) => {
+    const socialsHtml = (s.socials || []).map(soc =>
+      '<span class="action-btn" style="cursor:default;margin-right:4px;margin-top:4px;display:inline-block;">' + socialPlatformIcon(soc.platform) + ' ' + soc.platform + '</span>'
+    ).join('');
+    return '<div class="raid-card" id="hw-card-' + i + '" style="flex-direction:column;align-items:flex-start;gap:10px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;">' +
+        '<div>' +
+          '<div class="raid-name" style="display:flex;align-items:center;gap:8px;">' +
+            s.name +
+            '<span id="hw-live-' + s.login + '" style="display:none;background:var(--red);color:#fff;font-size:0.6rem;font-weight:900;padding:2px 8px;border-radius:50px;letter-spacing:0.06em;">LIVE</span>' +
+          '</div>' +
+          '<div style="font-size:0.72rem;font-weight:700;color:var(--muted);margin-top:2px;">twitch.tv/' + s.login + '</div>' +
+          (socialsHtml ? '<div style="margin-top:8px;">' + socialsHtml + '</div>' : '') +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+          '<button class="action-btn" onclick="hwToggleSocials('' + s.login + '',' + i + ')">+ Add Socials</button>' +
+          '<button class="action-btn" style="border-color:#fca5a5;color:var(--red);" onclick="hwRemove('' + s.login + '')">Remove</button>' +
+        '</div>' +
+      '</div>' +
+      '<div id="hw-social-panel-' + i + '" style="display:none;width:100%;padding-top:8px;border-top:1px solid var(--border);">' +
+        '<div style="display:flex;gap:8px;align-items:center;">' +
+          '<input type="text" id="hw-social-input-' + i + '" class="login-input" style="margin-bottom:0;text-align:left;letter-spacing:0.02em;flex:1;" placeholder="Paste social URL..." />' +
+          '<button class="action-btn" onclick="hwSubmitSocial('' + s.login + '',' + i + ')" style="border-color:var(--accent);color:var(--accent);white-space:nowrap;">+</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function hwToggleSocials(login, idx) {
+  const panel = document.getElementById('hw-social-panel-' + idx);
+  if (!panel) return;
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  if (panel.style.display === 'block') {
+    const inp = document.getElementById('hw-social-input-' + idx);
+    if (inp) inp.focus();
+  }
+}
+
+function hwSubmitSocial(login, idx) {
+  const inp = document.getElementById('hw-social-input-' + idx);
+  if (!inp || !inp.value.trim()) return;
+  const url = inp.value.trim();
+  const platform = detectSocialPlatform(url);
+  if (!platform) {
+    inp.style.borderColor = 'var(--red)';
+    setTimeout(() => inp.style.borderColor = '', 1200);
+    return;
+  }
+  hwAddSocialUrl(login, url);
+  inp.value = '';
+  renderHomeworkList();
+  // Re-open the panel so they can keep adding
+  const panel = document.getElementById('hw-social-panel-' + idx);
+  const newList = getHomeworkList();
+  const newIdx = newList.findIndex(s => s.login === login);
+  if (panel && newIdx !== -1) {
+    const newPanel = document.getElementById('hw-social-panel-' + newIdx);
+    if (newPanel) newPanel.style.display = 'block';
+  }
+}
+
+async function checkHomeworkLiveStatus() {
+  const list = getHomeworkList();
+  if (!list.length) return;
+  // Use twitchPublic to check live status for each streamer in batches
+  const logins = list.map(s => s.login);
+  // Batch into groups of 20 (Twitch API limit per request)
+  for (let i = 0; i < logins.length; i += 20) {
+    const batch = logins.slice(i, i + 20);
+    try {
+      const query = batch.map(l => 'user_login=' + encodeURIComponent(l)).join('&');
+      const data = await twitchPublic('streams?' + query);
+      if (data && data.data) {
+        const liveSet = new Set(data.data.map(s => s.user_login.toLowerCase()));
+        batch.forEach(login => {
+          const indicator = document.getElementById('hw-live-' + login);
+          if (indicator) indicator.style.display = liveSet.has(login) ? 'inline-block' : 'none';
+        });
+      }
+    } catch(e) {}
+  }
+}
+
+// ── Web Push ─────────────────────────────────────────────────
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return new Uint8Array([...rawData].map(c => c.charCodeAt(0)));
+}
+
+async function registerPushNotifications() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    // Send subscription to worker to store in KV
+    await fetch(WORKER_URL + '/push-subscribe', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription: sub.toJSON() })
+    });
+    localStorage.setItem('sh_push_registered', '1');
+  } catch(e) {
+    console.warn('Push registration failed:', e);
+  }
+}
+
+async function initPushIfNeeded() {
+  if (localStorage.getItem('sh_push_registered')) return;
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'denied') return;
+  if (Notification.permission === 'default') {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return;
+  }
+  await registerPushNotifications();
+}
+
+// ── Raid interaction functions ─────────────────────────────────
+function raidWantTo(login, name, idx) {
+  // Show the embed, replace button with Definitely/Never Mind
+  const card = document.getElementById('raid-card-' + idx);
+  const embed = document.getElementById('raid-embed-' + idx);
+  if (!embed) return;
+  embed.style.display = 'block';
+  // Hide the "I'd like to raid" button
+  const btn = card.querySelector('.action-btn');
+  if (btn) btn.style.display = 'none';
+}
+
+function raidDefinitely(login, name, idx) {
+  // Copy /raid command to clipboard
+  navigator.clipboard.writeText('/raid ' + login).catch(() => {});
+  // Add to homework
+  hwAddStreamer(login, name);
+  // Collapse card back
+  raidCollapse(idx);
+  // Small feedback
+  const card = document.getElementById('raid-card-' + idx);
+  if (card) {
+    const toast = document.createElement('div');
+    toast.textContent = '✓ /raid ' + login + ' copied + added to Homework';
+    toast.style.cssText = 'font-size:0.72rem;font-weight:800;color:var(--accent);padding:6px 0;width:100%;';
+    card.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+}
+
+async function raidNeverMind(login, idx) {
+  // Collapse
+  raidCollapse(idx);
+  // Remove this streamer from current list and fetch one replacement
+  if (!window._currentRaidList) return;
+  window._currentRaidList = window._currentRaidList.filter(s => s.user_login !== login);
+
+  // Show loading in the slot
+  const card = document.getElementById('raid-card-' + idx);
+  if (card) card.innerHTML = '<div style="color:var(--muted);font-size:0.78rem;font-weight:700;padding:8px;width:100%;">Finding replacement...</div>';
+
+  // Fetch one replacement from same game/category
+  try {
+    const existing = window._currentRaidList;
+    const category = existing.length ? existing[0].category : 'Dead by Daylight';
+    // Get game id for that category
+    const gameData = await twitchPublic('games?name=' + encodeURIComponent(category));
+    if (!gameData || !gameData.data || !gameData.data[0]) throw new Error('no game');
+    const gameId = gameData.data[0].id;
+
+    const myAvgViewers = (window._lastMyAvgViewers || 7);
+    const stretchMax = Math.ceil(myAvgViewers * 5);
+    const peerMax = Math.ceil(myAvgViewers * 2.5);
+
+    const res = await fetch(WORKER_URL + '/twitch-streams-deep', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ game_id: gameId, min_viewers: peerMax + 1, max_viewers: stretchMax })
+    });
+    const data = await res.json();
+    if (!data || !data.data || !data.data.length) throw new Error('no streams');
+
+    // Pick one not already in the list
+    const existingLogins = new Set(existing.map(s => s.user_login));
+    const candidate = data.data.find(s => !existingLogins.has(s.user_login) && s.user_login !== login);
+    if (!candidate) throw new Error('no candidate');
+
+    candidate.category = category;
+    window._currentRaidList[idx] = candidate;
+    if (card) card.outerHTML = renderRaid(candidate, idx);
+  } catch(e) {
+    if (card) card.innerHTML = '<div style="color:var(--muted);font-size:0.78rem;font-weight:700;padding:8px;width:100%;">No replacement found right now.</div>';
+  }
+}
+
+function raidCollapse(idx) {
+  const embed = document.getElementById('raid-embed-' + idx);
+  if (embed) embed.style.display = 'none';
+  const card = document.getElementById('raid-card-' + idx);
+  if (card) {
+    const btn = card.querySelector('.action-btn');
+    if (btn) btn.style.display = '';
+  }
+}
+
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/streamer-hub/sw.js');
+  navigator.serviceWorker.register('/streamer-hub/sw.js').then(() => {
+    // Request push permission on first visit to homework tab — deferred
+  });
 }
+// Request push on first homework tab visit
+document.addEventListener('DOMContentLoaded', () => {
+  // Prompt handled in switchTab('homework')
+});
 </script>
 </body>
 </html>
