@@ -1,3 +1,39 @@
+// ── VAPID signing helper ──────────────────────────────────────────
+async function signVapid(privateKeyB64u, audience, subject) {
+  const b64u = obj => btoa(JSON.stringify(obj)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  const header = { typ: "JWT", alg: "ES256" };
+  const payload = { aud: audience, exp: Math.floor(Date.now() / 1000) + 43200, sub: subject };
+  const signingInput = b64u(header) + "." + b64u(payload);
+  const padded = privateKeyB64u.replace(/-/g,"+").replace(/_/g,"/");
+  const keyBytes = Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+  const privateKey = await crypto.subtle.importKey(
+    "raw", keyBytes, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]
+  );
+  const sig = await crypto.subtle.sign(
+    { name: "ECDSA", hash: "SHA-256" }, privateKey, new TextEncoder().encode(signingInput)
+  );
+  const sigB64u = btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  return signingInput + "." + sigB64u;
+}
+
+async function sendWebPush(env, subscription, payload) {
+  const endpoint = subscription.endpoint;
+  const audience = new URL(endpoint).origin;
+  const jwt = await signVapid(env.VAPID_PRIVATE_KEY, audience, "mailto:noreply@dualpost.app");
+  const payloadBytes = new TextEncoder().encode(JSON.stringify(payload));
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/octet-stream",
+      "TTL": "86400",
+      "Authorization": "vapid t=" + jwt + ", k=" + env.VAPID_PUBLIC_KEY,
+      "Content-Encoding": "aes128gcm",
+    },
+    body: payloadBytes,
+  });
+  return res.status;
+}
+
 export default {
   async fetch(request, env) {
     const corsHeaders = {
@@ -485,6 +521,33 @@ export default {
       }
     }
 
+    // ── Push notification subscription storage ──────────────────────
+    if (url.pathname === "/push-subscribe") {
+      try {
+        const { subscription } = body;
+        if (!subscription || !subscription.endpoint) {
+          return new Response(JSON.stringify({ error: "No subscription" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        const key = "push_sub_" + btoa(subscription.endpoint).replace(/[^a-zA-Z0-9]/g, '').slice(0, 40);
+        await env.PUSH_KV.put(key, JSON.stringify(subscription), { expirationTtl: 60 * 60 * 24 * 90 });
+        return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch(e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
+    // ── Homework list sync (so cron can read it) ─────────────────────
+    if (url.pathname === "/push-homework-sync") {
+      try {
+        const { list } = body;
+        if (!Array.isArray(list)) return new Response(JSON.stringify({ error: "Invalid list" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        await env.PUSH_KV.put("homework_list", JSON.stringify(list));
+        return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch(e) {
+        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     // ── Streamer Hub password verification ──────────────────────────
     if (url.pathname === "/verify-password") {
       const provided = body.password || "";
@@ -528,5 +591,60 @@ export default {
     } catch (e) {
       return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+  },
+
+  async scheduled(event, env, ctx) {
+    try {
+      const hwRaw = await env.PUSH_KV.get("homework_list");
+      if (!hwRaw) return;
+      const hwList = JSON.parse(hwRaw);
+      if (!hwList.length) return;
+
+      const tokenRes = await fetch("https://id.twitch.tv/oauth2/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          client_id: env.TWITCH_CLIENT_ID, client_secret: env.TWITCH_CLIENT_SECRET,
+          grant_type: "client_credentials",
+        }),
+      });
+      const appToken = (await tokenRes.json()).access_token;
+
+      const logins = hwList.map(s => s.login);
+      const query = logins.map(l => "user_login=" + encodeURIComponent(l)).join("&");
+      const streamsRes = await fetch("https://api.twitch.tv/helix/streams?" + query, {
+        headers: { "Authorization": "Bearer " + appToken, "Client-Id": env.TWITCH_CLIENT_ID },
+      });
+      const liveStreamers = (await streamsRes.json()).data || [];
+      if (!liveStreamers.length) return;
+
+      const notifiedRaw = await env.PUSH_KV.get("push_notified") || "{}";
+      const notified = JSON.parse(notifiedRaw);
+      const now = Date.now();
+      const toNotify = liveStreamers.filter(s => {
+        const key = s.user_login.toLowerCase();
+        return !notified[key] || (now - notified[key]) > 3600000;
+      });
+      if (!toNotify.length) return;
+
+      const subKeys = await env.PUSH_KV.list({ prefix: "push_sub_" });
+      if (!subKeys.keys.length) return;
+
+      for (const streamer of toNotify) {
+        const payload = {
+          title: streamer.user_name + " is live!",
+          body: (streamer.game_name ? "Playing " + streamer.game_name + " \u00b7 " : "") + streamer.viewer_count + " viewers",
+          url: "https://twitch.tv/" + streamer.user_login,
+        };
+        for (const keyObj of subKeys.keys) {
+          const subRaw = await env.PUSH_KV.get(keyObj.name);
+          if (!subRaw) continue;
+          try { await sendWebPush(env, JSON.parse(subRaw), payload); } catch(e) {}
+        }
+        notified[streamer.user_login.toLowerCase()] = now;
+      }
+      await env.PUSH_KV.put("push_notified", JSON.stringify(notified), { expirationTtl: 604800 });
+    } catch(e) { console.error("Scheduled push failed:", e); }
   }
+
 };
