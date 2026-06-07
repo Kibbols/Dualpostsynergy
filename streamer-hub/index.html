@@ -556,6 +556,12 @@ tr:hover td { background:var(--surface2); }
         </div>
       </div>
 
+      <!-- Push test -->
+      <div style="margin-bottom:16px;">
+        <button class="action-btn" onclick="testPush()" id="push-test-btn">Test Notification</button>
+        <div id="push-test-result" style="font-size:0.75rem;font-weight:700;margin-top:8px;color:var(--muted);"></div>
+      </div>
+
       <!-- List -->
       <div id="hw-list"></div>
       <div id="hw-empty" class="empty-state">
@@ -2099,6 +2105,26 @@ function copyIdea(i) {
   setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
 }
 
+
+async function testPush() {
+  const btn = document.getElementById('push-test-btn');
+  const result = document.getElementById('push-test-result');
+  btn.textContent = 'Sending...';
+  btn.disabled = true;
+  try {
+    const res = await fetch(WORKER_URL + '/push-test', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'
+    });
+    const data = await res.json();
+    result.style.color = data.ok ? 'var(--accent)' : 'var(--red)';
+    result.textContent = data.ok ? 'Sent! FCM status: ' + data.fcm_status + ' — check for notification' : 'Error: ' + (data.error || JSON.stringify(data));
+  } catch(e) {
+    result.style.color = 'var(--red)';
+    result.textContent = 'Request failed: ' + e.message;
+  }
+  btn.textContent = 'Test Notification';
+  btn.disabled = false;
+}
 
 // ── Homework Tab ──────────────────────────────────────────────
 const VAPID_PUBLIC_KEY = 'BNcB3SUY5pfa-x2k9nwvcE-oFNmpXllK3sPw2DFbME_UyF9Pt8XsehsSL9ZXSk2PBBdN5zmFlz2Jx97pcWMh1L4';
