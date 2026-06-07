@@ -608,9 +608,12 @@ export default {
     // ── Debug: manually trigger a push to test the pipeline ─────────
     if (url.pathname === "/push-test") {
       try {
-        const subRaw = await env.PUSH_KV.get("push_sub_aHR0cHM6Ly9mY20uZ29vZ2xlYXBpcy5jb20vZmNt");
-        if (!subRaw) return new Response(JSON.stringify({ error: "No subscription found" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        const subKeys = await env.PUSH_KV.list({ prefix: "push_sub_" });
+        if (!subKeys.keys.length) return new Response(JSON.stringify({ error: "No subscriptions in KV" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        const subRaw = await env.PUSH_KV.get(subKeys.keys[0].name);
+        if (!subRaw) return new Response(JSON.stringify({ error: "Subscription key empty" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         const sub = JSON.parse(subRaw);
+        if (!sub.keys) return new Response(JSON.stringify({ error: "Subscription has no keys", sub }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         const payload = { title: "Test notification", body: "If you see this, push is working!", url: "https://dualpost.app/streamer-hub/" };
         const status = await sendWebPush(env, sub, payload);
         return new Response(JSON.stringify({ ok: true, fcm_status: status }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
