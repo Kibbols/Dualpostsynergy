@@ -2402,7 +2402,12 @@ async function raidNeverMind(login, idx) {
 
 function raidCollapse(idx) {
   const embed = document.getElementById('raid-embed-' + idx);
-  if (embed) embed.style.display = 'none';
+  if (embed) {
+    // Remove iframe from DOM entirely — no lingering background processes
+    const iframe = embed.querySelector('iframe');
+    if (iframe) iframe.remove();
+    embed.style.display = 'none';
+  }
   const card = document.getElementById('raid-card-' + idx);
   if (card) {
     const btn = card.querySelector('.action-btn');
