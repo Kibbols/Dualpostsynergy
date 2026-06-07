@@ -2231,7 +2231,7 @@ function renderHomeworkList() {
   if (empty) empty.style.display = 'none';
   container.innerHTML = list.map((s, i) => {
     const socialsHtml = (s.socials || []).map(soc =>
-      `<span class="action-btn" style="cursor:default;margin-right:4px;margin-top:4px;display:inline-block;">${socialPlatformIcon(soc.platform)} ${soc.platform}</span>`
+      `<a href="${soc.url}" target="_blank" rel="noopener" class="action-btn" style="margin-right:4px;margin-top:4px;display:inline-block;text-decoration:none;">${socialPlatformIcon(soc.platform)} ${soc.platform}</a>`
     ).join('');
     return `<div class="raid-card" id="hw-card-${i}" style="flex-direction:column;align-items:flex-start;gap:10px;">
       <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;">
