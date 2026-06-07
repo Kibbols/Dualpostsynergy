@@ -2212,6 +2212,32 @@ function hwAddSocialUrl(login, url) {
   saveHomeworkList(list);
 }
 
+function socialDeepLink(platform, url) {
+  // Extract username/path from URL for deep linking
+  try {
+    const u = new URL(url);
+    const path = u.pathname.replace(/^\//, '');
+    switch(platform) {
+      case 'Twitter / X':
+        return 'twitter://user?screen_name=' + path.split('/')[0];
+      case 'TikTok':
+        return 'snssdk1233://user/profile/' + path.replace('@','');
+      case 'Instagram':
+        return 'instagram://user?username=' + path.split('/')[0];
+      case 'YouTube':
+        // YouTube app handles https links natively
+        return url;
+      case 'Twitch':
+        return 'twitch://open?stream=' + path.split('/')[0];
+      case 'Discord':
+        // Discord invite links work directly
+        return url;
+      default:
+        return url;
+    }
+  } catch(e) { return url; }
+}
+
 function detectSocialPlatform(url) {
   url = url.toLowerCase();
   if (url.includes('twitter.com') || url.includes('x.com')) return 'Twitter / X';
@@ -2257,7 +2283,7 @@ function renderHomeworkList() {
   container.innerHTML = list.map((s, i) => {
     const socialsHtml = (s.socials || []).map((soc, si) =>
       `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:4px;margin-top:4px;">` +
-      `<a href="${soc.url}" target="_blank" rel="noopener" class="action-btn" style="text-decoration:none;margin:0;">${socialPlatformIcon(soc.platform)} ${soc.platform}</a>` +
+      `<a href="${socialDeepLink(soc.platform, soc.url)}" target="_blank" rel="noopener" class="action-btn" style="text-decoration:none;margin:0;">${socialPlatformIcon(soc.platform)} ${soc.platform}</a>` +
       `<button onclick="hwRemoveSocial('${s.login}',${si})" style="background:none;border:none;color:var(--muted);font-size:0.8rem;cursor:pointer;padding:0 2px;line-height:1;" title="Remove">✕</button>` +
       `</span>`
     ).join('');
