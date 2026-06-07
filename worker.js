@@ -16,20 +16,93 @@ async function signVapid(privateKeyB64u, audience, subject) {
   return signingInput + "." + sigB64u;
 }
 
+// ── Web Push helpers ──────────────────────────────────────────────
+function b64uDecode(str) {
+  const padded = str.replace(/-/g,"+").replace(/_/g,"/") + "==".slice(0,(4-str.length%4)%4);
+  const raw = atob(padded);
+  return new Uint8Array([...raw].map(c=>c.charCodeAt(0)));
+}
+function b64uEncode(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+function concatBuffers(...arrays) {
+  const total = arrays.reduce((s,a)=>s+a.byteLength,0);
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const a of arrays) { out.set(new Uint8Array(a.buffer||a),offset); offset+=a.byteLength; }
+  return out;
+}
+async function hkdfExpand(prk, info, length) {
+  const prkKey = await crypto.subtle.importKey("raw",prk,{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+  const infoWithCounter = concatBuffers(info instanceof Uint8Array ? info : new TextEncoder().encode(info), new Uint8Array([1]));
+  const okm = await crypto.subtle.sign("HMAC",prkKey,infoWithCounter);
+  return new Uint8Array(okm).slice(0,length);
+}
+async function hkdfExtract(salt, ikm) {
+  const saltKey = await crypto.subtle.importKey("raw",salt,{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+  return new Uint8Array(await crypto.subtle.sign("HMAC",saltKey,ikm));
+}
+
+async function encryptWebPushPayload(subscription, payloadStr) {
+  const encoder = new TextEncoder();
+  const browserPublicKeyBytes = b64uDecode(subscription.keys.p256dh);
+  const authSecret = b64uDecode(subscription.keys.auth);
+
+  const browserPublicKey = await crypto.subtle.importKey(
+    "raw", browserPublicKeyBytes, {name:"ECDH",namedCurve:"P-256"}, false, []
+  );
+
+  // Ephemeral key pair
+  const ephemKP = await crypto.subtle.generateKey({name:"ECDH",namedCurve:"P-256"},true,["deriveBits"]);
+  const ephemPublicRaw = new Uint8Array(await crypto.subtle.exportKey("raw",ephemKP.publicKey));
+
+  // ECDH shared secret
+  const sharedSecretBits = await crypto.subtle.deriveBits({name:"ECDH",public:browserPublicKey},ephemKP.privateKey,256);
+  const sharedSecret = new Uint8Array(sharedSecretBits);
+
+  // Salt
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+
+  // RFC 8291 key derivation
+  // ikm = HKDF-Extract(auth_secret, sharedSecret) with info = "WebPush: info\0" + browserPub + ephemPub
+  const ikmInfo = concatBuffers(encoder.encode("WebPush: info\x00"), browserPublicKeyBytes, ephemPublicRaw);
+  const prk = await hkdfExtract(authSecret, sharedSecret);
+  const ikm = await hkdfExpand(prk, ikmInfo, 32);
+
+  // Derive CEK and nonce from salt
+  const prkCek = await hkdfExtract(salt, ikm);
+  const cek = await hkdfExpand(prkCek, encoder.encode("Content-Encoding: aes128gcm\x00"), 16);
+  const nonce = await hkdfExpand(prkCek, encoder.encode("Content-Encoding: nonce\x00"), 12);
+
+  // Encrypt payload — append \x02 padding delimiter
+  const plaintext = encoder.encode(payloadStr);
+  const padded = concatBuffers(plaintext, new Uint8Array([2]));
+  const cekKey = await crypto.subtle.importKey("raw",cek,{name:"AES-GCM"},false,["encrypt"]);
+  const ciphertext = new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv:nonce},cekKey,padded));
+
+  // Build aes128gcm record: salt(16) + rs(4) + keyid_len(1) + ephemPub(65) + ciphertext
+  const header = new Uint8Array(21);
+  header.set(salt,0);
+  new DataView(header.buffer).setUint32(16,4096,false);
+  header[20] = ephemPublicRaw.byteLength;
+  return concatBuffers(header, ephemPublicRaw, ciphertext);
+}
+
 async function sendWebPush(env, subscription, payload) {
+  if (!subscription.keys || !subscription.keys.p256dh || !subscription.keys.auth) return 400;
   const endpoint = subscription.endpoint;
   const audience = new URL(endpoint).origin;
   const jwt = await signVapid(env.VAPID_PRIVATE_KEY, audience, "mailto:noreply@dualpost.app");
-  const payloadBytes = new TextEncoder().encode(JSON.stringify(payload));
+  const encrypted = await encryptWebPushPayload(subscription, JSON.stringify(payload));
   const res = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/octet-stream",
+      "Content-Encoding": "aes128gcm",
       "TTL": "86400",
       "Authorization": "vapid t=" + jwt + ", k=" + env.VAPID_PUBLIC_KEY,
-      "Content-Encoding": "aes128gcm",
     },
-    body: payloadBytes,
+    body: encrypted,
   });
   return res.status;
 }
