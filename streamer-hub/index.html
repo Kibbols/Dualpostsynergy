@@ -1718,6 +1718,7 @@ function switchTab(name, btn) {
     loadYTAStats();
   }
   if (name === 'homework') {
+    migrateHomeworkSocials();
     renderHomeworkList();
     checkHomeworkLiveStatus();
     initPushIfNeeded();
@@ -2134,6 +2135,20 @@ const VAPID_PUBLIC_KEY = 'BNcB3SUY5pfa-x2k9nwvcE-oFNmpXllK3sPw2DFbME_UyF9Pt8Xseh
 function getHomeworkList() {
   try { return JSON.parse(localStorage.getItem('sh_homework') || '[]'); } catch(e) { return []; }
 }
+
+function migrateHomeworkSocials() {
+  const list = getHomeworkList();
+  let changed = false;
+  list.forEach(entry => {
+    (entry.socials || []).forEach(soc => {
+      if (soc.url && !soc.url.startsWith('http://') && !soc.url.startsWith('https://')) {
+        soc.url = 'https://' + soc.url;
+        changed = true;
+      }
+    });
+  });
+  if (changed) saveHomeworkList(list);
+}
 function saveHomeworkList(list) {
   localStorage.setItem('sh_homework', JSON.stringify(list));
   // Sync to worker KV so cron can check live status and notify
@@ -2176,7 +2191,17 @@ function hwRemove(login) {
   renderHomeworkList();
 }
 
+function hwRemoveSocial(login, idx) {
+  const list = getHomeworkList();
+  const entry = list.find(s => s.login === login);
+  if (!entry || !entry.socials) return;
+  entry.socials.splice(idx, 1);
+  saveHomeworkList(list);
+  renderHomeworkList();
+}
+
 function hwAddSocialUrl(login, url) {
+  if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
   const list = getHomeworkList();
   const entry = list.find(s => s.login === login);
   if (!entry) return;
@@ -2230,9 +2255,14 @@ function renderHomeworkList() {
   }
   if (empty) empty.style.display = 'none';
   container.innerHTML = list.map((s, i) => {
-    const socialsHtml = (s.socials || []).map(soc =>
-      `<a href="${soc.url}" target="_blank" rel="noopener" class="action-btn" style="margin-right:4px;margin-top:4px;display:inline-block;text-decoration:none;">${socialPlatformIcon(soc.platform)} ${soc.platform}</a>`
+    const socialsHtml = (s.socials || []).map((soc, si) =>
+      `<span style="display:inline-flex;align-items:center;gap:4px;margin-right:4px;margin-top:4px;">` +
+      `<a href="${soc.url}" target="_blank" rel="noopener" class="action-btn" style="text-decoration:none;margin:0;">${socialPlatformIcon(soc.platform)} ${soc.platform}</a>` +
+      `<button onclick="hwRemoveSocial('${s.login}',${si})" style="background:none;border:none;color:var(--muted);font-size:0.8rem;cursor:pointer;padding:0 2px;line-height:1;" title="Remove">✕</button>` +
+      `</span>`
     ).join('');
+    // Wrap in a flex container that wraps at 3 per row
+    const socialsWrapped = socialsHtml ? `<div style="display:flex;flex-wrap:wrap;gap:0;">${socialsHtml}</div>` : '';
     return `<div class="raid-card" id="hw-card-${i}" style="flex-direction:column;align-items:flex-start;gap:10px;">
       <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:10px;">
         <div>
@@ -2241,7 +2271,7 @@ function renderHomeworkList() {
             <span id="hw-live-${s.login}" style="display:none;background:var(--red);color:#fff;font-size:0.6rem;font-weight:900;padding:2px 8px;border-radius:50px;letter-spacing:0.06em;">LIVE</span>
           </div>
           <div style="font-size:0.72rem;font-weight:700;color:var(--muted);margin-top:2px;">twitch.tv/${s.login}</div>
-          ${socialsHtml ? `<div style="margin-top:8px;">${socialsHtml}</div>` : ''}
+          ${socialsWrapped ? `<div style="margin-top:8px;">${socialsWrapped}</div>` : ''}
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
           <button class="action-btn" onclick="hwToggleSocials('${s.login}',${i})">+ Add Socials</button>
