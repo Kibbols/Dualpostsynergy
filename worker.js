@@ -722,12 +722,13 @@ export default {
       const liveStreamers = (await streamsRes.json()).data || [];
       if (!liveStreamers.length) return;
 
+      // Track by stream ID — only notify when a new stream session starts
       const notifiedRaw = await env.PUSH_KV.get("push_notified") || "{}";
       const notified = JSON.parse(notifiedRaw);
-      const now = Date.now();
+
       const toNotify = liveStreamers.filter(s => {
         const key = s.user_login.toLowerCase();
-        return !notified[key] || (now - notified[key]) > 3600000;
+        return notified[key] !== s.id;
       });
       if (!toNotify.length) return;
 
@@ -745,9 +746,9 @@ export default {
           if (!subRaw) continue;
           try { await sendWebPush(env, JSON.parse(subRaw), payload); } catch(e) {}
         }
-        notified[streamer.user_login.toLowerCase()] = now;
+        notified[streamer.user_login.toLowerCase()] = streamer.id;
       }
-      await env.PUSH_KV.put("push_notified", JSON.stringify(notified), { expirationTtl: 604800 });
+      await env.PUSH_KV.put("push_notified", JSON.stringify(notified), { expirationTtl: 604800 * 4 });
     } catch(e) { console.error("Scheduled push failed:", e); }
   }
 
