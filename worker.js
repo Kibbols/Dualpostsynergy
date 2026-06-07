@@ -4,10 +4,28 @@ async function signVapid(privateKeyB64u, audience, subject) {
   const header = { typ: "JWT", alg: "ES256" };
   const payload = { aud: audience, exp: Math.floor(Date.now() / 1000) + 43200, sub: subject };
   const signingInput = b64u(header) + "." + b64u(payload);
+
+  // Wrap raw 32-byte private scalar in PKCS8 structure for P-256
   const padded = privateKeyB64u.replace(/-/g,"+").replace(/_/g,"/");
-  const keyBytes = Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+  const rawKey = Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+  // PKCS8 header for EC P-256 private key + the 32-byte scalar
+  const pkcs8Header = new Uint8Array([
+    0x30,0x41, // SEQUENCE
+    0x02,0x01,0x00, // version = 0
+    0x30,0x13, // SEQUENCE (AlgorithmIdentifier)
+      0x06,0x07,0x2a,0x86,0x48,0xce,0x3d,0x02,0x01, // OID ecPublicKey
+      0x06,0x08,0x2a,0x86,0x48,0xce,0x3d,0x03,0x01,0x07, // OID P-256
+    0x04,0x27, // OCTET STRING
+      0x30,0x25, // SEQUENCE (ECPrivateKey)
+        0x02,0x01,0x01, // version = 1
+        0x04,0x20 // OCTET STRING, 32 bytes follow
+  ]);
+  const pkcs8 = new Uint8Array(pkcs8Header.length + rawKey.length);
+  pkcs8.set(pkcs8Header);
+  pkcs8.set(rawKey, pkcs8Header.length);
+
   const privateKey = await crypto.subtle.importKey(
-    "raw", keyBytes, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]
+    "pkcs8", pkcs8, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]
   );
   const sig = await crypto.subtle.sign(
     { name: "ECDSA", hash: "SHA-256" }, privateKey, new TextEncoder().encode(signingInput)
