@@ -605,6 +605,20 @@ export default {
       }
     }
 
+    // ── Debug: manually trigger a push to test the pipeline ─────────
+    if (url.pathname === "/push-test") {
+      try {
+        const subRaw = await env.PUSH_KV.get("push_sub_aHR0cHM6Ly9mY20uZ29vZ2xlYXBpcy5jb20vZmNt");
+        if (!subRaw) return new Response(JSON.stringify({ error: "No subscription found" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        const sub = JSON.parse(subRaw);
+        const payload = { title: "Test notification", body: "If you see this, push is working!", url: "https://dualpost.app/streamer-hub/" };
+        const status = await sendWebPush(env, sub, payload);
+        return new Response(JSON.stringify({ ok: true, fcm_status: status }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch(e) {
+        return new Response(JSON.stringify({ error: e.message, stack: e.stack }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     // ── Homework list sync (so cron can read it) ─────────────────────
     if (url.pathname === "/push-homework-sync") {
       try {
