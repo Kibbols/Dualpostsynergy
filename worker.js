@@ -16,76 +16,72 @@ async function signVapid(privateKeyB64u, audience, subject) {
   return signingInput + "." + sigB64u;
 }
 
-// ── Web Push helpers ──────────────────────────────────────────────
+// ── Web Push helpers (RFC 8291 / RFC 8188) ────────────────────────
 function b64uDecode(str) {
   const padded = str.replace(/-/g,"+").replace(/_/g,"/") + "==".slice(0,(4-str.length%4)%4);
   const raw = atob(padded);
   return new Uint8Array([...raw].map(c=>c.charCodeAt(0)));
 }
-function b64uEncode(buf) {
-  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
-}
 function concatBuffers(...arrays) {
   const total = arrays.reduce((s,a)=>s+a.byteLength,0);
   const out = new Uint8Array(total);
-  let offset = 0;
-  for (const a of arrays) { out.set(new Uint8Array(a.buffer||a),offset); offset+=a.byteLength; }
+  let offset=0;
+  for (const a of arrays){out.set(new Uint8Array(a.buffer||a),offset);offset+=a.byteLength;}
   return out;
 }
-async function hkdfExpand(prk, info, length) {
-  const prkKey = await crypto.subtle.importKey("raw",prk,{name:"HMAC",hash:"SHA-256"},false,["sign"]);
-  const infoWithCounter = concatBuffers(info instanceof Uint8Array ? info : new TextEncoder().encode(info), new Uint8Array([1]));
-  const okm = await crypto.subtle.sign("HMAC",prkKey,infoWithCounter);
-  return new Uint8Array(okm).slice(0,length);
-}
-async function hkdfExtract(salt, ikm) {
+async function hkdf(salt, ikm, info, len) {
   const saltKey = await crypto.subtle.importKey("raw",salt,{name:"HMAC",hash:"SHA-256"},false,["sign"]);
-  return new Uint8Array(await crypto.subtle.sign("HMAC",saltKey,ikm));
+  const prk = new Uint8Array(await crypto.subtle.sign("HMAC",saltKey,ikm));
+  const prkKey = await crypto.subtle.importKey("raw",prk,{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+  const infoBytes = typeof info==="string" ? new TextEncoder().encode(info) : info;
+  const t = new Uint8Array(await crypto.subtle.sign("HMAC",prkKey,concatBuffers(infoBytes,new Uint8Array([1]))));
+  return t.slice(0,len);
 }
 
 async function encryptWebPushPayload(subscription, payloadStr) {
-  const encoder = new TextEncoder();
-  const browserPublicKeyBytes = b64uDecode(subscription.keys.p256dh);
+  const enc = new TextEncoder();
+  const receiverPublicKeyBytes = b64uDecode(subscription.keys.p256dh);
   const authSecret = b64uDecode(subscription.keys.auth);
 
-  const browserPublicKey = await crypto.subtle.importKey(
-    "raw", browserPublicKeyBytes, {name:"ECDH",namedCurve:"P-256"}, false, []
+  // Import receiver public key for ECDH
+  const receiverPublicKey = await crypto.subtle.importKey(
+    "raw", receiverPublicKeyBytes, {name:"ECDH",namedCurve:"P-256"}, false, []
   );
 
-  // Ephemeral key pair
-  const ephemKP = await crypto.subtle.generateKey({name:"ECDH",namedCurve:"P-256"},true,["deriveBits"]);
-  const ephemPublicRaw = new Uint8Array(await crypto.subtle.exportKey("raw",ephemKP.publicKey));
+  // Generate sender (ephemeral) key pair
+  const senderKP = await crypto.subtle.generateKey({name:"ECDH",namedCurve:"P-256"},true,["deriveBits"]);
+  const senderPublicKeyBytes = new Uint8Array(await crypto.subtle.exportKey("raw",senderKP.publicKey));
 
-  // ECDH shared secret
-  const sharedSecretBits = await crypto.subtle.deriveBits({name:"ECDH",public:browserPublicKey},ephemKP.privateKey,256);
-  const sharedSecret = new Uint8Array(sharedSecretBits);
+  // ECDH
+  const ecdhBits = new Uint8Array(await crypto.subtle.deriveBits({name:"ECDH",public:receiverPublicKey},senderKP.privateKey,256));
 
-  // Salt
+  // Random 16-byte salt
   const salt = crypto.getRandomValues(new Uint8Array(16));
 
-  // RFC 8291 key derivation
-  // ikm = HKDF-Extract(auth_secret, sharedSecret) with info = "WebPush: info\0" + browserPub + ephemPub
-  const ikmInfo = concatBuffers(encoder.encode("WebPush: info\x00"), browserPublicKeyBytes, ephemPublicRaw);
-  const prk = await hkdfExtract(authSecret, sharedSecret);
-  const ikm = await hkdfExpand(prk, ikmInfo, 32);
+  // RFC 8291 §3.3 — derive IKM
+  // keyinfo = "WebPush: info" + 0x00 + receiverPublicKey + senderPublicKey
+  const keyInfo = concatBuffers(enc.encode("WebPush: info"), new Uint8Array([0]), receiverPublicKeyBytes, senderPublicKeyBytes);
+  const ikm = await hkdf(authSecret, ecdhBits, keyInfo, 32);
 
-  // Derive CEK and nonce from salt
-  const prkCek = await hkdfExtract(salt, ikm);
-  const cek = await hkdfExpand(prkCek, encoder.encode("Content-Encoding: aes128gcm\x00"), 16);
-  const nonce = await hkdfExpand(prkCek, encoder.encode("Content-Encoding: nonce\x00"), 12);
+  // RFC 8188 §2.1 — derive CEK and nonce
+  // cek_info = "Content-Encoding: aes128gcm" + 0x00
+  // nonce_info = "Content-Encoding: nonce" + 0x00
+  const cekInfo = concatBuffers(enc.encode("Content-Encoding: aes128gcm"), new Uint8Array([0]));
+  const nonceInfo = concatBuffers(enc.encode("Content-Encoding: nonce"), new Uint8Array([0]));
+  const cek = await hkdf(salt, ikm, cekInfo, 16);
+  const nonce = await hkdf(salt, ikm, nonceInfo, 12);
 
-  // Encrypt payload — append \x02 padding delimiter
-  const plaintext = encoder.encode(payloadStr);
+  // Encrypt: plaintext + 0x02 delimiter (end of record, no padding)
+  const plaintext = enc.encode(payloadStr);
   const padded = concatBuffers(plaintext, new Uint8Array([2]));
   const cekKey = await crypto.subtle.importKey("raw",cek,{name:"AES-GCM"},false,["encrypt"]);
   const ciphertext = new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv:nonce},cekKey,padded));
 
-  // Build aes128gcm record: salt(16) + rs(4) + keyid_len(1) + ephemPub(65) + ciphertext
-  const header = new Uint8Array(21);
-  header.set(salt,0);
-  new DataView(header.buffer).setUint32(16,4096,false);
-  header[20] = ephemPublicRaw.byteLength;
-  return concatBuffers(header, ephemPublicRaw, ciphertext);
+  // RFC 8188 header: salt(16) + record_size(4, big-endian) + key_id_len(1) + key_id(senderPublicKey, 65 bytes)
+  const rs = new Uint8Array(4);
+  new DataView(rs.buffer).setUint32(0, 4096, false);
+  const header = concatBuffers(salt, rs, new Uint8Array([senderPublicKeyBytes.length]), senderPublicKeyBytes);
+  return concatBuffers(header, ciphertext);
 }
 
 async function sendWebPush(env, subscription, payload) {
