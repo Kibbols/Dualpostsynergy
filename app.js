@@ -1185,12 +1185,17 @@ async function uploadToTikTok(file, title, description) {
         brand_content_toggle: document.getElementById('ttBrandedContent').checked,
         brand_organic_toggle: document.getElementById('ttYourBrand').checked,
       },
-      source_info: {
-        source: 'FILE_UPLOAD',
-        video_size: file.size,
-        chunk_size: Math.max(file.size, 5 * 1024 * 1024),
-        total_chunk_count: 1,
-      },
+      source_info: (() => {
+        const CHUNK = 50 * 1024 * 1024;
+        const chunkSize = file.size < 5 * 1024 * 1024 ? file.size : CHUNK;
+        const totalChunks = file.size < 5 * 1024 * 1024 ? 1 : Math.ceil(file.size / CHUNK);
+        return {
+          source: 'FILE_UPLOAD',
+          video_size: file.size,
+          chunk_size: chunkSize,
+          total_chunk_count: totalChunks,
+        };
+      })(),
     }),
   });
 
@@ -1211,58 +1216,73 @@ async function uploadToTikTok(file, title, description) {
   if (!upload_url) throw new Error('TikTok did not return an upload URL.');
   setProgress('tt', 5, 'Uploading...');
 
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    dbg('TT XHR upload starting. file.size=' + file.size + ' Content-Range=bytes 0-' + (file.size-1) + '/' + file.size);
-    xhr.open('PUT', upload_url);
-    xhr.setRequestHeader('Content-Range', `bytes 0-${file.size - 1}/${file.size}`);
-    xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+  // Multi-chunk upload
+  const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB chunks
+  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+  dbg('TT uploading ' + totalChunks + ' chunk(s). file.size=' + file.size);
 
-    xhr.upload.onprogress = e => {
-      if (e.lengthComputable)
-        setProgress('tt', Math.round((e.loaded / e.total) * 93) + 5,
-          `${Math.round((e.loaded / e.total) * 93) + 5}%`);
-    };
+  for (let i = 0; i < totalChunks; i++) {
+    const start = i * CHUNK_SIZE;
+    const end   = Math.min(start + CHUNK_SIZE, file.size);
+    const chunk = file.slice(start, end);
 
-    xhr.onload = async () => {
-      dbg('TT XHR status: ' + xhr.status + ' | ' + xhr.responseText.slice(0, 100));
-      if ([200, 201, 206].includes(xhr.status)) {
-        setProgress('tt', 100, 'Processing...');
-        // Poll status until processed or failed
-        try {
-          let attempts = 0;
-          const maxAttempts = 20;
-          const pollStatus = async () => {
-            attempts++;
-            const statusRes = await fetch(CONFIG.WORKER_URL + '/tt-status', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ token, publish_id }),
-            });
-            const statusData = await statusRes.json();
-            const status = statusData?.data?.status;
-            dbg('TT publish status (' + attempts + '): ' + status);
-            if (status === 'PROCESSING_UPLOAD' && attempts < maxAttempts) {
-              await new Promise(r => setTimeout(r, 5000));
-              return pollStatus();
-            }
-          };
-          await pollStatus();
-        } catch(e) {
-          dbg('TT status check failed: ' + e.message);
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', upload_url);
+      xhr.setRequestHeader('Content-Range', `bytes ${start}-${end - 1}/${file.size}`);
+      xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+
+      xhr.upload.onprogress = e => {
+        if (e.lengthComputable) {
+          const chunkProgress = e.loaded / e.total;
+          const overall = ((i + chunkProgress) / totalChunks) * 93 + 5;
+          setProgress('tt', Math.round(overall), `${Math.round(overall)}% (chunk ${i+1}/${totalChunks})`);
         }
-        setProgress('tt', 100, 'Done ✓');
-        resolve(`https://www.tiktok.com/upload?publish_id=${publish_id}`);
-      } else {
-        setProgress('tt', 0, `Failed (${xhr.status})`);
-        reject(new Error(`TikTok upload error ${xhr.status}: ${xhr.responseText}`));
+      };
+
+      xhr.onload = () => {
+        dbg('TT chunk ' + (i+1) + '/' + totalChunks + ' status: ' + xhr.status);
+        if ([200, 201, 206].includes(xhr.status)) {
+          resolve();
+        } else {
+          reject(new Error(`TikTok chunk ${i+1} upload error ${xhr.status}: ${xhr.responseText}`));
+        }
+      };
+      xhr.onerror = () => reject(new Error('Network error on chunk ' + (i+1)));
+      xhr.onabort = () => reject(new Error('Cancelled'));
+      xhr.send(chunk);
+      window._ttXhr = xhr;
+    });
+  }
+
+  setProgress('tt', 100, 'Processing...');
+
+  // Poll status until processed or failed
+  try {
+    let attempts = 0;
+    const maxAttempts = 20;
+    const pollStatus = async () => {
+      attempts++;
+      const statusRes = await fetch(CONFIG.WORKER_URL + '/tt-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, publish_id }),
+      });
+      const statusData = await statusRes.json();
+      const status = statusData?.data?.status;
+      dbg('TT publish status (' + attempts + '): ' + status);
+      if (status === 'PROCESSING_UPLOAD' && attempts < maxAttempts) {
+        await new Promise(r => setTimeout(r, 5000));
+        return pollStatus();
       }
     };
-    xhr.onerror = () => { setProgress('tt', 0, 'Network error'); reject(new Error('Network error')); };
-    xhr.onabort = () => { setProgress('tt', 0, 'Cancelled');     reject(new Error('Cancelled')); };
-    xhr.send(file);
-    window._ttXhr = xhr;
-  });
+    await pollStatus();
+  } catch(e) {
+    dbg('TT status check failed: ' + e.message);
+  }
+
+  setProgress('tt', 100, 'Done ✓');
+  return `https://www.tiktok.com/upload?publish_id=${publish_id}`;
 }
 
 // ── Cancel ─────────────────────────────────────────────────────
