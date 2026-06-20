@@ -789,9 +789,6 @@ async function fetchTikTokCreatorInfo() {
   // Ensure token is fresh before fetching
   await ensureTikTokToken();
 
-  // Ensure token is fresh before fetching
-  await ensureTikTokToken();
-
   const ttAccessToken = state.ttToken?.access_token || (typeof state.ttToken === 'string' ? state.ttToken : null);
   dbg('TT access token: ' + (ttAccessToken ? ttAccessToken.slice(0,12)+'...' : 'NONE'));
   if (!ttAccessToken) { dbg('No TT access token'); return; }
@@ -1191,7 +1188,7 @@ async function uploadToTikTok(file, title, description) {
       source_info: {
         source: 'FILE_UPLOAD',
         video_size: file.size,
-        chunk_size: file.size,
+        chunk_size: Math.max(file.size, 5 * 1024 * 1024),
         total_chunk_count: 1,
       },
     }),
