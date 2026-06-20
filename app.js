@@ -1188,7 +1188,7 @@ async function uploadToTikTok(file, title, description) {
       source_info: (() => {
         const CHUNK = 50 * 1024 * 1024;
         const chunkSize = file.size < 5 * 1024 * 1024 ? file.size : CHUNK;
-        const totalChunks = file.size < 5 * 1024 * 1024 ? 1 : Math.ceil(file.size / CHUNK);
+        const totalChunks = file.size < 5 * 1024 * 1024 ? 1 : Math.floor(file.size / chunkSize);
         return {
           source: 'FILE_UPLOAD',
           video_size: file.size,
@@ -1216,14 +1216,15 @@ async function uploadToTikTok(file, title, description) {
   if (!upload_url) throw new Error('TikTok did not return an upload URL.');
   setProgress('tt', 5, 'Uploading...');
 
-  // Multi-chunk upload
+  // Multi-chunk upload — TikTok uses Math.floor for chunk count, last chunk absorbs remainder
   const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB chunks
-  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+  const totalChunks = file.size < 5 * 1024 * 1024 ? 1 : Math.floor(file.size / CHUNK_SIZE);
   dbg('TT uploading ' + totalChunks + ' chunk(s). file.size=' + file.size);
 
   for (let i = 0; i < totalChunks; i++) {
     const start = i * CHUNK_SIZE;
-    const end   = Math.min(start + CHUNK_SIZE, file.size);
+    // Last chunk absorbs all remaining bytes
+    const end   = i === totalChunks - 1 ? file.size : Math.min(start + CHUNK_SIZE, file.size);
     const chunk = file.slice(start, end);
 
     await new Promise((resolve, reject) => {
