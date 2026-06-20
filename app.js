@@ -1186,13 +1186,18 @@ async function uploadToTikTok(file, title, description) {
         brand_organic_toggle: document.getElementById('ttYourBrand').checked,
       },
       source_info: (() => {
-        const CHUNK = 50 * 1024 * 1024;
-        const chunkSize = file.size < 5 * 1024 * 1024 ? file.size : CHUNK;
-        const totalChunks = file.size < 5 * 1024 * 1024 ? 1 : Math.floor(file.size / chunkSize);
+        // Per TikTok docs: chunk_size 5MB–64MB, total_chunk_count = floor(video_size / chunk_size)
+        // Final chunk absorbs remainder (can be up to 128MB)
+        const CHUNK = file.size <= 5 * 1024 * 1024
+          ? file.size          // under 5MB: whole file as one chunk
+          : 10 * 1024 * 1024;  // otherwise: 10MB chunks (safe, always gives correct floor)
+        const totalChunks = file.size <= 5 * 1024 * 1024
+          ? 1
+          : Math.floor(file.size / CHUNK);
         return {
           source: 'FILE_UPLOAD',
           video_size: file.size,
-          chunk_size: chunkSize,
+          chunk_size: CHUNK,
           total_chunk_count: totalChunks,
         };
       })(),
@@ -1216,10 +1221,10 @@ async function uploadToTikTok(file, title, description) {
   if (!upload_url) throw new Error('TikTok did not return an upload URL.');
   setProgress('tt', 5, 'Uploading...');
 
-  // Multi-chunk upload — TikTok uses Math.floor for chunk count, last chunk absorbs remainder
-  const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB chunks
-  const totalChunks = file.size < 5 * 1024 * 1024 ? 1 : Math.floor(file.size / CHUNK_SIZE);
-  dbg('TT uploading ' + totalChunks + ' chunk(s). file.size=' + file.size);
+  // Multi-chunk upload — must match source_info exactly
+  const CHUNK_SIZE = file.size <= 5 * 1024 * 1024 ? file.size : 10 * 1024 * 1024;
+  const totalChunks = file.size <= 5 * 1024 * 1024 ? 1 : Math.floor(file.size / CHUNK_SIZE);
+  dbg('TT chunking: file.size=' + file.size + ' CHUNK_SIZE=' + CHUNK_SIZE + ' totalChunks=' + totalChunks);
 
   for (let i = 0; i < totalChunks; i++) {
     const start = i * CHUNK_SIZE;
