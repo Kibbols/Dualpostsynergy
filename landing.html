@@ -237,11 +237,17 @@
     }
 
     .features-grid {
-      justify-content: center;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(6, 1fr);
       gap: 18px;
     }
+
+    .feature-card {
+      grid-column: span 2;
+    }
+
+    .features-grid .feature-card:nth-child(4) { grid-column: 2 / span 2; }
+    .features-grid .feature-card:nth-child(5) { grid-column: 4 / span 2; }
 
     .feature-card {
       background: var(--surface);
@@ -460,17 +466,16 @@
         <h3>Private and secure</h3>
         <p>Your videos go directly from your device to each platform. DualPost Synergy never stores your content or credentials on any server.</p>
       </div>
-      <div style="display:flex; gap: inherit; justify-content:center; width:100%;">
-        <div class="feature-card">
-          <span class="feature-icon">📲</span>
-          <h3>Works on any device</h3>
-          <p>DualPost Synergy is a web app that works in any browser. Install it to your home screen for a native app experience on mobile.</p>
-        </div>
-        <div class="feature-card">
-          <span class="feature-icon">☕</span>
-          <h3>Free forever</h3>
-          <p>DualPost Synergy is completely free to use. If it saves you time, consider supporting it to help keep the lights on.</p>
-        </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">📲</span>
+        <h3>Works on any device</h3>
+        <p>DualPost Synergy is a web app that works in any browser. Install it to your home screen for a native app experience on mobile.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">☕</span>
+        <h3>Free forever</h3>
+        <p>DualPost Synergy is completely free to use. If it saves you time, consider supporting it to help keep the lights on.</p>
       </div>
     </div>
   </section>
@@ -487,7 +492,7 @@
         <div class="step-card">
           <div class="step-num">2</div>
           <h3>Select your video</h3>
-          <p>Pick a vertical video from your device.</p>
+          <p>Pick a vertical video from your device. MP4, MOV, and WebM formats are all supported.</p>
         </div>
         <div class="step-card">
           <div class="step-num">3</div>
