@@ -1186,18 +1186,16 @@ async function uploadToTikTok(file, title, description) {
         brand_organic_toggle: document.getElementById('ttYourBrand').checked,
       },
       source_info: (() => {
-        // Per TikTok docs: chunk_size 5MB–64MB, total_chunk_count = floor(video_size / chunk_size)
-        // Final chunk absorbs remainder (can be up to 128MB)
-        const CHUNK = file.size <= 5 * 1024 * 1024
-          ? file.size          // under 5MB: whole file as one chunk
-          : 10 * 1024 * 1024;  // otherwise: 10MB chunks (safe, always gives correct floor)
-        const totalChunks = file.size <= 5 * 1024 * 1024
-          ? 1
-          : Math.floor(file.size / CHUNK);
+        // Per TikTok docs: chunk_size must equal video_size when total_chunk_count = 1
+        // For multi-chunk: chunk_size 5MB–64MB, total_chunk_count = floor(video_size / chunk_size)
+        const MULTI_CHUNK = 10 * 1024 * 1024; // 10MB per chunk
+        const multiCount = Math.floor(file.size / MULTI_CHUNK);
+        const totalChunks = multiCount >= 2 ? multiCount : 1;
+        const chunkSize = totalChunks === 1 ? file.size : MULTI_CHUNK;
         return {
           source: 'FILE_UPLOAD',
           video_size: file.size,
-          chunk_size: CHUNK,
+          chunk_size: chunkSize,
           total_chunk_count: totalChunks,
         };
       })(),
@@ -1222,8 +1220,10 @@ async function uploadToTikTok(file, title, description) {
   setProgress('tt', 5, 'Uploading...');
 
   // Multi-chunk upload — must match source_info exactly
-  const CHUNK_SIZE = file.size <= 5 * 1024 * 1024 ? file.size : 10 * 1024 * 1024;
-  const totalChunks = file.size <= 5 * 1024 * 1024 ? 1 : Math.floor(file.size / CHUNK_SIZE);
+  const MULTI_CHUNK = 10 * 1024 * 1024;
+  const multiCount = Math.floor(file.size / MULTI_CHUNK);
+  const totalChunks = multiCount >= 2 ? multiCount : 1;
+  const CHUNK_SIZE = totalChunks === 1 ? file.size : MULTI_CHUNK;
   dbg('TT chunking: file.size=' + file.size + ' CHUNK_SIZE=' + CHUNK_SIZE + ' totalChunks=' + totalChunks);
 
   for (let i = 0; i < totalChunks; i++) {
